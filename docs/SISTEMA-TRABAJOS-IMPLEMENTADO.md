@@ -13,6 +13,7 @@ Se ha implementado exitosamente un sistema completo de gestión de trabajos cont
 ### ✨ Características Principales
 
 1. **Gestión de Trabajos**
+
    - Crear trabajos con nombre, mes, descripción
    - Listar trabajos del usuario autenticado
    - Actualizar información de trabajos
@@ -21,6 +22,7 @@ Se ha implementado exitosamente un sistema completo de gestión de trabajos cont
    - Obtener estadísticas globales
 
 2. **Gestión de Reportes**
+
    - Crear múltiples reportes por trabajo (hasta 9 tipos diferentes)
    - Importar datos desde Excel (preparado para implementar)
    - Almacenamiento híbrido con JSONB en PostgreSQL
@@ -39,6 +41,7 @@ Se ha implementado exitosamente un sistema completo de gestión de trabajos cont
 ## 🗂️ Estructura de Base de Datos
 
 ### Tabla: `trabajos`
+
 ```sql
 - id: UUID (PK)
 - nombre: VARCHAR
@@ -51,6 +54,7 @@ Se ha implementado exitosamente un sistema completo de gestión de trabajos cont
 ```
 
 ### Tabla: `reportes`
+
 ```sql
 - id: UUID (PK)
 - trabajoId: UUID (FK -> trabajos)
@@ -93,15 +97,15 @@ backend/src/trabajos/
 
 ```typescript
 enum TipoReporte {
-  MENSUAL = 'mensual',
-  INGRESOS = 'ingresos',
-  AUXILIAR_INGRESOS = 'auxiliar_ingresos',
-  ADMIN_INGRESOS = 'admin_ingresos',
-  EGRESOS = 'egresos',
-  AUXILIAR_EGRESOS = 'auxiliar_egresos',
-  BALANCE = 'balance',
-  RESUMEN = 'resumen',
-  OTRO = 'otro'
+  MENSUAL = "mensual",
+  INGRESOS = "ingresos",
+  AUXILIAR_INGRESOS = "auxiliar_ingresos",
+  ADMIN_INGRESOS = "admin_ingresos",
+  EGRESOS = "egresos",
+  AUXILIAR_EGRESOS = "auxiliar_egresos",
+  BALANCE = "balance",
+  RESUMEN = "resumen",
+  OTRO = "otro",
 }
 ```
 
@@ -110,12 +114,14 @@ enum TipoReporte {
 ## 🔌 API Endpoints Disponibles
 
 ### Autenticación
+
 ```http
 POST   /auth/register          # Registrar nuevo usuario
 POST   /auth/login             # Iniciar sesión
 ```
 
 ### Trabajos (Requieren autenticación JWT)
+
 ```http
 POST   /trabajos                        # Crear trabajo
 GET    /trabajos                        # Listar trabajos del usuario
@@ -127,6 +133,7 @@ POST   /trabajos/:id/duplicar           # Duplicar trabajo
 ```
 
 ### Reportes (Requieren autenticación JWT)
+
 ```http
 POST   /trabajos/:trabajoId/reportes                           # Crear reporte
 GET    /trabajos/:trabajoId/reportes                           # Listar reportes
@@ -147,6 +154,7 @@ POST   /trabajos/:trabajoId/reportes/:id/columnas              # Agregar columna
 ## 📊 Estructura de Datos JSONB
 
 ### `metadata` (Información del reporte)
+
 ```json
 {
   "filas": 100,
@@ -164,6 +172,7 @@ POST   /trabajos/:trabajoId/reportes/:id/columnas              # Agregar columna
 ```
 
 ### `datosOriginales` (Datos del Excel)
+
 ```json
 {
   "headers": ["A", "B", "C", "D"],
@@ -180,6 +189,7 @@ POST   /trabajos/:trabajoId/reportes/:id/columnas              # Agregar columna
 ```
 
 ### `datosModificados` (Solo cambios)
+
 ```json
 {
   "celdas": {
@@ -220,6 +230,7 @@ POST   /trabajos/:trabajoId/reportes/:id/columnas              # Agregar columna
 ```
 
 ### `configuracion` (Configuración del reporte)
+
 ```json
 {
   "areas_editables": [
@@ -253,6 +264,7 @@ POST   /trabajos/:trabajoId/reportes/:id/columnas              # Agregar columna
 ## 🧪 Ejemplos de Uso (PowerShell)
 
 ### 1. Registrar y Obtener Token
+
 ```powershell
 $registerBody = @{
     email = "usuario@example.com"
@@ -268,6 +280,7 @@ $headers = @{ Authorization = "Bearer $token" }
 ```
 
 ### 2. Crear un Trabajo
+
 ```powershell
 $trabajoBody = @{
     nombre = "Contabilidad Octubre 2025"
@@ -281,6 +294,7 @@ $trabajo = Invoke-RestMethod -Uri "http://localhost:3001/trabajos" `
 ```
 
 ### 3. Crear un Reporte
+
 ```powershell
 $trabajoId = $trabajo.id
 
@@ -296,6 +310,7 @@ $reporte = Invoke-RestMethod `
 ```
 
 ### 4. Editar una Celda
+
 ```powershell
 $reporteId = $reporte.id
 $fila = 5
@@ -312,6 +327,7 @@ Invoke-RestMethod `
 ```
 
 ### 5. Agregar una Fila
+
 ```powershell
 $filaBody = @{
     datos = @("Nuevo Concepto", 1000, 2000, 3000)
@@ -325,12 +341,14 @@ Invoke-RestMethod `
 ```
 
 ### 6. Listar Trabajos
+
 ```powershell
 $trabajos = Invoke-RestMethod -Uri "http://localhost:3001/trabajos" `
     -Method GET -Headers $headers
 ```
 
 ### 7. Obtener Estadísticas
+
 ```powershell
 $stats = Invoke-RestMethod `
     -Uri "http://localhost:3001/trabajos/estadisticas" `
@@ -344,8 +362,8 @@ $stats = Invoke-RestMethod `
 ```json
 {
   "dependencies": {
-    "xlsx": "^0.18.5",           // Parser de Excel
-    "exceljs": "^4.4.0",         // Generación de Excel avanzada
+    "xlsx": "^0.18.5", // Parser de Excel
+    "exceljs": "^4.4.0", // Generación de Excel avanzada
     "hot-formula-parser": "^4.0.0" // Motor de fórmulas
   }
 }
@@ -356,6 +374,7 @@ $stats = Invoke-RestMethod `
 ## ✅ Funcionalidades Implementadas
 
 ### Backend ✅
+
 - [x] Entidades TypeORM (Trabajo, Reporte)
 - [x] DTOs de validación
 - [x] Servicios de negocio
@@ -368,6 +387,7 @@ $stats = Invoke-RestMethod `
 - [x] Estadísticas de trabajos
 
 ### Base de Datos ✅
+
 - [x] Migraciones automáticas
 - [x] Tablas creadas (users, trabajos, reportes)
 - [x] Relaciones FK configuradas
@@ -375,6 +395,7 @@ $stats = Invoke-RestMethod `
 - [x] Columnas JSONB para flexibilidad
 
 ### API ✅
+
 - [x] 20+ endpoints funcionales
 - [x] Autenticación requerida
 - [x] Validación de datos
@@ -386,6 +407,7 @@ $stats = Invoke-RestMethod `
 ## 🚀 Próximos Pasos
 
 ### Frontend (Pendiente)
+
 - [ ] Componente de lista de trabajos
 - [ ] Formulario de creación de trabajo
 - [ ] Vista de detalles del trabajo
@@ -397,6 +419,7 @@ $stats = Invoke-RestMethod `
 - [ ] Indicadores de estado
 
 ### Backend (Mejoras)
+
 - [ ] Implementar parser completo de Excel
 - [ ] Motor de fórmulas avanzado
 - [ ] Sistema de versionado de reportes
@@ -413,16 +436,19 @@ $stats = Invoke-RestMethod `
 ### Ventajas de la Arquitectura Híbrida (JSONB)
 
 1. **Flexibilidad Máxima**
+
    - Agregar filas/columnas sin cambiar esquema
    - Diferentes estructuras por tipo de reporte
    - Fácil evolución del sistema
 
 2. **Performance Optimizada**
+
    - Solo se guardan cambios (datosModificados)
    - Índices en columnas JSONB de PostgreSQL
    - Queries rápidas con operadores JSONB
 
 3. **Escalabilidad**
+
    - No hay límite de reportes por trabajo
    - Soporta archivos grandes (miles de filas)
    - Fácil sharding por usuario
@@ -437,14 +463,17 @@ $stats = Invoke-RestMethod `
 ## 🐛 Problemas Resueltos
 
 1. **Bcrypt en Docker**
+
    - Agregado `python3`, `make`, `g++` al Dockerfile
    - Reconstrucción de binarios nativos en contenedor
 
 2. **JWT Strategy**
+
    - Retorna objeto con `userId`, `email`, `name`
    - Compatible con controladores
 
 3. **Validación de DTOs**
+
    - CamelCase en propiedades (`tipoReporte`)
    - Enums correctamente definidos
 
