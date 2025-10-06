@@ -8,7 +8,12 @@ import {
     Delete,
     UseGuards,
     Request,
+    UseInterceptors,
+    UploadedFile,
+    BadRequestException,
+    Query,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ReporteService } from '../services/reporte.service';
 import {
     CreateReporteDto,
@@ -78,6 +83,39 @@ export class ReporteController {
         );
     }
 
+    @Post(':id/importar-excel')
+    @UseInterceptors(FileInterceptor('file'))
+    async importarExcel(
+        @Param('id') id: string,
+        @Param('trabajoId') trabajoId: string,
+        @UploadedFile() file: Express.Multer.File,
+        @Request() req,
+    ) {
+        if (!file) {
+            throw new BadRequestException('No se ha proporcionado ningún archivo');
+        }
+
+        return this.reporteService.importarDesdeExcel(
+            id,
+            trabajoId,
+            file.buffer,
+            file.originalname,
+            req.user.userId,
+        );
+    }
+
+    @Post(':id/info-excel')
+    @UseInterceptors(FileInterceptor('file'))
+    async obtenerInfoExcel(
+        @UploadedFile() file: Express.Multer.File,
+    ) {
+        if (!file) {
+            throw new BadRequestException('No se ha proporcionado ningún archivo');
+        }
+
+        return this.reporteService.obtenerInfoExcel(file.buffer);
+    }
+
     @Patch(':id/celdas/:fila/:columna')
     actualizarCelda(
         @Param('id') id: string,
@@ -116,5 +154,53 @@ export class ReporteController {
     @Delete(':id')
     remove(@Param('id') id: string, @Request() req) {
         return this.reporteService.remove(id, req.user.userId);
+    }
+
+    /**
+     * FASE 2: ENDPOINTS DE VISUALIZACIÓN
+     */
+
+    @Get(':id/datos')
+    obtenerDatosVisualizacion(
+        @Param('id') id: string,
+        @Query('hoja') hoja: string,
+        @Query('pagina') pagina: string,
+        @Query('porPagina') porPagina: string,
+        @Query('incluirModificaciones') incluirModificaciones: string,
+        @Request() req,
+    ) {
+        return this.reporteService.obtenerDatosVisualizacion(id, req.user.userId, {
+            hoja,
+            pagina: pagina ? parseInt(pagina) : 1,
+            porPagina: porPagina ? parseInt(porPagina) : 100,
+            incluirModificaciones: incluirModificaciones !== 'false',
+        });
+    }
+
+    @Get(':id/hojas')
+    obtenerHojasDisponibles(@Param('id') id: string, @Request() req) {
+        return this.reporteService.obtenerHojasDisponibles(id, req.user.userId);
+    }
+
+    @Get(':id/estadisticas')
+    obtenerEstadisticas(@Param('id') id: string, @Request() req) {
+        return this.reporteService.obtenerEstadisticas(id, req.user.userId);
+    }
+
+    @Get(':id/rango')
+    obtenerRangoDatos(
+        @Param('id') id: string,
+        @Query('hoja') hoja: string,
+        @Query('filaInicio') filaInicio: string,
+        @Query('filaFin') filaFin: string,
+        @Query('incluirHeaders') incluirHeaders: string,
+        @Request() req,
+    ) {
+        return this.reporteService.obtenerRangoDatos(id, req.user.userId, {
+            hoja,
+            filaInicio: parseInt(filaInicio),
+            filaFin: parseInt(filaFin),
+            incluirHeaders: incluirHeaders === 'true',
+        });
     }
 }

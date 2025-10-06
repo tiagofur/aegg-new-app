@@ -16,6 +16,7 @@ import {
     AgregarColumnaDto,
 } from '../dto/reporte.dto';
 import { FormulaService } from './formula.service';
+import { ExcelParserService } from './excel-parser.service';
 
 @Injectable()
 export class ReporteService {
@@ -25,6 +26,7 @@ export class ReporteService {
         @InjectRepository(Trabajo)
         private trabajoRepository: Repository<Trabajo>,
         private formulaService: FormulaService,
+        private excelParserService: ExcelParserService,
     ) { }
 
     /**
@@ -359,4 +361,504 @@ export class ReporteService {
             tiene_mas: datosCompletos.length > 10,
         };
     }
+
+    /**
+     * Importar datos desde un archivo Excel
+     * - Para tipo "mensual": importa todas las hojas
+     * - Para otros tipos: solo la primera hoja
+     */
+    async importarDesdeExcel(
+        id: string,
+        trabajoId: string,
+        buffer: Buffer,
+        nombreArchivo: string,
+        usuarioId: string,
+    ): Promise<Reporte> {
+        // Verificar que el reporte existe y pertenece al usuario
+        const reporte = await this.findOne(id, usuarioId);
+
+        // Validar el archivo
+        this.excelParserService.validarArchivoExcel(buffer, nombreArchivo);
+
+        // Determinar si debe parsear todas las hojas o solo la primera
+        const esMultiHoja = reporte.tipoReporte === 'mensual';
+
+        // Parsear el Excel
+        const resultado = this.excelParserService.parsearExcel(buffer, {
+            nombreArchivo,
+            todasLasHojas: esMultiHoja,
+            maxFilas: 10000,
+            maxColumnas: 100,
+        });
+
+        // Construir datosOriginales
+        // Si es multi-hoja, guardamos todas las hojas
+        // Si es una sola hoja, solo guardamos la primera
+        const datosOriginales: DatosOriginales = esMultiHoja
+            ? {
+                // Multi-hoja: guardar todas
+                hojas: resultado.hojas.map(hoja => ({
+                    nombre: hoja.nombre,
+                    headers: hoja.headers,
+                    filas: hoja.filas,
+                })),
+                metadata: {
+                    totalHojas: resultado.hojas.length,
+                    fechaImportacion: resultado.metadata.fechaParseo.toISOString(),
+                    nombreArchivo: resultado.nombreArchivo,
+                    tamanoArchivo: resultado.metadata.tamanoArchivo,
+                },
+            }
+            : {
+                // Una sola hoja
+                headers: resultado.hojas[0].headers,
+                filas: resultado.hojas[0].filas,
+                metadata: {
+                    totalFilas: resultado.hojas[0].metadata.totalFilas,
+                    totalColumnas: resultado.hojas[0].metadata.totalColumnas,
+                    fechaImportacion: resultado.metadata.fechaParseo.toISOString(),
+                    nombreArchivo: resultado.nombreArchivo,
+                    tamanoArchivo: resultado.metadata.tamanoArchivo,
+                },
+            };
+
+        // Construir metadata del reporte
+        const metadata = esMultiHoja
+            ? {
+                // Metadata para multi-hoja
+                hojas: resultado.hojas.map(hoja => ({
+                    nombre: hoja.nombre,
+                    filas: hoja.metadata.totalFilas,
+                    columnas: hoja.metadata.totalColumnas,
+                    areas_editables: [], // Se pueden configurar después
+                })),
+                totalHojas: resultado.hojas.length,
+            }
+            : {
+                // Metadata para una sola hoja
+                filas: resultado.hojas[0].metadata.totalFilas,
+                columnas: resultado.hojas[0].metadata.totalColumnas,
+                headers: resultado.hojas[0].headers,
+                areas_editables: [], // Se pueden configurar después
+            };
+
+        // Actualizar el reporte
+        reporte.datosOriginales = datosOriginales;
+        reporte.metadata = metadata;
+        reporte.archivoOriginal = nombreArchivo;
+        reporte.estado = 'importado';
+        reporte.datosModificados = {}; // Resetear modificaciones
+
+        return await this.reporteRepository.save(reporte);
+    }
+
+    /**
+     * Obtener información del Excel sin importarlo completamente
+     */
+    async obtenerInfoExcel(buffer: Buffer): Promise<{
+        nombreHojas: string[];
+        totalHojas: number;
+        tamanoArchivo: number;
+    }> {
+        return await this.excelParserService.obtenerInfoExcel(buffer);
+    }
+
+    /**
+     * FASE 2: MÉTODOS DE VISUALIZACIÓN
+     */
+
+    /**
+     * Obtener datos completos del reporte con paginación
+     */
+    async obtenerDatosVisualizacion(
+        id: string,
+        usuarioId: string,
+        opciones: {
+            hoja?: string; // Nombre de la hoja (para multi-hoja)
+            pagina?: number;
+            porPagina?: number;
+            incluirModificaciones?: boolean;
+        } = {},
+    ) {
+        const reporte = await this.findOne(id, usuarioId);
+
+        if (!reporte.datosOriginales) {
+            throw new BadRequestException('El reporte no tiene datos importados');
+        }
+
+        const {
+            hoja = null,
+            pagina = 1,
+            porPagina = 100,
+            incluirModificaciones = true,
+        } = opciones;
+
+        // Determinar si es multi-hoja o una sola hoja
+        const esMultiHoja = Boolean(reporte.datosOriginales.hojas);
+
+        if (esMultiHoja) {
+            // Multi-hoja: obtener datos de una hoja específica
+            return this.obtenerDatosHojaEspecifica(
+                reporte,
+                hoja,
+                pagina,
+                porPagina,
+                incluirModificaciones,
+            );
+        } else {
+            // Una sola hoja: obtener datos directos
+            return this.obtenerDatosHojaUnica(
+                reporte,
+                pagina,
+                porPagina,
+                incluirModificaciones,
+            );
+        }
+    }
+
+    /**
+     * Obtener datos de una hoja específica (para multi-hoja)
+     */
+    private obtenerDatosHojaEspecifica(
+        reporte: Reporte,
+        nombreHoja: string,
+        pagina: number,
+        porPagina: number,
+        incluirModificaciones: boolean,
+    ) {
+        const hojas = reporte.datosOriginales.hojas;
+
+        if (!hojas || hojas.length === 0) {
+            throw new BadRequestException('No hay hojas disponibles');
+        }
+
+        // Si no se especifica hoja, usar la primera
+        const hojaSeleccionada = nombreHoja
+            ? hojas.find((h) => h.nombre === nombreHoja)
+            : hojas[0];
+
+        if (!hojaSeleccionada) {
+            throw new BadRequestException(
+                `La hoja "${nombreHoja}" no existe. Hojas disponibles: ${hojas.map((h) => h.nombre).join(', ')}`,
+            );
+        }
+
+        // Obtener filas paginadas
+        const inicio = (pagina - 1) * porPagina;
+        const fin = inicio + porPagina;
+        const filasPaginadas = hojaSeleccionada.filas.slice(inicio, fin);
+
+        // Aplicar modificaciones si es necesario
+        const filasFinales = incluirModificaciones
+            ? this.aplicarModificacionesAFilas(
+                filasPaginadas,
+                reporte.datosModificados,
+                inicio,
+            )
+            : filasPaginadas;
+
+        return {
+            tipo: 'multi-hoja',
+            hojaActual: hojaSeleccionada.nombre,
+            hojasDisponibles: hojas.map((h) => ({
+                nombre: h.nombre,
+                totalFilas: h.filas.length,
+                totalColumnas: h.headers.length,
+            })),
+            headers: hojaSeleccionada.headers,
+            filas: filasFinales,
+            paginacion: {
+                pagina,
+                porPagina,
+                totalFilas: hojaSeleccionada.filas.length,
+                totalPaginas: Math.ceil(hojaSeleccionada.filas.length / porPagina),
+                inicio: inicio + 1,
+                fin: Math.min(fin, hojaSeleccionada.filas.length),
+            },
+            metadata: {
+                tieneModificaciones: this.tieneModificaciones(reporte.datosModificados),
+                totalHojas: hojas.length,
+                estadoReporte: reporte.estado,
+            },
+        };
+    }
+
+    /**
+     * Obtener datos de una sola hoja
+     */
+    private obtenerDatosHojaUnica(
+        reporte: Reporte,
+        pagina: number,
+        porPagina: number,
+        incluirModificaciones: boolean,
+    ) {
+        const headers = reporte.datosOriginales.headers;
+        const filas = reporte.datosOriginales.filas;
+
+        if (!headers || !filas) {
+            throw new BadRequestException('Datos originales incompletos');
+        }
+
+        // Obtener filas paginadas
+        const inicio = (pagina - 1) * porPagina;
+        const fin = inicio + porPagina;
+        const filasPaginadas = filas.slice(inicio, fin);
+
+        // Aplicar modificaciones si es necesario
+        const filasFinales = incluirModificaciones
+            ? this.aplicarModificacionesAFilas(
+                filasPaginadas,
+                reporte.datosModificados,
+                inicio,
+            )
+            : filasPaginadas;
+
+        return {
+            tipo: 'hoja-unica',
+            headers,
+            filas: filasFinales,
+            paginacion: {
+                pagina,
+                porPagina,
+                totalFilas: filas.length,
+                totalPaginas: Math.ceil(filas.length / porPagina),
+                inicio: inicio + 1,
+                fin: Math.min(fin, filas.length),
+            },
+            metadata: {
+                tieneModificaciones: this.tieneModificaciones(reporte.datosModificados),
+                estadoReporte: reporte.estado,
+            },
+        };
+    }
+
+    /**
+     * Aplicar modificaciones a las filas obtenidas
+     */
+    private aplicarModificacionesAFilas(
+        filas: any[][],
+        modificaciones: DatosModificados,
+        offsetInicio: number,
+    ): any[][] {
+        if (!modificaciones || !modificaciones.celdas) {
+            return filas;
+        }
+
+        // Clonar las filas para no mutar el original
+        const filasModificadas = filas.map((fila) => [...fila]);
+
+        // Aplicar modificaciones de celdas
+        Object.entries(modificaciones.celdas).forEach(([key, modificacion]) => {
+            const [filaStr, columnaStr] = key.split(',');
+            const filaIndex = parseInt(filaStr) - offsetInicio;
+            const columnaIndex = parseInt(columnaStr);
+
+            // Verificar si la celda está en el rango actual
+            if (
+                filaIndex >= 0 &&
+                filaIndex < filasModificadas.length &&
+                columnaIndex >= 0 &&
+                columnaIndex < filasModificadas[filaIndex].length
+            ) {
+                filasModificadas[filaIndex][columnaIndex] = modificacion.valor_nuevo;
+            }
+        });
+
+        return filasModificadas;
+    }
+
+    /**
+     * Verificar si hay modificaciones en el reporte
+     */
+    private tieneModificaciones(modificaciones: DatosModificados): boolean {
+        if (!modificaciones) return false;
+
+        return (
+            (modificaciones.celdas && Object.keys(modificaciones.celdas).length > 0) ||
+            (modificaciones.filas_nuevas && modificaciones.filas_nuevas.length > 0) ||
+            (modificaciones.columnas_nuevas && modificaciones.columnas_nuevas.length > 0) ||
+            (modificaciones.formulas && Object.keys(modificaciones.formulas).length > 0)
+        );
+    }
+
+    /**
+     * Obtener lista de hojas disponibles (para multi-hoja)
+     */
+    async obtenerHojasDisponibles(id: string, usuarioId: string) {
+        const reporte = await this.findOne(id, usuarioId);
+
+        if (!reporte.datosOriginales) {
+            throw new BadRequestException('El reporte no tiene datos importados');
+        }
+
+        const hojas = reporte.datosOriginales.hojas;
+
+        if (!hojas) {
+            // Es una hoja única
+            return {
+                tipo: 'hoja-unica',
+                hojas: [
+                    {
+                        nombre: 'Hoja Principal',
+                        totalFilas: reporte.datosOriginales.filas?.length || 0,
+                        totalColumnas: reporte.datosOriginales.headers?.length || 0,
+                    },
+                ],
+            };
+        }
+
+        return {
+            tipo: 'multi-hoja',
+            hojas: hojas.map((hoja) => ({
+                nombre: hoja.nombre,
+                totalFilas: hoja.filas.length,
+                totalColumnas: hoja.headers.length,
+            })),
+        };
+    }
+
+    /**
+     * Obtener estadísticas de un reporte
+     */
+    async obtenerEstadisticas(id: string, usuarioId: string) {
+        const reporte = await this.findOne(id, usuarioId);
+
+        if (!reporte.datosOriginales) {
+            return {
+                estado: 'sin_datos',
+                mensaje: 'El reporte no tiene datos importados',
+            };
+        }
+
+        const esMultiHoja = Boolean(reporte.datosOriginales.hojas);
+
+        if (esMultiHoja) {
+            const hojas = reporte.datosOriginales.hojas;
+            const totalFilas = hojas.reduce((sum, hoja) => sum + hoja.filas.length, 0);
+            const totalColumnas = Math.max(...hojas.map((hoja) => hoja.headers.length));
+
+            return {
+                estado: reporte.estado,
+                tipo: 'multi-hoja',
+                totalHojas: hojas.length,
+                totalFilas,
+                totalColumnas,
+                hojas: hojas.map((hoja) => ({
+                    nombre: hoja.nombre,
+                    filas: hoja.filas.length,
+                    columnas: hoja.headers.length,
+                })),
+                modificaciones: this.contarModificaciones(reporte.datosModificados),
+                fechaImportacion: reporte.datosOriginales.metadata.fechaImportacion,
+                nombreArchivo: reporte.datosOriginales.metadata.nombreArchivo,
+            };
+        } else {
+            return {
+                estado: reporte.estado,
+                tipo: 'hoja-unica',
+                totalFilas: reporte.datosOriginales.filas?.length || 0,
+                totalColumnas: reporte.datosOriginales.headers?.length || 0,
+                modificaciones: this.contarModificaciones(reporte.datosModificados),
+                fechaImportacion: reporte.datosOriginales.metadata.fechaImportacion,
+                nombreArchivo: reporte.datosOriginales.metadata.nombreArchivo,
+            };
+        }
+    }
+
+    /**
+     * Contar modificaciones realizadas
+     */
+    private contarModificaciones(modificaciones: DatosModificados): {
+        celdasModificadas: number;
+        filasAgregadas: number;
+        columnasAgregadas: number;
+        formulas: number;
+    } {
+        if (!modificaciones) {
+            return {
+                celdasModificadas: 0,
+                filasAgregadas: 0,
+                columnasAgregadas: 0,
+                formulas: 0,
+            };
+        }
+
+        return {
+            celdasModificadas: modificaciones.celdas
+                ? Object.keys(modificaciones.celdas).length
+                : 0,
+            filasAgregadas: modificaciones.filas_nuevas?.length || 0,
+            columnasAgregadas: modificaciones.columnas_nuevas?.length || 0,
+            formulas: modificaciones.formulas
+                ? Object.keys(modificaciones.formulas).length
+                : 0,
+        };
+    }
+
+    /**
+     * Obtener rango de datos específico (para scrolling virtual)
+     */
+    async obtenerRangoDatos(
+        id: string,
+        usuarioId: string,
+        opciones: {
+            hoja?: string;
+            filaInicio: number;
+            filaFin: number;
+            incluirHeaders?: boolean;
+        },
+    ) {
+        const reporte = await this.findOne(id, usuarioId);
+
+        if (!reporte.datosOriginales) {
+            throw new BadRequestException('El reporte no tiene datos importados');
+        }
+
+        const { hoja, filaInicio, filaFin, incluirHeaders = false } = opciones;
+        const esMultiHoja = Boolean(reporte.datosOriginales.hojas);
+
+        let headers: string[];
+        let filasCompletas: any[][];
+
+        if (esMultiHoja) {
+            const hojas = reporte.datosOriginales.hojas;
+            const hojaSeleccionada = hoja
+                ? hojas.find((h) => h.nombre === hoja)
+                : hojas[0];
+
+            if (!hojaSeleccionada) {
+                throw new BadRequestException(`La hoja "${hoja}" no existe`);
+            }
+
+            headers = hojaSeleccionada.headers;
+            filasCompletas = hojaSeleccionada.filas;
+        } else {
+            headers = reporte.datosOriginales.headers;
+            filasCompletas = reporte.datosOriginales.filas;
+        }
+
+        // Validar rango
+        const inicio = Math.max(0, filaInicio);
+        const fin = Math.min(filasCompletas.length, filaFin);
+
+        const filasRango = filasCompletas.slice(inicio, fin);
+
+        // Aplicar modificaciones
+        const filasConModificaciones = this.aplicarModificacionesAFilas(
+            filasRango,
+            reporte.datosModificados,
+            inicio,
+        );
+
+        return {
+            headers: incluirHeaders ? headers : undefined,
+            filas: filasConModificaciones,
+            rango: {
+                inicio,
+                fin,
+                total: filasCompletas.length,
+            },
+        };
+    }
 }
+

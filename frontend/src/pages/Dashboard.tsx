@@ -1,5 +1,6 @@
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { FolderOpen, FileText } from "lucide-react";
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -15,7 +16,9 @@ const Dashboard = () => {
       <nav className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <h1 className="text-xl font-bold text-gray-900">Mi Aplicación</h1>
+            <h1 className="text-xl font-bold text-gray-900">
+              Sistema de Reportes Contables
+            </h1>
             <button
               onClick={handleLogout}
               className="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
@@ -41,46 +44,44 @@ const Dashboard = () => {
           </div>
 
           <div className="border-t border-gray-200 pt-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6">
-                <div className="text-blue-600 text-3xl mb-2">🎉</div>
-                <h3 className="font-semibold text-gray-900 mb-1">
-                  Cuenta Creada
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+              <button
+                onClick={() => navigate("/trabajos")}
+                className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-8 hover:shadow-lg transition-all border-2 border-transparent hover:border-blue-400"
+              >
+                <FolderOpen className="h-16 w-16 text-blue-600 mx-auto mb-4" />
+                <h3 className="font-semibold text-gray-900 mb-2 text-xl">
+                  Mis Trabajos
                 </h3>
                 <p className="text-sm text-gray-600">
-                  Tu cuenta ha sido creada exitosamente
+                  Gestiona tus proyectos y reportes contables
                 </p>
-              </div>
+              </button>
 
-              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6">
-                <div className="text-green-600 text-3xl mb-2">✅</div>
-                <h3 className="font-semibold text-gray-900 mb-1">
-                  Autenticado
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-8 opacity-75 border-2 border-gray-300">
+                <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="font-semibold text-gray-900 mb-2 text-xl">
+                  Reportes
                 </h3>
                 <p className="text-sm text-gray-600">
-                  Estás correctamente autenticado
+                  Visualiza y edita tus reportes importados
                 </p>
-              </div>
-
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6">
-                <div className="text-purple-600 text-3xl mb-2">🚀</div>
-                <h3 className="font-semibold text-gray-900 mb-1">
-                  Listo para Empezar
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Tu aplicación está lista
-                </p>
+                <p className="text-xs text-gray-500 mt-2">(Próximamente)</p>
               </div>
             </div>
           </div>
 
           <div className="mt-8 p-6 bg-gray-50 rounded-xl">
-            <h3 className="font-semibold text-gray-900 mb-2">Próximos pasos</h3>
-            <p className="text-gray-600 text-sm">
-              Esta es tu página de dashboard. Desde aquí podrás agregar más
-              funcionalidades paso a paso conforme vayas desarrollando tu
-              aplicación.
-            </p>
+            <h3 className="font-semibold text-gray-900 mb-2">
+              Funcionalidades Disponibles
+            </h3>
+            <ul className="text-gray-600 text-sm space-y-2">
+              <li>✅ Crear y gestionar trabajos contables</li>
+              <li>✅ Importar archivos Excel con reportes</li>
+              <li>✅ Soporte para múltiples hojas (tipo mensual)</li>
+              <li>🚧 Visualización de datos importados (próximamente)</li>
+              <li>🚧 Edición de datos y cálculos (próximamente)</li>
+            </ul>
           </div>
         </div>
       </main>

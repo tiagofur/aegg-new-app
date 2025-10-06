@@ -22,14 +22,32 @@ export enum TipoReporte {
 }
 
 // Interfaces para la estructura JSONB
-export interface DatosOriginales {
+
+// Interface para una hoja individual
+export interface HojaReporte {
+    nombre: string;
     headers: string[];
     filas: any[][];
+}
+
+// DatosOriginales puede ser de una sola hoja o multi-hoja
+export interface DatosOriginales {
+    // Para reportes de una sola hoja
+    headers?: string[];
+    filas?: any[][];
+
+    // Para reportes multi-hoja (tipo mensual)
+    hojas?: HojaReporte[];
+
+    // Metadata común
     metadata: {
-        total_filas: number;
-        total_columnas: number;
-        fecha_importacion: string;
-        nombre_hoja?: string;
+        totalFilas?: number;
+        totalColumnas?: number;
+        totalHojas?: number;
+        fechaImportacion: string;
+        nombreArchivo?: string;
+        tamanoArchivo?: number;
+        nombreHoja?: string;
     };
 }
 
@@ -122,10 +140,20 @@ export class Reporte {
 
     @Column({ type: 'jsonb', nullable: true })
     metadata: {
-        filas: number;
-        columnas: number;
-        areas_editables: AreaEditable[];
-        headers: string[];
+        // Para una sola hoja
+        filas?: number;
+        columnas?: number;
+        headers?: string[];
+        areas_editables?: AreaEditable[];
+
+        // Para multi-hoja
+        hojas?: Array<{
+            nombre: string;
+            filas: number;
+            columnas: number;
+            areas_editables: AreaEditable[];
+        }>;
+        totalHojas?: number;
     };
 
     @Column({ type: 'jsonb', nullable: true, name: 'datos_originales' })
