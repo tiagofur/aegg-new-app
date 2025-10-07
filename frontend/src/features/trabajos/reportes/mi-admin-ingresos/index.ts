@@ -4,36 +4,36 @@
 
 // Types
 export type {
-  MiAdminIngresosRow,
-  MiAdminIngresosTotales,
-  ComparisonStatus,
-  MiAdminIngresosComparisonResult,
-  TotalesComparison,
+    MiAdminIngresosRow,
+    MiAdminIngresosTotales,
+    ComparisonStatus,
+    MiAdminIngresosComparisonResult,
+    TotalesComparison,
 } from './types';
 
 export { MI_ADMIN_INGRESOS_CONFIG } from './types';
 
 // Utils
 export {
-  parseExcelToMiAdminIngresos,
-  calculateSubtotalMXN,
-  calculateTCSugerido,
-  calculateTotales,
-  recalculateRowAfterTipoCambioChange,
-  updateRowEstadoSat,
-  formatCurrency,
-  formatTipoCambio,
-  formatDate,
-  isValidTipoCambio,
-  convertToExcelFormat,
-  rowStyles,
-  footerStyles,
-  inputStyles,
-  badgeStyles,
-  getRowBackgroundColor,
-  getFooterBackgroundColor,
-  getEstadoSatCellClasses,
-  getComparisonBadgeVariant,
+    parseExcelToMiAdminIngresos,
+    calculateSubtotalMXN,
+    calculateTCSugerido,
+    calculateTotales,
+    recalculateRowAfterTipoCambioChange,
+    updateRowEstadoSat,
+    formatCurrency,
+    formatTipoCambio,
+    formatDate,
+    isValidTipoCambio,
+    convertToExcelFormat,
+    rowStyles,
+    footerStyles,
+    inputStyles,
+    badgeStyles,
+    getRowBackgroundColor,
+    getFooterBackgroundColor,
+    getEstadoSatCellClasses,
+    getComparisonBadgeVariant,
 } from './utils';
 
 // Hooks
