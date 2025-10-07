@@ -8,8 +8,7 @@ import { AuthProvider } from "./context/AuthContext";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
-import { Trabajos } from "./pages/Trabajos";
-import { TrabajoDetail } from "./pages/TrabajoDetail";
+import { TrabajosPage } from "./pages/TrabajosPage";
 import PrivateRoute from "./components/PrivateRoute";
 
 function App() {
@@ -36,15 +35,7 @@ function App() {
             path="/trabajos"
             element={
               <PrivateRoute>
-                <Trabajos />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/trabajos/:id"
-            element={
-              <PrivateRoute>
-                <TrabajoDetail />
+                <TrabajosPage />
               </PrivateRoute>
             }
           />
