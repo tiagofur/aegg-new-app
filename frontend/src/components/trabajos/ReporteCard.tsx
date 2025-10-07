@@ -3,6 +3,8 @@ import { ReporteMensual, TIPOS_REPORTE_NOMBRES } from "../../types/trabajo";
 import { reportesMensualesService } from "../../services";
 import { ReporteViewer } from "./ReporteViewer";
 import { AuxiliarIngresosTable } from "../../features/trabajos/reportes/auxiliar-ingresos";
+import { MiAdminIngresosTable } from "../../features/trabajos/reportes/mi-admin-ingresos";
+import { useAuxiliarIngresosData } from "../../features/trabajos/reportes/auxiliar-ingresos/hooks/useAuxiliarIngresosData";
 
 interface ReporteCardProps {
   reporte: ReporteMensual;
@@ -22,6 +24,13 @@ export const ReporteCard: React.FC<ReporteCardProps> = ({
   const [localReporte, setLocalReporte] = useState(reporte);
   const [verDatos, setVerDatos] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Cargar datos de Auxiliar si estamos en Mi Admin
+  const { data: auxiliarData } = useAuxiliarIngresosData(
+    reporte.tipo === "INGRESOS_MI_ADMIN" ? trabajoYear : undefined,
+    reporte.tipo === "INGRESOS_MI_ADMIN" ? mesNumber : undefined,
+    ""
+  );
 
   const tieneDatos =
     localReporte.datos && Object.keys(localReporte.datos).length > 0;
@@ -263,6 +272,14 @@ export const ReporteCard: React.FC<ReporteCardProps> = ({
                 year={trabajoYear}
                 month={mesNumber}
                 fileName={localReporte.archivoOriginal || ""}
+              />
+            </div>
+          ) : reporte.tipo === "INGRESOS_MI_ADMIN" ? (
+            <div className="h-[600px]">
+              <MiAdminIngresosTable
+                mesId={mesId}
+                reporteId={localReporte.id}
+                auxiliarData={auxiliarData}
               />
             </div>
           ) : (

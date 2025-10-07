@@ -3,8 +3,8 @@
  * Muestra el TC sugerido calculado con botón para aplicarlo
  */
 
-import { ArrowDownCircle } from 'lucide-react';
-import { formatTipoCambio } from '../../utils';
+import { ArrowDownCircle } from "lucide-react";
+import { formatTipoCambio } from "../../utils";
 
 interface TCSugeridoCellProps {
   /** Valor del TC sugerido (puede ser null si no se puede calcular) */
@@ -12,7 +12,7 @@ interface TCSugeridoCellProps {
   /** Tipo de cambio actual de la fila */
   tipoCambioActual: number | null;
   /** Estado SAT de la fila */
-  estadoSat: 'Vigente' | 'Cancelada';
+  estadoSat: "Vigente" | "Cancelada";
   /** Callback al hacer click en "Aplicar" */
   onAplicar: () => void;
   /** Si está deshabilitado (ej: no hay TC sugerido o está cancelada) */
@@ -30,7 +30,7 @@ export const TCSugeridoCell: React.FC<TCSugeridoCellProps> = ({
   disabled = false,
 }) => {
   // Si no hay TC sugerido o está cancelada, mostrar N/A
-  if (tcSugerido === null || estadoSat === 'Cancelada') {
+  if (tcSugerido === null || estadoSat === "Cancelada") {
     return (
       <div className="flex items-center justify-center text-gray-400 text-sm">
         N/A
@@ -47,7 +47,7 @@ export const TCSugeridoCell: React.FC<TCSugeridoCellProps> = ({
     <div className="flex items-center gap-2 justify-between">
       <span
         className={`font-mono text-sm ${
-          isAlreadyApplied ? 'text-green-600 font-semibold' : 'text-blue-600'
+          isAlreadyApplied ? "text-green-600 font-semibold" : "text-blue-600"
         }`}
         title={`TC Sugerido: ${formatTipoCambio(tcSugerido)}`}
       >
@@ -63,8 +63,8 @@ export const TCSugeridoCell: React.FC<TCSugeridoCellProps> = ({
             transition-colors
             ${
               disabled
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-blue-100 text-blue-700 hover:bg-blue-200 active:bg-blue-300'
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                : "bg-blue-100 text-blue-700 hover:bg-blue-200 active:bg-blue-300"
             }
           `}
           title="Aplicar TC Sugerido a esta fila"
@@ -75,9 +75,7 @@ export const TCSugeridoCell: React.FC<TCSugeridoCellProps> = ({
       )}
 
       {isAlreadyApplied && (
-        <span className="text-xs text-green-600 font-medium">
-          ✓ Aplicado
-        </span>
+        <span className="text-xs text-green-600 font-medium">✓ Aplicado</span>
       )}
     </div>
   );

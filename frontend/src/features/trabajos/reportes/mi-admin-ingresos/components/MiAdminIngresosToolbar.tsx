@@ -3,9 +3,9 @@
  * Incluye botones especiales: Aplicar TC Sugerido y Cancelar Folios Únicos
  */
 
-import { ArrowDownCircle, XCircle } from 'lucide-react';
-import { badgeStyles } from '../utils';
-import type { MiAdminIngresosTotales, TotalesComparison } from '../types';
+import { ArrowDownCircle, XCircle } from "lucide-react";
+import { badgeStyles } from "../utils";
+import type { MiAdminIngresosTotales, TotalesComparison } from "../types";
 
 interface MiAdminIngresosToolbarProps {
   /** Si hay cambios sin guardar */
@@ -59,13 +59,13 @@ export const MiAdminIngresosToolbar: React.FC<MiAdminIngresosToolbarProps> = ({
                 px-4 py-2 rounded font-medium transition-colors
                 ${
                   isDirty && !isSaving
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    ? "bg-blue-600 text-white hover:bg-blue-700"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
                 }
               `}
-              title={isDirty ? 'Guardar cambios' : 'No hay cambios'}
+              title={isDirty ? "Guardar cambios" : "No hay cambios"}
             >
-              {isSaving ? 'Guardando...' : 'Guardar'}
+              {isSaving ? "Guardando..." : "Guardar"}
             </button>
 
             <button
@@ -75,23 +75,23 @@ export const MiAdminIngresosToolbar: React.FC<MiAdminIngresosToolbarProps> = ({
                 px-4 py-2 rounded font-medium transition-colors
                 ${
                   !hasAuxiliarData
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                     : isComparisonActive
-                    ? 'bg-purple-600 text-white hover:bg-purple-700'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    ? "bg-purple-600 text-white hover:bg-purple-700"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                 }
               `}
               title={
                 !hasAuxiliarData
-                  ? 'No hay datos de Auxiliar para comparar'
+                  ? "No hay datos de Auxiliar para comparar"
                   : isComparisonActive
-                  ? 'Desactivar comparación'
-                  : 'Activar comparación'
+                  ? "Desactivar comparación"
+                  : "Activar comparación"
               }
             >
               {isComparisonActive
-                ? '🔍 Comparación Activa'
-                : '🔍 Comparar con Auxiliar'}
+                ? "🔍 Comparación Activa"
+                : "🔍 Comparar con Auxiliar"}
             </button>
           </div>
 
@@ -127,9 +127,9 @@ export const MiAdminIngresosToolbar: React.FC<MiAdminIngresosToolbarProps> = ({
                 }`}
                 title={totalesComparison.tooltip}
               >
-                {totalesComparison.isMatch ? '✅' : '❌'} Totales{' '}
+                {totalesComparison.isMatch ? "✅" : "❌"} Totales{" "}
                 {totalesComparison.isMatch
-                  ? 'OK'
+                  ? "OK"
                   : `Dif: $${totalesComparison.difference.toFixed(2)}`}
               </span>
             )}
@@ -151,8 +151,8 @@ export const MiAdminIngresosToolbar: React.FC<MiAdminIngresosToolbarProps> = ({
                 transition-colors
                 ${
                   isSaving
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-blue-100 text-blue-700 hover:bg-blue-200 active:bg-blue-300'
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-blue-100 text-blue-700 hover:bg-blue-200 active:bg-blue-300"
                 }
               `}
               title="Aplicar TC Sugerido a todas las filas que lo tengan disponible"
@@ -169,14 +169,14 @@ export const MiAdminIngresosToolbar: React.FC<MiAdminIngresosToolbarProps> = ({
                 transition-colors
                 ${
                   isSaving || !isComparisonActive
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-red-100 text-red-700 hover:bg-red-200 active:bg-red-300'
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-red-100 text-red-700 hover:bg-red-200 active:bg-red-300"
                 }
               `}
               title={
                 !isComparisonActive
-                  ? 'Activa la comparación para usar esta función'
-                  : 'Cancelar todos los folios que solo existen en Mi Admin (no en Auxiliar)'
+                  ? "Activa la comparación para usar esta función"
+                  : "Cancelar todos los folios que solo existen en Mi Admin (no en Auxiliar)"
               }
             >
               <XCircle className="w-4 h-4" />
@@ -185,8 +185,8 @@ export const MiAdminIngresosToolbar: React.FC<MiAdminIngresosToolbarProps> = ({
 
             <span className="text-xs text-gray-500 ml-2">
               {isComparisonActive
-                ? 'Comparación activa - Puedes usar ambas acciones'
-                : 'Activa la comparación para cancelar folios únicos'}
+                ? "Comparación activa - Puedes usar ambas acciones"
+                : "Activa la comparación para cancelar folios únicos"}
             </span>
           </div>
         )}

@@ -7,18 +7,18 @@ import { calculateTotales } from '../utils';
 import type { MiAdminIngresosRow, MiAdminIngresosTotales } from '../types';
 
 interface UseMiAdminIngresosCalculationsProps {
-  data: MiAdminIngresosRow[];
+    data: MiAdminIngresosRow[];
 }
 
 export const useMiAdminIngresosCalculations = ({
-  data,
+    data,
 }: UseMiAdminIngresosCalculationsProps) => {
-  // Calcular totales (excluyendo canceladas)
-  const totales: MiAdminIngresosTotales = useMemo(() => {
-    return calculateTotales(data);
-  }, [data]);
+    // Calcular totales (excluyendo canceladas)
+    const totales: MiAdminIngresosTotales = useMemo(() => {
+        return calculateTotales(data);
+    }, [data]);
 
-  return {
-    totales,
-  };
+    return {
+        totales,
+    };
 };

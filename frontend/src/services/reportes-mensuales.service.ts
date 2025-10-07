@@ -28,4 +28,26 @@ export const reportesMensualesService = {
         );
         return data;
     },
+
+    async obtenerDatos(
+        mesId: string,
+        reporteId: string
+    ): Promise<{ datos: any[][] }> {
+        const { data } = await api.get(
+            `/reportes-mensuales/${mesId}/${reporteId}/datos`
+        );
+        return data;
+    },
+
+    async actualizarDatos(
+        mesId: string,
+        reporteId: string,
+        datos: any[][]
+    ): Promise<ReporteMensual> {
+        const { data } = await api.put(
+            `/reportes-mensuales/${mesId}/${reporteId}/datos`,
+            { datos }
+        );
+        return data;
+    },
 };

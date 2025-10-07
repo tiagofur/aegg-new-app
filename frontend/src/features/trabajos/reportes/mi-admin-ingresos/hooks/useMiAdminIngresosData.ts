@@ -4,76 +4,95 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchTrabajoExcel, saveTrabajoExcel } from '@/services/trabajoService';
-import { parseExcelToMiAdminIngresos } from '../utils';
+import { reportesMensualesService } from '@/services';
+import { parseExcelToMiAdminIngresos, convertToExcelFormat } from '../utils';
 import type { MiAdminIngresosRow } from '../types';
 import type { AuxiliarIngresosRow } from '../../auxiliar-ingresos';
 
 interface UseMiAdminIngresosDataProps {
-  trabajoId: string | undefined;
-  auxiliarData: AuxiliarIngresosRow[] | undefined;
+    mesId: string | undefined;
+    reporteId: string | undefined;
+    auxiliarData: AuxiliarIngresosRow[] | undefined;
+    enabled?: boolean;
 }
 
 export const useMiAdminIngresosData = ({
-  trabajoId,
-  auxiliarData,
+    mesId,
+    reporteId,
+    auxiliarData,
+    enabled = true,
 }: UseMiAdminIngresosDataProps) => {
-  const queryClient = useQueryClient();
-  const queryKey = ['trabajo-excel', trabajoId, 'mi-admin-ingresos'];
+    const queryClient = useQueryClient();
+    const queryKey = ['reporte-mi-admin-ingresos', mesId, reporteId];
 
-  // Query para cargar datos
-  const {
-    data: miAdminData,
-    isLoading,
-    error,
-    refetch,
-  } = useQuery({
-    queryKey,
-    queryFn: async () => {
-      if (!trabajoId) return [];
+    // Query para cargar datos
+    const {
+        data: miAdminData,
+        isLoading,
+        error,
+        refetch,
+    } = useQuery({
+        queryKey,
+        queryFn: async () => {
+            if (!mesId || !reporteId) return [];
 
-      const excelData = await fetchTrabajoExcel(trabajoId, 'mi-admin-ingresos');
+            const response = await reportesMensualesService.obtenerDatos(mesId, reporteId);
+            
+            if (!response?.datos) return [];
 
-      // Parsear Excel e integrar con datos de Auxiliar
-      const parsedData = parseExcelToMiAdminIngresos(excelData, auxiliarData || []);
+            // Parsear Excel e integrar con datos de Auxiliar
+            const parsedData = parseExcelToMiAdminIngresos(response.datos, auxiliarData || []);
 
-      return parsedData;
-    },
-    enabled: !!trabajoId,
-    staleTime: 1000 * 60 * 5, // 5 minutos
-  });
+            return parsedData;
+        },
+        enabled: enabled && !!mesId && !!reporteId,
+        staleTime: 1000 * 60 * 5, // 5 minutos
+    });
 
-  // Mutation para guardar cambios
-  const saveMutation = useMutation({
-    mutationFn: async (updatedData: MiAdminIngresosRow[]) => {
-      if (!trabajoId) {
-        throw new Error('No hay ID de trabajo');
-      }
+    // Mutation para guardar cambios
+    const saveMutation = useMutation({
+        mutationFn: async (updatedData: MiAdminIngresosRow[]) => {
+            if (!mesId || !reporteId) {
+                throw new Error('No hay ID de mes o reporte');
+            }
 
-      await saveTrabajoExcel(trabajoId, 'mi-admin-ingresos', updatedData);
-    },
-    onSuccess: () => {
-      // Invalidar cache para refrescar datos
-      queryClient.invalidateQueries({ queryKey });
-      
-      // También invalidar auxiliar por si hay cambios relacionados
-      queryClient.invalidateQueries({ 
-        queryKey: ['trabajo-excel', trabajoId, 'auxiliar-ingresos'] 
-      });
-    },
-  });
+            // Convertir de vuelta a formato Excel
+            const excelData = convertToExcelFormat(updatedData);
 
-  const handleSave = async (data: MiAdminIngresosRow[]) => {
-    await saveMutation.mutateAsync(data);
-  };
+            return await reportesMensualesService.actualizarDatos(
+                mesId,
+                reporteId,
+                excelData
+            );
+        },
+        onSuccess: () => {
+            // Invalidar cache para refrescar datos
+            queryClient.invalidateQueries({ queryKey });
+            
+            // También invalidar auxiliar por si hay cambios relacionados
+            queryClient.invalidateQueries({ 
+                queryKey: ['reporte-auxiliar-ingresos', mesId] 
+            });
+            
+            queryClient.invalidateQueries({
+                queryKey: ['reporte-anual'],
+            });
+            
+            queryClient.invalidateQueries({
+                queryKey: ['mes', mesId],
+            });
+        },
+    });    const handleSave = async (data: MiAdminIngresosRow[]) => {
+        await saveMutation.mutateAsync(data);
+    };
 
-  return {
-    data: miAdminData || [],
-    isLoading,
-    error,
-    refetch,
-    handleSave,
-    isSaving: saveMutation.isPending,
-    saveError: saveMutation.error,
-  };
+    return {
+        data: miAdminData || [],
+        isLoading,
+        error: error as Error | null,
+        refetch,
+        handleSave,
+        isSaving: saveMutation.isPending,
+        saveError: saveMutation.error as Error | null,
+    };
 };

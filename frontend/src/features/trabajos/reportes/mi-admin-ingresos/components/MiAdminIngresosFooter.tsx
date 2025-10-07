@@ -3,9 +3,9 @@
  * Muestra totales calculados con columnas específicas (Subtotal, Subtotal AUX, Subtotal MXN)
  */
 
-import { formatCurrency } from '../utils';
-import { getFooterBackgroundColor } from '../utils';
-import type { MiAdminIngresosTotales, TotalesComparison } from '../types';
+import { formatCurrency } from "../utils";
+import { getFooterBackgroundColor } from "../utils";
+import type { MiAdminIngresosTotales, TotalesComparison } from "../types";
 
 interface MiAdminIngresosFooterProps {
   /** Totales calculados */
@@ -36,7 +36,7 @@ export const MiAdminIngresosFooter: React.FC<MiAdminIngresosFooterProps> = ({
           <span className="text-lg">TOTALES</span>
           {isComparisonActive && totalesComparison && (
             <span className="ml-2 text-sm">
-              {totalesComparison.isMatch ? '✅' : '❌'}
+              {totalesComparison.isMatch ? "✅" : "❌"}
             </span>
           )}
         </div>
@@ -69,7 +69,7 @@ export const MiAdminIngresosFooter: React.FC<MiAdminIngresosFooterProps> = ({
         {isComparisonActive && totalesComparison && (
           <div className="col-span-1 flex flex-col">
             <span className="text-xs text-gray-600 uppercase">
-              {totalesComparison.isMatch ? 'Dif' : 'Disc'}
+              {totalesComparison.isMatch ? "Dif" : "Disc"}
             </span>
             <span className="text-base font-bold">
               {formatCurrency(Math.abs(totalesComparison.difference))}
@@ -119,17 +119,17 @@ export const MiAdminIngresosFooter: React.FC<MiAdminIngresosFooterProps> = ({
 
             <div className="flex flex-col items-end">
               <span className="text-xs text-gray-600 uppercase">
-                {totalesComparison.isMatch ? 'Coincidencia' : 'Diferencia'}
+                {totalesComparison.isMatch ? "Coincidencia" : "Diferencia"}
               </span>
               <span
                 className={`text-sm font-bold ${
-                  totalesComparison.isMatch ? 'text-green-700' : 'text-red-700'
+                  totalesComparison.isMatch ? "text-green-700" : "text-red-700"
                 }`}
               >
                 {totalesComparison.isMatch
                   ? `≈ $${Math.abs(totalesComparison.difference).toFixed(2)}`
                   : `$${
-                      totalesComparison.difference >= 0 ? '+' : ''
+                      totalesComparison.difference >= 0 ? "+" : ""
                     }${totalesComparison.difference.toFixed(2)}`}
               </span>
             </div>

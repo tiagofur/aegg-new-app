@@ -3,7 +3,7 @@
  * Integra todos los hooks y componentes del feature con columnas específicas
  */
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -13,28 +13,35 @@ import {
   createColumnHelper,
   type SortingState,
   type ColumnFiltersState,
-} from '@tanstack/react-table';
+} from "@tanstack/react-table";
 
-import { useMiAdminIngresosData } from '../hooks/useMiAdminIngresosData';
-import { useMiAdminIngresosEdit } from '../hooks/useMiAdminIngresosEdit';
-import { useMiAdminIngresosCalculations } from '../hooks/useMiAdminIngresosCalculations';
-import { useMiAdminIngresosComparison } from '../hooks/useMiAdminIngresosComparison';
+import { useMiAdminIngresosData } from "../hooks/useMiAdminIngresosData";
+import { useMiAdminIngresosEdit } from "../hooks/useMiAdminIngresosEdit";
+import { useMiAdminIngresosCalculations } from "../hooks/useMiAdminIngresosCalculations";
+import { useMiAdminIngresosComparison } from "../hooks/useMiAdminIngresosComparison";
 
-import { MiAdminIngresosToolbar } from './MiAdminIngresosToolbar';
-import { MiAdminIngresosFooter } from './MiAdminIngresosFooter';
+import { MiAdminIngresosToolbar } from "./MiAdminIngresosToolbar";
+import { MiAdminIngresosFooter } from "./MiAdminIngresosFooter";
 import {
   TCSugeridoCell,
   EditableTipoCambioCell,
   EditableEstadoSatCell,
-} from './cells';
+} from "./cells";
 
-import { formatCurrency, formatDate, formatTipoCambio, getRowBackgroundColor } from '../utils';
-import type { MiAdminIngresosRow } from '../types';
-import type { AuxiliarIngresosRow } from '../../auxiliar-ingresos';
+import {
+  formatCurrency,
+  formatDate,
+  formatTipoCambio,
+  getRowBackgroundColor,
+} from "../utils";
+import type { MiAdminIngresosRow } from "../types";
+import type { AuxiliarIngresosRow } from "../../auxiliar-ingresos";
 
 interface MiAdminIngresosTableProps {
-  /** ID del trabajo */
-  trabajoId: string | undefined;
+  /** ID del mes */
+  mesId: string | undefined;
+  /** ID del reporte */
+  reporteId: string | undefined;
   /** Datos de Auxiliar Ingresos para integración */
   auxiliarData: AuxiliarIngresosRow[] | undefined;
 }
@@ -45,13 +52,15 @@ const columnHelper = createColumnHelper<MiAdminIngresosRow>();
  * Componente principal de tabla de Mi Admin Ingresos
  */
 export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
-  trabajoId,
+  mesId,
+  reporteId,
   auxiliarData,
 }) => {
   // Hooks de datos y lógica
   const { data, isLoading, error, handleSave, isSaving } =
     useMiAdminIngresosData({
-      trabajoId,
+      mesId,
+      reporteId,
       auxiliarData,
     });
 
@@ -90,8 +99,8 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
   // Definición de columnas
   const columns = useMemo(
     () => [
-      columnHelper.accessor('folio', {
-        header: 'Folio',
+      columnHelper.accessor("folio", {
+        header: "Folio",
         cell: (info) => (
           <span className="font-mono text-sm font-semibold">
             {info.getValue()}
@@ -99,20 +108,20 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
         ),
         size: 120,
       }),
-      columnHelper.accessor('fecha', {
-        header: 'Fecha',
+      columnHelper.accessor("fecha", {
+        header: "Fecha",
         cell: (info) => formatDate(info.getValue()),
         size: 100,
       }),
-      columnHelper.accessor('rfc', {
-        header: 'RFC',
+      columnHelper.accessor("rfc", {
+        header: "RFC",
         cell: (info) => (
           <span className="font-mono text-sm">{info.getValue()}</span>
         ),
         size: 140,
       }),
-      columnHelper.accessor('razonSocial', {
-        header: 'Razón Social',
+      columnHelper.accessor("razonSocial", {
+        header: "Razón Social",
         cell: (info) => (
           <span className="text-sm truncate max-w-xs" title={info.getValue()}>
             {info.getValue()}
@@ -120,13 +129,13 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
         ),
         size: 200,
       }),
-      columnHelper.accessor('subtotal', {
-        header: 'Subtotal',
+      columnHelper.accessor("subtotal", {
+        header: "Subtotal",
         cell: (info) => formatCurrency(info.getValue()),
         size: 120,
       }),
-      columnHelper.accessor('moneda', {
-        header: 'Moneda',
+      columnHelper.accessor("moneda", {
+        header: "Moneda",
         cell: (info) => (
           <span className="text-center block font-semibold">
             {info.getValue()}
@@ -134,8 +143,8 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
         ),
         size: 80,
       }),
-      columnHelper.accessor('tipoCambio', {
-        header: 'Tipo Cambio',
+      columnHelper.accessor("tipoCambio", {
+        header: "Tipo Cambio",
         cell: (info) => {
           const row = info.row.original;
           return (
@@ -143,14 +152,14 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
               value={info.getValue()}
               moneda={row.moneda}
               onChange={(newValue) => updateTipoCambio(row.folio, newValue)}
-              disabled={row.moneda === 'MXN'}
+              disabled={row.moneda === "MXN"}
             />
           );
         },
         size: 120,
       }),
-      columnHelper.accessor('subtotalAUX', {
-        header: 'Subtotal AUX',
+      columnHelper.accessor("subtotalAUX", {
+        header: "Subtotal AUX",
         cell: (info) => {
           const value = info.getValue();
           return value !== null ? (
@@ -161,13 +170,13 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
         },
         size: 120,
       }),
-      columnHelper.accessor('subtotalMXN', {
-        header: 'Subtotal MXN',
+      columnHelper.accessor("subtotalMXN", {
+        header: "Subtotal MXN",
         cell: (info) => formatCurrency(info.getValue()),
         size: 120,
       }),
-      columnHelper.accessor('tcSugerido', {
-        header: 'TC Sugerido',
+      columnHelper.accessor("tcSugerido", {
+        header: "TC Sugerido",
         cell: (info) => {
           const row = info.row.original;
           return (
@@ -181,8 +190,8 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
         },
         size: 150,
       }),
-      columnHelper.accessor('estadoSat', {
-        header: 'Estado SAT',
+      columnHelper.accessor("estadoSat", {
+        header: "Estado SAT",
         cell: (info) => {
           const row = info.row.original;
           return (
@@ -198,8 +207,8 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
       ...(isComparisonActive
         ? [
             columnHelper.display({
-              id: 'comparison',
-              header: 'Comparación',
+              id: "comparison",
+              header: "Comparación",
               cell: (info) => {
                 const row = info.row.original;
                 const comparison = comparisonMap.get(row.folio);
@@ -207,13 +216,13 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
                 if (!comparison) return null;
 
                 const icon =
-                  comparison.status === 'match'
-                    ? '✅'
-                    : comparison.status === 'mismatch'
-                    ? '❌'
-                    : comparison.status === 'only-miadmin'
-                    ? '🔵'
-                    : '🟣';
+                  comparison.status === "match"
+                    ? "✅"
+                    : comparison.status === "mismatch"
+                    ? "❌"
+                    : comparison.status === "only-miadmin"
+                    ? "🔵"
+                    : "🟣";
 
                 return (
                   <div
@@ -314,8 +323,8 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
                       <div
                         className={
                           header.column.getCanSort()
-                            ? 'cursor-pointer select-none flex items-center gap-2'
-                            : ''
+                            ? "cursor-pointer select-none flex items-center gap-2"
+                            : ""
                         }
                         onClick={header.column.getToggleSortingHandler()}
                       >
@@ -324,8 +333,8 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
                           header.getContext()
                         )}
                         {{
-                          asc: ' 🔼',
-                          desc: ' 🔽',
+                          asc: " 🔼",
+                          desc: " 🔽",
                         }[header.column.getIsSorted() as string] ?? null}
                       </div>
                     )}
