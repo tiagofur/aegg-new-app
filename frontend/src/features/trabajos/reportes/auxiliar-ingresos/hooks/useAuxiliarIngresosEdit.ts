@@ -4,35 +4,35 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
-import { 
-  AuxiliarIngresosRow, 
-  EstadoSat 
+import {
+    AuxiliarIngresosRow,
+    EstadoSat
 } from '../types';
-import { 
-  recalculateRowAfterTipoCambioChange, 
-  updateRowEstadoSat 
+import {
+    recalculateRowAfterTipoCambioChange,
+    updateRowEstadoSat
 } from '../utils';
 
 interface UseAuxiliarIngresosEditProps {
-  /** Datos originales del reporte */
-  initialData: AuxiliarIngresosRow[];
+    /** Datos originales del reporte */
+    initialData: AuxiliarIngresosRow[];
 }
 
 interface UseAuxiliarIngresosEditReturn {
-  /** Datos combinados (originales + ediciones) */
-  data: AuxiliarIngresosRow[];
-  /** Mapa de ediciones por UUID */
-  editedRows: Map<string, Partial<AuxiliarIngresosRow>>;
-  /** Si hay cambios sin guardar */
-  isDirty: boolean;
-  /** Actualizar tipo de cambio de una fila */
-  updateTipoCambio: (uuid: string, tipoCambio: number) => void;
-  /** Actualizar estado SAT de una fila */
-  updateEstadoSat: (uuid: string, estadoSat: EstadoSat) => void;
-  /** Resetear todas las ediciones */
-  resetEdits: () => void;
-  /** Obtener ediciones de una fila específica */
-  getRowEdits: (uuid: string) => Partial<AuxiliarIngresosRow> | undefined;
+    /** Datos combinados (originales + ediciones) */
+    data: AuxiliarIngresosRow[];
+    /** Mapa de ediciones por UUID */
+    editedRows: Map<string, Partial<AuxiliarIngresosRow>>;
+    /** Si hay cambios sin guardar */
+    isDirty: boolean;
+    /** Actualizar tipo de cambio de una fila */
+    updateTipoCambio: (uuid: string, tipoCambio: number) => void;
+    /** Actualizar estado SAT de una fila */
+    updateEstadoSat: (uuid: string, estadoSat: EstadoSat) => void;
+    /** Resetear todas las ediciones */
+    resetEdits: () => void;
+    /** Obtener ediciones de una fila específica */
+    getRowEdits: (uuid: string) => Partial<AuxiliarIngresosRow> | undefined;
 }
 
 /**
@@ -40,115 +40,115 @@ interface UseAuxiliarIngresosEditReturn {
  * Mantiene cambios en memoria sin mutar los datos originales
  */
 export const useAuxiliarIngresosEdit = ({
-  initialData,
+    initialData,
 }: UseAuxiliarIngresosEditProps): UseAuxiliarIngresosEditReturn => {
-  // Estado: Mapa de ediciones por UUID
-  const [editedRows, setEditedRows] = useState<
-    Map<string, Partial<AuxiliarIngresosRow>>
-  >(new Map());
+    // Estado: Mapa de ediciones por UUID
+    const [editedRows, setEditedRows] = useState<
+        Map<string, Partial<AuxiliarIngresosRow>>
+    >(new Map());
 
-  /**
-   * Actualiza el tipo de cambio de una fila
-   * Recalcula automáticamente el subtotalMXN
-   */
-  const updateTipoCambio = useCallback((uuid: string, tipoCambio: number) => {
-    setEditedRows((prev) => {
-      const newMap = new Map(prev);
-      
-      // Buscar la fila original
-      const originalRow = initialData.find((row) => row.id === uuid);
-      if (!originalRow) return prev;
+    /**
+     * Actualiza el tipo de cambio de una fila
+     * Recalcula automáticamente el subtotalMXN
+     */
+    const updateTipoCambio = useCallback((uuid: string, tipoCambio: number) => {
+        setEditedRows((prev) => {
+            const newMap = new Map(prev);
 
-      // Recalcular fila completa
-      const updatedRow = recalculateRowAfterTipoCambioChange(
-        originalRow,
-        tipoCambio
-      );
+            // Buscar la fila original
+            const originalRow = initialData.find((row) => row.id === uuid);
+            if (!originalRow) return prev;
 
-      // Guardar solo los cambios
-      const edits = newMap.get(uuid) || {};
-      newMap.set(uuid, {
-        ...edits,
-        tipoCambio: updatedRow.tipoCambio,
-        subtotalMXN: updatedRow.subtotalMXN,
-      });
+            // Recalcular fila completa
+            const updatedRow = recalculateRowAfterTipoCambioChange(
+                originalRow,
+                tipoCambio
+            );
 
-      return newMap;
-    });
-  }, [initialData]);
+            // Guardar solo los cambios
+            const edits = newMap.get(uuid) || {};
+            newMap.set(uuid, {
+                ...edits,
+                tipoCambio: updatedRow.tipoCambio,
+                subtotalMXN: updatedRow.subtotalMXN,
+            });
 
-  /**
-   * Actualiza el estado SAT de una fila
-   */
-  const updateEstadoSat = useCallback((uuid: string, estadoSat: EstadoSat) => {
-    setEditedRows((prev) => {
-      const newMap = new Map(prev);
-      const edits = newMap.get(uuid) || {};
-      
-      newMap.set(uuid, {
-        ...edits,
-        estadoSat,
-      });
+            return newMap;
+        });
+    }, [initialData]);
 
-      return newMap;
-    });
-  }, []);
+    /**
+     * Actualiza el estado SAT de una fila
+     */
+    const updateEstadoSat = useCallback((uuid: string, estadoSat: EstadoSat) => {
+        setEditedRows((prev) => {
+            const newMap = new Map(prev);
+            const edits = newMap.get(uuid) || {};
 
-  /**
-   * Resetea todas las ediciones
-   */
-  const resetEdits = useCallback(() => {
-    setEditedRows(new Map());
-  }, []);
+            newMap.set(uuid, {
+                ...edits,
+                estadoSat,
+            });
 
-  /**
-   * Obtiene las ediciones de una fila específica
-   */
-  const getRowEdits = useCallback(
-    (uuid: string): Partial<AuxiliarIngresosRow> | undefined => {
-      return editedRows.get(uuid);
-    },
-    [editedRows]
-  );
+            return newMap;
+        });
+    }, []);
 
-  /**
-   * Combina datos originales con ediciones
-   * Recalcula solo cuando cambian initialData o editedRows
-   */
-  const mergedData = useMemo(() => {
-    if (editedRows.size === 0) {
-      return initialData;
-    }
+    /**
+     * Resetea todas las ediciones
+     */
+    const resetEdits = useCallback(() => {
+        setEditedRows(new Map());
+    }, []);
 
-    return initialData.map((row) => {
-      const edits = editedRows.get(row.id);
-      
-      if (!edits) {
-        return row;
-      }
+    /**
+     * Obtiene las ediciones de una fila específica
+     */
+    const getRowEdits = useCallback(
+        (uuid: string): Partial<AuxiliarIngresosRow> | undefined => {
+            return editedRows.get(uuid);
+        },
+        [editedRows]
+    );
 
-      // Combinar fila original con ediciones
-      return {
-        ...row,
-        ...edits,
-      };
-    });
-  }, [initialData, editedRows]);
+    /**
+     * Combina datos originales con ediciones
+     * Recalcula solo cuando cambian initialData o editedRows
+     */
+    const mergedData = useMemo(() => {
+        if (editedRows.size === 0) {
+            return initialData;
+        }
 
-  /**
-   * Determina si hay cambios sin guardar
-   */
-  const isDirty = useMemo(() => {
-    return editedRows.size > 0;
-  }, [editedRows]);
+        return initialData.map((row) => {
+            const edits = editedRows.get(row.id);
 
-  return {
-    data: mergedData,
-    editedRows,
-    isDirty,
-    updateTipoCambio,
-    updateEstadoSat,
-    resetEdits,
-    getRowEdits,
-  };
+            if (!edits) {
+                return row;
+            }
+
+            // Combinar fila original con ediciones
+            return {
+                ...row,
+                ...edits,
+            };
+        });
+    }, [initialData, editedRows]);
+
+    /**
+     * Determina si hay cambios sin guardar
+     */
+    const isDirty = useMemo(() => {
+        return editedRows.size > 0;
+    }, [editedRows]);
+
+    return {
+        data: mergedData,
+        editedRows,
+        isDirty,
+        updateTipoCambio,
+        updateEstadoSat,
+        resetEdits,
+        getRowEdits,
+    };
 };

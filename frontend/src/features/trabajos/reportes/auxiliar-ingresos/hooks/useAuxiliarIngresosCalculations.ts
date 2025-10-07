@@ -8,19 +8,19 @@ import { AuxiliarIngresosRow, AuxiliarIngresosTotales } from '../types';
 import { calculateTotales } from '../utils';
 
 interface UseAuxiliarIngresosCalculationsProps {
-  /** Datos del reporte */
-  data: AuxiliarIngresosRow[];
+    /** Datos del reporte */
+    data: AuxiliarIngresosRow[];
 }
 
 interface UseAuxiliarIngresosCalculationsReturn {
-  /** Totales calculados */
-  totales: AuxiliarIngresosTotales;
-  /** Porcentaje de facturas vigentes */
-  porcentajeVigentes: number;
-  /** Porcentaje de facturas canceladas */
-  porcentajeCanceladas: number;
-  /** Promedio de subtotal por factura vigente */
-  promedioSubtotalVigentes: number;
+    /** Totales calculados */
+    totales: AuxiliarIngresosTotales;
+    /** Porcentaje de facturas vigentes */
+    porcentajeVigentes: number;
+    /** Porcentaje de facturas canceladas */
+    porcentajeCanceladas: number;
+    /** Promedio de subtotal por factura vigente */
+    promedioSubtotalVigentes: number;
 }
 
 /**
@@ -28,44 +28,44 @@ interface UseAuxiliarIngresosCalculationsReturn {
  * Usa memoización para evitar recálculos innecesarios
  */
 export const useAuxiliarIngresosCalculations = ({
-  data,
+    data,
 }: UseAuxiliarIngresosCalculationsProps): UseAuxiliarIngresosCalculationsReturn => {
-  /**
-   * Calcula totales principales
-   * Solo recalcula cuando cambian los datos
-   */
-  const totales = useMemo(() => {
-    return calculateTotales(data);
-  }, [data]);
+    /**
+     * Calcula totales principales
+     * Solo recalcula cuando cambian los datos
+     */
+    const totales = useMemo(() => {
+        return calculateTotales(data);
+    }, [data]);
 
-  /**
-   * Calcula porcentaje de facturas vigentes
-   */
-  const porcentajeVigentes = useMemo(() => {
-    if (data.length === 0) return 0;
-    return (totales.cantidadVigentes / data.length) * 100;
-  }, [totales.cantidadVigentes, data.length]);
+    /**
+     * Calcula porcentaje de facturas vigentes
+     */
+    const porcentajeVigentes = useMemo(() => {
+        if (data.length === 0) return 0;
+        return (totales.cantidadVigentes / data.length) * 100;
+    }, [totales.cantidadVigentes, data.length]);
 
-  /**
-   * Calcula porcentaje de facturas canceladas
-   */
-  const porcentajeCanceladas = useMemo(() => {
-    if (data.length === 0) return 0;
-    return (totales.cantidadCanceladas / data.length) * 100;
-  }, [totales.cantidadCanceladas, data.length]);
+    /**
+     * Calcula porcentaje de facturas canceladas
+     */
+    const porcentajeCanceladas = useMemo(() => {
+        if (data.length === 0) return 0;
+        return (totales.cantidadCanceladas / data.length) * 100;
+    }, [totales.cantidadCanceladas, data.length]);
 
-  /**
-   * Calcula promedio de subtotal por factura vigente
-   */
-  const promedioSubtotalVigentes = useMemo(() => {
-    if (totales.cantidadVigentes === 0) return 0;
-    return totales.totalSubtotalMXN / totales.cantidadVigentes;
-  }, [totales.totalSubtotalMXN, totales.cantidadVigentes]);
+    /**
+     * Calcula promedio de subtotal por factura vigente
+     */
+    const promedioSubtotalVigentes = useMemo(() => {
+        if (totales.cantidadVigentes === 0) return 0;
+        return totales.totalSubtotalMXN / totales.cantidadVigentes;
+    }, [totales.totalSubtotalMXN, totales.cantidadVigentes]);
 
-  return {
-    totales,
-    porcentajeVigentes,
-    porcentajeCanceladas,
-    promedioSubtotalVigentes,
-  };
+    return {
+        totales,
+        porcentajeVigentes,
+        porcentajeCanceladas,
+        promedioSubtotalVigentes,
+    };
 };
