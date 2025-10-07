@@ -23,7 +23,7 @@ import { ReporteAnual } from '../entities/reporte-anual.entity';
 export class ReporteAnualController {
     constructor(
         private readonly reporteAnualService: ReporteAnualService,
-    ) {}
+    ) { }
 
     /**
      * GET /trabajos/:trabajoId/reporte-anual/:anio

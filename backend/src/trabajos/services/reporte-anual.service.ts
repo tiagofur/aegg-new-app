@@ -33,7 +33,7 @@ export class ReporteAnualService {
         private readonly reporteAnualRepository: Repository<ReporteAnual>,
         @InjectRepository(Trabajo)
         private readonly trabajoRepository: Repository<Trabajo>,
-    ) {}
+    ) { }
 
     /**
      * Obtiene o crea todos los registros mensuales para un año específico

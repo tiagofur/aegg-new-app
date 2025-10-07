@@ -1,7 +1,7 @@
 # FASE 7 - Sistema de Reporte Anual (Guardar en Base)
 
 **Fecha de Creación**: 7 de Octubre, 2025  
-**Estado**: ✅ FASE 1 COMPLETADA - Backend Implementado  
+**Estado**: ✅ FASE 2 COMPLETADA - Backend + Frontend Hooks  
 **Prioridad**: Alta
 
 ---
@@ -129,6 +129,7 @@ frontend/src/features/trabajos/reportes/
 ### **FASE 1: Backend - Entidad y Servicio** ✅ COMPLETADA
 
 #### Tareas:
+
 - [x] Crear entidad `ReporteAnual`
 - [x] Crear enum `MesEnum`
 - [x] Crear DTO `ActualizarVentasDto`
@@ -144,43 +145,69 @@ frontend/src/features/trabajos/reportes/
 - [x] Crear migración de base de datos
 
 **Archivos creados:**
+
 - `backend/src/trabajos/entities/reporte-anual.entity.ts` ✅
 - `backend/src/trabajos/services/reporte-anual.service.ts` ✅
 - `backend/src/trabajos/controllers/reporte-anual.controller.ts` ✅
 - `backend/src/migrations/1709999999999-CreateReporteAnual.ts` ✅
 
 **Archivos actualizados:**
+
 - `backend/src/trabajos/entities/trabajo.entity.ts` ✅
 - `backend/src/trabajos/trabajos.module.ts` ✅
 
 ---
 
-### **FASE 2: Frontend - Servicios y Hooks**
+### **FASE 2: Frontend - Servicios y Hooks** ✅ COMPLETADA
 
 #### Tareas:
-- [ ] Crear tipos TypeScript para Reporte Anual
-- [ ] Crear servicio API `reporteAnualService`
-- [ ] Crear hook `useReporteAnualData` (fetch con React Query)
-- [ ] Crear hook `useReporteAnualUpdate` (mutation)
-- [ ] Exportaciones centralizadas
 
-**Archivos a crear:**
-- `frontend/src/features/trabajos/reportes/reporte-anual/types/index.ts`
-- `frontend/src/services/reporte-anual.service.ts`
-- `frontend/src/features/trabajos/reportes/reporte-anual/hooks/useReporteAnualData.ts`
-- `frontend/src/features/trabajos/reportes/reporte-anual/hooks/useReporteAnualUpdate.ts`
+- [x] Crear tipos TypeScript para Reporte Anual
+- [x] Crear servicio API `reporteAnualService`
+- [x] Crear hook `useReporteAnualData` (fetch con React Query)
+- [x] Crear hook `useReporteAnualUpdate` (mutation)
+- [x] Exportaciones centralizadas
+
+**Archivos creados:**
+
+- `frontend/src/features/trabajos/reportes/reporte-anual/types/index.ts` ✅
+  - Tipos: ReporteAnual, ResumenAnual, ActualizarVentasDto, ActualizarVentasRequest
+  - Enum MesEnum (1-12)
+  - Constante NOMBRES_MESES para UI
+- `frontend/src/services/reporte-anual.service.ts` ✅
+  - obtenerReporteAnual(): GET todos los meses del año
+  - obtenerResumenAnual(): GET resumen con totales
+  - obtenerReporteMensual(): GET reporte de un mes
+  - actualizarVentas(): POST guardar ventas
+- `frontend/src/features/trabajos/reportes/reporte-anual/hooks/useReporteAnualData.ts` ✅
+  - useReporteAnualData(): Hook para fetch de reportes anuales
+  - useReporteAnualResumen(): Hook para fetch de resumen
+  - useReporteMensual(): Hook para fetch de mes específico
+  - Cache con staleTime de 5 min
+- `frontend/src/features/trabajos/reportes/reporte-anual/hooks/useReporteAnualUpdate.ts` ✅
+  - useReporteAnualUpdate(): Hook mutation para guardar ventas
+  - Invalidación automática de cache (reportes, resumen, mes)
+  - Callbacks onSuccess/onError
+- `frontend/src/features/trabajos/reportes/reporte-anual/hooks/index.ts` ✅
+- `frontend/src/features/trabajos/reportes/reporte-anual/index.ts` ✅
+
+**Archivos actualizados:**
+
+- `frontend/src/services/index.ts` ✅ (export reporteAnualService)
 
 ---
 
 ### **FASE 3: Frontend - Componente Botón**
 
 #### Tareas:
+
 - [ ] Crear componente `GuardarEnBaseButton`
 - [ ] Implementar diálogo de confirmación
 - [ ] Integrar con hooks de FASE 2
 - [ ] Manejo de estados (loading, success, error)
 
 **Características:**
+
 - Botón deshabilitado si totales no coinciden
 - Badge visual de estado
 - Confirmación con resumen de datos
@@ -191,6 +218,7 @@ frontend/src/features/trabajos/reportes/
 ### **FASE 4: Frontend - Integración**
 
 #### Tareas:
+
 - [ ] Integrar `GuardarEnBaseButton` en `MiAdminIngresosToolbar`
 - [ ] Pasar props necesarias (trabajoId, año, mes, totales)
 - [ ] Calcular totales de Auxiliar para comparación
@@ -201,6 +229,7 @@ frontend/src/features/trabajos/reportes/
 ### **FASE 5: Frontend - Vista Reporte Anual**
 
 #### Tareas:
+
 - [ ] Crear componente `ReporteAnualTable`
 - [ ] Mostrar 12 meses con sus ventas
 - [ ] Card de resumen (total anual, meses confirmados)
@@ -225,7 +254,7 @@ CREATE TABLE reportes_anuales (
   confirmado BOOLEAN DEFAULT false,
   fecha_creacion TIMESTAMP DEFAULT NOW(),
   fecha_actualizacion TIMESTAMP DEFAULT NOW(),
-  
+
   UNIQUE(trabajo_id, anio, mes)
 );
 
@@ -301,6 +330,7 @@ Card de resumen:
 ## ⚠️ Consideraciones
 
 ### **Validaciones:**
+
 - ✅ Año debe ser >= 2020
 - ✅ Mes debe estar entre 1-12
 - ✅ Ventas no pueden ser negativas
@@ -308,11 +338,13 @@ Card de resumen:
 - ✅ Un solo registro por trabajo/año/mes (UNIQUE constraint)
 
 ### **Permisos:**
+
 - ✅ Solo usuarios autenticados
 - ✅ Solo usuarios asignados al trabajo pueden actualizar
 - ✅ Admins pueden ver todos los reportes
 
 ### **Performance:**
+
 - ✅ Índices en trabajo_id y anio
 - ✅ Lazy loading en relaciones
 - ✅ Cache de React Query (5 minutos)
@@ -340,13 +372,18 @@ Card de resumen:
   - [x] Migración de base de datos
   - [x] Relación OneToMany en Trabajo entity
   - [x] Módulo actualizado con provider y controller
-- [ ] FASE 2: Frontend - Servicios y Hooks
+- [x] ✅ FASE 2: Frontend - Servicios y Hooks (COMPLETADA)
+  - [x] Tipos TypeScript (ReporteAnual, ResumenAnual, MesEnum)
+  - [x] reporteAnualService con 4 métodos API
+  - [x] useReporteAnualData, useReporteAnualResumen, useReporteMensual
+  - [x] useReporteAnualUpdate con invalidación de cache
+  - [x] Exportaciones centralizadas
 - [ ] FASE 3: Frontend - Componente Botón
 - [ ] FASE 4: Frontend - Integración
 - [ ] FASE 5: Frontend - Vista Reporte Anual
 
 ---
 
-**Última Actualización**: 7 de Octubre, 2025 - FASE 1 Backend Completada  
+**Última Actualización**: 7 de Octubre, 2025 - FASE 2 Frontend Completada  
 **Responsable**: Equipo de Desarrollo  
 **Relacionado con**: FASE-6-MI-ADMIN-INGRESOS-MEJORADO
