@@ -51,7 +51,7 @@ export const MesCard: React.FC<MesCardProps> = ({
   return (
     <div className="border border-gray-300 rounded-lg overflow-hidden">
       <div
-        className="bg-gray-50 p-4 cursor-pointer hover:bg-gray-100 transition-colors"
+        className="bg-gray-50 p-3 cursor-pointer hover:bg-gray-100 transition-colors"
         onClick={() => setExpanded(!expanded)}
       >
         <div className="flex items-center justify-between">
@@ -86,12 +86,12 @@ export const MesCard: React.FC<MesCardProps> = ({
       </div>
 
       {expanded && (
-        <div className="p-4 bg-white">
-          <p className="text-sm font-semibold text-gray-700 mb-3">
+        <div className="p-3 bg-white">
+          <p className="text-sm font-semibold text-gray-700 mb-2">
             Reportes Mensuales:
           </p>
 
-          <div className="space-y-3 mb-4">
+          <div className="space-y-2 mb-3">
             {mes.reportes.map((reporte) => (
               <ReporteCard
                 key={reporte.id}

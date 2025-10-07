@@ -30,12 +30,16 @@ import { formatCurrency, formatDate, getRowBackgroundColor } from "../utils";
 import type { AuxiliarIngresosRow } from "../types";
 
 interface AuxiliarIngresosTableProps {
+  /** ID del mes */
+  mesId: string;
+  /** ID del reporte */
+  reporteId: string;
   /** Año del reporte */
   year: number;
   /** Mes del reporte (1-12) */
   month: number;
-  /** Nombre del archivo Excel */
-  fileName: string;
+  /** Nombre del archivo Excel (opcional) */
+  fileName?: string;
 }
 
 const columnHelper = createColumnHelper<AuxiliarIngresosRow>();
@@ -44,34 +48,53 @@ const columnHelper = createColumnHelper<AuxiliarIngresosRow>();
  * Componente principal de tabla de Auxiliar de Ingresos
  */
 export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
+  mesId,
+  reporteId,
   year,
   month,
   fileName,
 }) => {
   // Hooks de datos y lógica
-  const { data, isLoading, error, saveMutation } = useAuxiliarIngresosData(
-    year,
-    month,
-    fileName
-  );
+  const { data, isLoading, error, saveChanges, isSaving } =
+    useAuxiliarIngresosData({
+      mesId,
+      reporteId,
+      enabled: true,
+    });
 
   const {
-    edits,
+    data: editedData,
+    editedRows,
     updateTipoCambio,
     updateEstadoSat,
-    mergedData,
     isDirty,
-    clearEdits,
-  } = useAuxiliarIngresosEdit(data);
+    resetEdits,
+  } = useAuxiliarIngresosEdit({ initialData: data });
 
-  const { totales } = useAuxiliarIngresosCalculations(mergedData);
+  const {
+    totales: baseTotales,
+    porcentajeVigentes,
+    porcentajeCanceladas,
+    promedioSubtotalVigentes,
+  } = useAuxiliarIngresosCalculations({ data: editedData });
+
+  // Merge calculated values into totales object
+  const totales = {
+    ...baseTotales,
+    porcentajeVigentes,
+    porcentajeCanceladas,
+    promedioSubtotalVigentes,
+  };
 
   const {
     isActive: isComparisonActive,
-    toggleComparison,
+    toggle: toggleComparison,
     comparisonMap,
     totalesComparison,
-  } = useAuxiliarIngresosComparison(year, month, mergedData, totales);
+  } = useAuxiliarIngresosComparison({
+    auxiliarData: editedData,
+    miadminData: undefined, // TODO: Load Mi Admin data when needed
+  });
 
   // State local para sorting y filtering
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -192,7 +215,7 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
 
   // Configuración de TanStack Table
   const table = useReactTable({
-    data: mergedData,
+    data: editedData,
     columns,
     state: {
       sorting,
@@ -206,12 +229,13 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
   });
 
   // Handler para guardar
-  const handleSave = () => {
-    saveMutation.mutate(mergedData, {
-      onSuccess: () => {
-        clearEdits();
-      },
-    });
+  const handleSave = async () => {
+    try {
+      await saveChanges(editedData);
+      resetEdits();
+    } catch (error) {
+      console.error("Error saving changes:", error);
+    }
   };
 
   // Estados de carga y error
@@ -243,7 +267,7 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
       <AuxiliarIngresosToolbar
         isDirty={isDirty}
         onSave={handleSave}
-        isSaving={saveMutation.isPending}
+        isSaving={isSaving}
         isComparisonActive={isComparisonActive}
         onToggleComparison={toggleComparison}
         totales={totales}

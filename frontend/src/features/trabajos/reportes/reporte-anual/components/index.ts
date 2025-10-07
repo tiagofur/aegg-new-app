@@ -4,3 +4,4 @@
  */
 
 export * from './GuardarEnBaseButton';
+export * from './ReporteAnualTable';

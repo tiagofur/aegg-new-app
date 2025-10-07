@@ -129,16 +129,16 @@ export const TrabajoDetail: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="px-2 py-4">
       <button
         onClick={() => navigate("/trabajos")}
-        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
+        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
       >
         <ArrowLeft className="h-5 w-5" />
         Volver a Trabajos
       </button>
 
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+      <div className="bg-white rounded-lg shadow-md p-4 mb-4">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">
           {trabajo.nombre}
         </h1>
@@ -157,10 +157,10 @@ export const TrabajoDetail: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Lista de Reportes */}
         <div>
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-3">
             <h2 className="text-xl font-semibold text-gray-900">Reportes</h2>
             <button
               onClick={() => setShowCreateModal(true)}
@@ -233,7 +233,7 @@ export const TrabajoDetail: React.FC = () => {
 
         {/* Panel de Importación */}
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 mb-3">
             Importar Excel
           </h2>
 

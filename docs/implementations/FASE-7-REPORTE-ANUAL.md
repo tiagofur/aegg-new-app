@@ -1,7 +1,7 @@
 # FASE 7 - Sistema de Reporte Anual (Guardar en Base)
 
 **Fecha de Creación**: 7 de Octubre, 2025  
-**Estado**: ✅ FASE 4 COMPLETADA - Sistema Completo Funcional  
+**Estado**: ✅ FASE 5 COMPLETADA - Sistema Completo con Vista de Reporte Anual  
 **Prioridad**: Alta
 
 ---
@@ -275,15 +275,61 @@ frontend/src/features/trabajos/reportes/
 
 ---
 
-### **FASE 5: Frontend - Vista Reporte Anual**
+### **FASE 5: Frontend - Vista Reporte Anual** ✅
 
 #### Tareas:
 
-- [ ] Crear componente `ReporteAnualTable`
-- [ ] Mostrar 12 meses con sus ventas
-- [ ] Card de resumen (total anual, meses confirmados)
-- [ ] Badges de estado (Pendiente, Confirmado, Con diferencia)
-- [ ] Agregar ruta en el sistema
+- [x] Crear componente `ReporteAnualTable`
+- [x] Mostrar 12 meses con sus ventas
+- [x] Card de resumen (total anual, meses confirmados)
+- [x] Badges de estado (Pendiente, Confirmado, Con diferencia)
+- [x] Agregar ruta en el sistema
+- [x] Botón de acceso desde TrabajoDetail
+
+#### Implementación:
+
+**Archivos creados:**
+
+1. `frontend/src/features/trabajos/reportes/reporte-anual/components/ReporteAnualTable.tsx` (267 líneas)
+
+   - Componente principal de tabla con 12 meses
+   - Cards de resumen (4 métricas)
+   - Badges con colores según estado
+   - Formateo de moneda MXN
+   - Integración con hooks existentes
+
+2. `frontend/src/pages/ReporteAnualPage.tsx` (95 líneas)
+
+   - Wrapper page para la tabla
+   - Validación de parámetros (trabajoId, año)
+   - Navegación de vuelta a trabajos
+   - Manejo de errores
+
+3. `frontend/src/App.tsx` (actualizado)
+
+   - Ruta: `/trabajos/:trabajoId/reporte-anual/:anio`
+   - Protección con PrivateRoute
+
+4. `frontend/src/components/trabajos/TrabajoDetail.tsx` (actualizado)
+   - Botón "📊 Ver Reporte Anual" agregado
+   - Navegación a la vista del reporte
+
+**Características implementadas:**
+
+- **Tabla de 12 meses**: Una fila por mes con todas las columnas
+- **Columnas**: Mes, Ventas Mi Admin, Ventas Auxiliar, Diferencia, Estado
+- **Cards de resumen**:
+  - Total Ventas Mi Admin (azul)
+  - Total Ventas Auxiliar (morado)
+  - Diferencia Total (amarillo)
+  - Meses Confirmados/12 (verde)
+- **Badges de estado**:
+  - ⚪ Pendiente (gris) - Sin datos
+  - ✅ Confirmado (verde) - Diferencia < $0.10
+  - ⚠️ Con diferencia (amarillo) - Con datos pero diferencia > $0.10
+- **Botón Actualizar**: Refresca datos del servidor
+- **Información contextual**: Footer con explicación de estados
+- **Responsive**: Grid adaptable para móvil/desktop
 
 ---
 
@@ -439,10 +485,19 @@ Card de resumen:
   - [x] Cálculo de totales de Auxiliar
   - [x] Validaciones completas de habilitación
   - [x] Fix de bugs pre-existentes (TotalesComparison.match)
-- [ ] FASE 5: Frontend - Vista Reporte Anual (Opcional)
+- [x] ✅ FASE 5: Frontend - Vista Reporte Anual (COMPLETADA)
+  - [x] Componente ReporteAnualTable con tabla de 12 meses
+  - [x] Cards de resumen con 4 métricas principales
+  - [x] Badges de estado (Pendiente/Confirmado/Con diferencia)
+  - [x] Página wrapper con validaciones
+  - [x] Ruta en App.tsx con protección
+  - [x] Botón de acceso desde TrabajoDetail
+  - [x] Formateo de moneda y nombres de meses
+  - [x] Botón de actualización de datos
+  - [x] Información contextual en footer
 
 ---
 
-**Última Actualización**: 7 de Octubre, 2025 - FASE 4 Integración Completada - Sistema Funcional ✅  
+**Última Actualización**: 7 de Octubre, 2025 - FASE 5 Vista Completada - Sistema Completo con UI de Visualización ✅  
 **Responsable**: Equipo de Desarrollo  
 **Relacionado con**: FASE-6-MI-ADMIN-INGRESOS-MEJORADO

@@ -33,7 +33,7 @@ export const ReporteViewer: React.FC<ReporteViewerProps> = ({
   return (
     <div className="bg-white rounded-lg shadow">
       {/* Header con título */}
-      <div className="p-4 border-b">
+      <div className="p-2 border-b">
         <h3 className="text-lg font-semibold">{titulo}</h3>
       </div>
 
@@ -59,7 +59,7 @@ export const ReporteViewer: React.FC<ReporteViewerProps> = ({
       )}
 
       {/* Contenido de la hoja */}
-      <div className="p-4">
+      <div className="p-2">
         {datos.length === 0 ? (
           <p className="text-gray-500 text-center py-8">Esta hoja está vacía</p>
         ) : (
@@ -75,7 +75,7 @@ export const ReporteViewer: React.FC<ReporteViewerProps> = ({
                       fila.map((celda, colIndex) => (
                         <td
                           key={colIndex}
-                          className="px-3 py-2 whitespace-nowrap text-gray-900 border-r last:border-r-0"
+                          className="px-2 py-1 whitespace-nowrap text-gray-900 border-r last:border-r-0"
                         >
                           {celda !== null && celda !== undefined
                             ? String(celda)
@@ -91,7 +91,7 @@ export const ReporteViewer: React.FC<ReporteViewerProps> = ({
       </div>
 
       {/* Footer con info */}
-      <div className="px-4 py-3 bg-gray-50 border-t text-sm text-gray-600">
+      <div className="px-2 py-2 bg-gray-50 border-t text-sm text-gray-600">
         {hojaSeleccionada && (
           <span>
             {datos.length} fila{datos.length !== 1 ? "s" : ""} •{" "}

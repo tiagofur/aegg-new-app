@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Trabajo, MESES_NOMBRES_CORTOS } from "../../types/trabajo";
 import { MesCard } from "./MesCard";
 import { ReporteViewer } from "./ReporteViewer";
@@ -17,6 +18,7 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
   onBack,
   onReload,
 }) => {
+  const navigate = useNavigate();
   const [verReporteBase, setVerReporteBase] = useState(false);
   const [mostrarImportDialog, setMostrarImportDialog] = useState(false);
 
@@ -29,9 +31,9 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
     trabajo.reporteBaseAnual.hojas.some((h) => h.datos && h.datos.length > 0);
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="px-2 py-4">
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4">
         <button
           onClick={onBack}
           className="text-blue-600 hover:text-blue-800 mb-4 flex items-center gap-2"
@@ -59,8 +61,8 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
       </div>
 
       {/* Reporte Base Anual */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6 border border-gray-200">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+      <div className="bg-white rounded-lg shadow-md p-4 mb-4 border border-gray-200">
+        <h2 className="text-2xl font-semibold text-gray-800 mb-3 flex items-center gap-2">
           📊 Reporte Base Anual {trabajo.anio}
         </h2>
 
@@ -99,6 +101,28 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
         </div>
 
         <div className="flex gap-3">
+          <button
+            onClick={() =>
+              navigate(`/trabajos/${trabajo.id}/reporte-anual/${trabajo.anio}`)
+            }
+            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+              <path
+                fillRule="evenodd"
+                d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
+                clipRule="evenodd"
+              />
+            </svg>
+            📊 Ver Reporte Anual
+          </button>
+
           {tieneHojas ? (
             <>
               <button
@@ -164,7 +188,7 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
 
       {/* Visualización del Reporte Base */}
       {verReporteBase && tieneHojas && trabajo.reporteBaseAnual && (
-        <div className="mb-6">
+        <div className="mb-4">
           <ReporteViewer
             hojas={trabajo.reporteBaseAnual.hojas}
             titulo={`Reporte Base Anual ${trabajo.anio}`}
@@ -181,8 +205,8 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
       />
 
       {/* Meses */}
-      <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-        <div className="flex justify-between items-center mb-4">
+      <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200">
+        <div className="flex justify-between items-center mb-3">
           <h2 className="text-2xl font-semibold text-gray-800">📅 Meses</h2>
           <button
             onClick={onAddMes}

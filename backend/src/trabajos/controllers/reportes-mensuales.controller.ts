@@ -1,6 +1,8 @@
 import {
     Controller,
     Post,
+    Get,
+    Put,
     Body,
     Param,
     UseGuards,
@@ -33,5 +35,22 @@ export class ReportesMensualesController {
     @Post(':mesId/procesar')
     procesarYGuardar(@Param('mesId') mesId: string) {
         return this.reportesService.procesarYGuardar(mesId);
+    }
+
+    @Get(':mesId/:reporteId/datos')
+    obtenerDatos(
+        @Param('mesId') mesId: string,
+        @Param('reporteId') reporteId: string,
+    ) {
+        return this.reportesService.obtenerDatos(mesId, reporteId);
+    }
+
+    @Put(':mesId/:reporteId/datos')
+    actualizarDatos(
+        @Param('mesId') mesId: string,
+        @Param('reporteId') reporteId: string,
+        @Body('datos') datos: any[][],
+    ) {
+        return this.reportesService.actualizarDatos(mesId, reporteId, datos);
     }
 }

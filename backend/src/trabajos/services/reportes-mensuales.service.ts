@@ -417,4 +417,51 @@ export class ReportesMensualesService {
         ];
         return meses[mes - 1];
     }
+
+    async obtenerDatos(mesId: string, reporteId: string): Promise<{ datos: any[][] }> {
+        // Buscar el mes con sus reportes
+        const mes = await this.mesRepository.findOne({
+            where: { id: mesId },
+            relations: ['reportes'],
+        });
+
+        if (!mes) {
+            throw new NotFoundException(`Mes con id ${mesId} no encontrado`);
+        }
+
+        // Buscar el reporte específico
+        const reporte = mes.reportes.find((r) => r.id === reporteId);
+
+        if (!reporte) {
+            throw new NotFoundException(`Reporte con id ${reporteId} no encontrado en el mes ${mesId}`);
+        }
+
+        return { datos: reporte.datos || [] };
+    }
+
+    async actualizarDatos(mesId: string, reporteId: string, datos: any[][]): Promise<ReporteMensual> {
+        // Buscar el mes con sus reportes
+        const mes = await this.mesRepository.findOne({
+            where: { id: mesId },
+            relations: ['reportes'],
+        });
+
+        if (!mes) {
+            throw new NotFoundException(`Mes con id ${mesId} no encontrado`);
+        }
+
+        // Buscar el reporte específico
+        const reporte = mes.reportes.find((r) => r.id === reporteId);
+
+        if (!reporte) {
+            throw new NotFoundException(`Reporte con id ${reporteId} no encontrado en el mes ${mesId}`);
+        }
+
+        // Actualizar los datos
+        reporte.datos = datos;
+        reporte.fechaImportacion = new Date();
+
+        // Guardar y retornar
+        return await this.reporteMensualRepository.save(reporte);
+    }
 }

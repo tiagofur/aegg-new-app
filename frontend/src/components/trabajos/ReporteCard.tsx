@@ -26,12 +26,12 @@ export const ReporteCard: React.FC<ReporteCardProps> = ({
   const [verDatos, setVerDatos] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Cargar datos de Auxiliar si estamos en Mi Admin
-  const { data: auxiliarData } = useAuxiliarIngresosData(
-    reporte.tipo === "INGRESOS_MI_ADMIN" ? trabajoYear : undefined,
-    reporte.tipo === "INGRESOS_MI_ADMIN" ? mesNumber : undefined,
-    ""
-  );
+  // Cargar datos de Auxiliar si estamos en Mi Admin (para comparación)
+  const { data: auxiliarData } = useAuxiliarIngresosData({
+    mesId: mesId,
+    reporteId: "", // No necesitamos el reporteId para Mi Admin
+    enabled: reporte.tipo === "INGRESOS_MI_ADMIN" && verDatos, // Solo cargar cuando es necesario
+  });
 
   const tieneDatos =
     localReporte.datos && Object.keys(localReporte.datos).length > 0;
@@ -270,9 +270,11 @@ export const ReporteCard: React.FC<ReporteCardProps> = ({
           {reporte.tipo === "INGRESOS_AUXILIAR" ? (
             <div className="h-[600px]">
               <AuxiliarIngresosTable
+                mesId={mesId}
+                reporteId={localReporte.id}
                 year={trabajoYear}
                 month={mesNumber}
-                fileName={localReporte.archivoOriginal || ""}
+                fileName={localReporte.archivoOriginal}
               />
             </div>
           ) : reporte.tipo === "INGRESOS_MI_ADMIN" ? (
