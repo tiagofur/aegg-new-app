@@ -42,8 +42,12 @@ export { useMiAdminIngresosEdit } from './hooks/useMiAdminIngresosEdit';
 export { useMiAdminIngresosCalculations } from './hooks/useMiAdminIngresosCalculations';
 export { useMiAdminIngresosComparison } from './hooks/useMiAdminIngresosComparison';
 
-// Components (se exportarán cuando se implementen en FASE 3)
-// export { MiAdminIngresosTable } from './components/MiAdminIngresosTable';
-// export { MiAdminIngresosToolbar } from './components/MiAdminIngresosToolbar';
-// export { MiAdminIngresosFooter } from './components/MiAdminIngresosFooter';
-// export { TCSugeridoCell } from './components/TCSugeridoCell';
+// Components
+export {
+    MiAdminIngresosTable,
+    MiAdminIngresosToolbar,
+    MiAdminIngresosFooter,
+    TCSugeridoCell,
+    EditableTipoCambioCell,
+    EditableEstadoSatCell,
+} from './components';
