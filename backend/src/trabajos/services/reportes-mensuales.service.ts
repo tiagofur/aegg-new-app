@@ -127,24 +127,65 @@ export class ReportesMensualesService {
         const miAdmin =
             reportes.find((r) => r.tipo === TipoReporteMensual.INGRESOS_MI_ADMIN)?.datos || [];
 
-        // Lógica de consolidación básica
-        // TODO: Implementar lógica de consolidación específica del negocio
-        const totales = this.calcularTotales(ingresos, auxiliar, miAdmin);
+        // Calcular totales reales de cada reporte
+        const totalesIngresos = this.calcularTotalesReporte(ingresos);
+        const totalesAuxiliar = this.calcularTotalesReporte(auxiliar);
+        const totalesMiAdmin = this.calcularTotalesReporte(miAdmin);
+
+        // Consolidar todos los totales
+        const totalIngresosConsolidado = totalesIngresos.total + totalesAuxiliar.total + totalesMiAdmin.total;
+        const totalIVATrasladado = totalesIngresos.iva + totalesAuxiliar.iva + totalesMiAdmin.iva;
 
         return {
             ingresos,
             auxiliar,
             miAdmin,
-            totales,
+            totales: {
+                totalIngresos: totalIngresosConsolidado,
+                totalIVATrasladado: totalIVATrasladado,
+                subtotal: totalIngresosConsolidado - totalIVATrasladado,
+            },
+            detalleTotales: {
+                ingresos: totalesIngresos,
+                auxiliar: totalesAuxiliar,
+                miAdmin: totalesMiAdmin,
+            },
         };
     }
 
-    private calcularTotales(ingresos: any[], auxiliar: any[], miAdmin: any[]): any {
-        // TODO: Implementar cálculos reales según tu lógica de negocio
+    private calcularTotalesReporte(datos: any[]): { total: number; subtotal: number; iva: number } {
+        if (!Array.isArray(datos) || datos.length === 0) {
+            return { total: 0, subtotal: 0, iva: 0 };
+        }
+
+        let total = 0;
+        let subtotal = 0;
+        let iva = 0;
+
+        // Saltar la primera fila (headers) y procesar datos
+        for (let i = 1; i < datos.length; i++) {
+            const fila = datos[i];
+            if (!Array.isArray(fila)) continue;
+
+            // Intentar encontrar columnas de totales, subtotales e IVA
+            // Buscar números en la fila
+            for (const celda of fila) {
+                if (typeof celda === 'number' && !isNaN(celda)) {
+                    total += celda;
+                }
+            }
+        }
+
+        // Si no encontramos IVA específico, estimarlo como 16% del subtotal
+        if (iva === 0 && total > 0) {
+            subtotal = total / 1.16;
+            iva = total - subtotal;
+        }
+
         return {
-            totalIngresos: 0,
-            totalEgresos: 0,
-            resultado: 0,
+            total: Math.round(total * 100) / 100,
+            subtotal: Math.round(subtotal * 100) / 100,
+            iva: Math.round(iva * 100) / 100,
         };
     }
 
@@ -161,7 +202,11 @@ export class ReportesMensualesService {
             throw new NotFoundException('Reporte base anual no encontrado');
         }
 
-        const hojas = reporteBase.hojas as any[];
+        // Inicializar hojas si está vacío o no tiene estructura
+        let hojas = reporteBase.hojas as any[];
+        if (!Array.isArray(hojas) || hojas.length === 0) {
+            hojas = this.inicializarHojasVacias();
+        }
 
         // Actualizar cada hoja con los datos del mes
         hojas.forEach((hoja) => {
@@ -188,50 +233,171 @@ export class ReportesMensualesService {
         // Guardar cambios
         reporteBase.hojas = hojas;
         reporteBase.mesesCompletados = mesesCompletados;
+        reporteBase.ultimaActualizacion = new Date();
         await this.reporteBaseRepository.save(reporteBase);
     }
 
+    private inicializarHojasVacias(): any[] {
+        return [
+            {
+                nombre: 'Resumen Anual',
+                datos: [
+                    ['Mes', 'Ingresos', 'IVA Trasladado', 'Subtotal', 'Fecha Actualización']
+                ],
+            },
+            {
+                nombre: 'Ingresos Consolidados',
+                datos: [
+                    ['Mes', 'Reporte Ingresos', 'Reporte Auxiliar', 'Reporte Mi Admin', 'Total']
+                ],
+            },
+            {
+                nombre: 'Comparativas',
+                datos: [
+                    ['Mes', 'Total Mes Actual', 'Total Mes Anterior', 'Variación %']
+                ],
+            },
+        ];
+    }
+
     private actualizarHojaResumen(hoja: any, mes: number, datos: any): void {
-        // Buscar si ya existe una fila para este mes
-        const index = hoja.datos.findIndex((r: any) => r.mes === mes);
-
-        const fila = {
-            mes,
-            nombreMes: this.getNombreMes(mes),
-            totalIngresos: datos.totales.totalIngresos,
-            totalEgresos: datos.totales.totalEgresos,
-            resultado: datos.totales.resultado,
-        };
-
-        if (index >= 0) {
-            hoja.datos[index] = fila;
-        } else {
-            hoja.datos.push(fila);
-            hoja.datos.sort((a: any, b: any) => a.mes - b.mes);
+        // Asegurarse de que datos sea array
+        if (!Array.isArray(hoja.datos)) {
+            hoja.datos = [['Mes', 'Ingresos', 'IVA Trasladado', 'Subtotal', 'Fecha Actualización']];
         }
+
+        const nombreMes = this.getNombreMes(mes);
+        const fechaActual = new Date().toLocaleDateString('es-MX');
+
+        // Buscar si ya existe una fila para este mes (empezando desde índice 1 para saltar headers)
+        const index = hoja.datos.findIndex((fila: any[], idx: number) =>
+            idx > 0 && Array.isArray(fila) && (fila[0] === nombreMes || fila[0] === mes)
+        );
+
+        const nuevaFila = [
+            nombreMes,
+            datos.totales.totalIngresos || 0,
+            datos.totales.totalIVATrasladado || 0,
+            datos.totales.subtotal || 0,
+            fechaActual,
+        ];
+
+        if (index > 0) {
+            // Actualizar fila existente
+            hoja.datos[index] = nuevaFila;
+        } else {
+            // Agregar nueva fila
+            hoja.datos.push(nuevaFila);
+        }
+
+        // Ordenar por mes (excepto header)
+        const headers = hoja.datos[0];
+        const filasDatos = hoja.datos.slice(1);
+        filasDatos.sort((a: any[], b: any[]) => {
+            const mesA = this.getMesNumero(a[0]);
+            const mesB = this.getMesNumero(b[0]);
+            return mesA - mesB;
+        });
+        hoja.datos = [headers, ...filasDatos];
     }
 
     private actualizarHojaIngresos(hoja: any, mes: number, datos: any): void {
-        // TODO: Implementar según tu lógica de negocio
-        // Agregar/actualizar datos de ingresos del mes
-        const ingresosMes = {
-            mes,
-            nombreMes: this.getNombreMes(mes),
-            datos: datos.ingresos,
-        };
-
-        const index = hoja.datos.findIndex((r: any) => r.mes === mes);
-        if (index >= 0) {
-            hoja.datos[index] = ingresosMes;
-        } else {
-            hoja.datos.push(ingresosMes);
-            hoja.datos.sort((a: any, b: any) => a.mes - b.mes);
+        // Asegurarse de que datos sea array
+        if (!Array.isArray(hoja.datos)) {
+            hoja.datos = [['Mes', 'Reporte Ingresos', 'Reporte Auxiliar', 'Reporte Mi Admin', 'Total']];
         }
+
+        const nombreMes = this.getNombreMes(mes);
+        const detalle = datos.detalleTotales || {};
+
+        // Buscar si ya existe una fila para este mes
+        const index = hoja.datos.findIndex((fila: any[], idx: number) =>
+            idx > 0 && Array.isArray(fila) && (fila[0] === nombreMes || fila[0] === mes)
+        );
+
+        const nuevaFila = [
+            nombreMes,
+            detalle.ingresos?.total || 0,
+            detalle.auxiliar?.total || 0,
+            detalle.miAdmin?.total || 0,
+            datos.totales.totalIngresos || 0,
+        ];
+
+        if (index > 0) {
+            hoja.datos[index] = nuevaFila;
+        } else {
+            hoja.datos.push(nuevaFila);
+        }
+
+        // Ordenar por mes
+        const headers = hoja.datos[0];
+        const filasDatos = hoja.datos.slice(1);
+        filasDatos.sort((a: any[], b: any[]) => {
+            const mesA = this.getMesNumero(a[0]);
+            const mesB = this.getMesNumero(b[0]);
+            return mesA - mesB;
+        });
+        hoja.datos = [headers, ...filasDatos];
     }
 
     private actualizarHojaComparativas(hoja: any, mes: number, datos: any): void {
-        // TODO: Implementar según tu lógica de negocio
-        // Agregar/actualizar datos comparativos del mes
+        // Asegurarse de que datos sea array
+        if (!Array.isArray(hoja.datos)) {
+            hoja.datos = [['Mes', 'Total Mes Actual', 'Total Mes Anterior', 'Variación %']];
+        }
+
+        const nombreMes = this.getNombreMes(mes);
+        const totalActual = datos.totales.totalIngresos || 0;
+
+        // Buscar mes anterior
+        const mesAnterior = mes === 1 ? 12 : mes - 1;
+        const indexMesAnterior = hoja.datos.findIndex((fila: any[], idx: number) =>
+            idx > 0 && Array.isArray(fila) && fila[0] === this.getNombreMes(mesAnterior)
+        );
+
+        const totalMesAnterior = indexMesAnterior > 0 ? (hoja.datos[indexMesAnterior][1] || 0) : 0;
+        const variacion = totalMesAnterior > 0
+            ? ((totalActual - totalMesAnterior) / totalMesAnterior * 100).toFixed(2) + '%'
+            : 'N/A';
+
+        // Buscar si ya existe una fila para este mes
+        const index = hoja.datos.findIndex((fila: any[], idx: number) =>
+            idx > 0 && Array.isArray(fila) && (fila[0] === nombreMes || fila[0] === mes)
+        );
+
+        const nuevaFila = [
+            nombreMes,
+            totalActual,
+            totalMesAnterior,
+            variacion,
+        ];
+
+        if (index > 0) {
+            hoja.datos[index] = nuevaFila;
+        } else {
+            hoja.datos.push(nuevaFila);
+        }
+
+        // Ordenar por mes
+        const headers = hoja.datos[0];
+        const filasDatos = hoja.datos.slice(1);
+        filasDatos.sort((a: any[], b: any[]) => {
+            const mesA = this.getMesNumero(a[0]);
+            const mesB = this.getMesNumero(b[0]);
+            return mesA - mesB;
+        });
+        hoja.datos = [headers, ...filasDatos];
+    }
+
+    private getMesNumero(nombreMes: string | number): number {
+        if (typeof nombreMes === 'number') return nombreMes;
+
+        const meses = [
+            'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+        ];
+        const index = meses.indexOf(nombreMes);
+        return index >= 0 ? index + 1 : 0;
     }
 
     private getNombreMes(mes: number): string {
