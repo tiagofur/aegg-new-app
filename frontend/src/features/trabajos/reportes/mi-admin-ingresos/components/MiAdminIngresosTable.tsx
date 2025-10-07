@@ -44,6 +44,12 @@ interface MiAdminIngresosTableProps {
   reporteId: string | undefined;
   /** Datos de Auxiliar Ingresos para integración */
   auxiliarData: AuxiliarIngresosRow[] | undefined;
+  /** ID del trabajo (para Guardar en Base) */
+  trabajoId?: string;
+  /** Año del trabajo (para Guardar en Base) */
+  anio?: number;
+  /** Mes del trabajo (para Guardar en Base) */
+  mes?: number;
 }
 
 const columnHelper = createColumnHelper<MiAdminIngresosRow>();
@@ -55,6 +61,9 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
   mesId,
   reporteId,
   auxiliarData,
+  trabajoId,
+  anio,
+  mes,
 }) => {
   // Hooks de datos y lógica
   const { data, isLoading, error, handleSave, isSaving } =
@@ -305,6 +314,10 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
         totales={totales}
         totalesComparison={totalesComparison}
         hasAuxiliarData={!!auxiliarData && auxiliarData.length > 0}
+        // Props para Guardar en Base
+        trabajoId={trabajoId}
+        anio={anio}
+        mes={mes}
       />
 
       {/* Table container */}

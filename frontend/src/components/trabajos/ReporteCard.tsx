@@ -17,6 +17,7 @@ interface ReporteCardProps {
 export const ReporteCard: React.FC<ReporteCardProps> = ({
   reporte,
   mesId,
+  trabajoId,
   trabajoYear,
   mesNumber,
 }) => {
@@ -280,6 +281,9 @@ export const ReporteCard: React.FC<ReporteCardProps> = ({
                 mesId={mesId}
                 reporteId={localReporte.id}
                 auxiliarData={auxiliarData}
+                trabajoId={trabajoId}
+                anio={trabajoYear}
+                mes={mesNumber}
               />
             </div>
           ) : (

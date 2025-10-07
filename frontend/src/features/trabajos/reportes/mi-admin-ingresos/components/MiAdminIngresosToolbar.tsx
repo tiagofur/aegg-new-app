@@ -6,6 +6,7 @@
 import { ArrowDownCircle, XCircle } from "lucide-react";
 import { badgeStyles } from "../utils";
 import type { MiAdminIngresosTotales, TotalesComparison } from "../types";
+import { GuardarEnBaseButton } from "../../reporte-anual";
 
 interface MiAdminIngresosToolbarProps {
   /** Si hay cambios sin guardar */
@@ -28,6 +29,12 @@ interface MiAdminIngresosToolbarProps {
   totalesComparison: TotalesComparison | null;
   /** Si hay datos de Auxiliar disponibles */
   hasAuxiliarData: boolean;
+  /** ID del trabajo (para Guardar en Base) - opcional */
+  trabajoId?: string;
+  /** Año del trabajo (para Guardar en Base) - opcional */
+  anio?: number;
+  /** Mes del trabajo (para Guardar en Base) - opcional */
+  mes?: number;
 }
 
 /**
@@ -44,7 +51,16 @@ export const MiAdminIngresosToolbar: React.FC<MiAdminIngresosToolbarProps> = ({
   totales,
   totalesComparison,
   hasAuxiliarData,
+  trabajoId,
+  anio,
+  mes,
 }) => {
+  // Calcular total de Auxiliar desde totalesComparison
+  const totalAuxiliar = totalesComparison?.auxiliarTotal ?? 0;
+
+  // Determinar si mostrar el botón Guardar en Base
+  const showGuardarEnBase = trabajoId && anio && mes && hasAuxiliarData;
+
   return (
     <div className="bg-white border-b border-gray-200 px-4 py-3">
       <div className="flex flex-col gap-3">
@@ -93,6 +109,19 @@ export const MiAdminIngresosToolbar: React.FC<MiAdminIngresosToolbarProps> = ({
                 ? "🔍 Comparación Activa"
                 : "🔍 Comparar con Auxiliar"}
             </button>
+
+            {/* Botón Guardar en Base - Solo si hay datos necesarios */}
+            {showGuardarEnBase && (
+              <GuardarEnBaseButton
+                trabajoId={trabajoId!}
+                anio={anio!}
+                mes={mes!}
+                totalMiAdmin={totales.totalSubtotalMXN}
+                totalAuxiliar={totalAuxiliar}
+                isDirty={isDirty}
+                isComparisonActive={isComparisonActive}
+              />
+            )}
           </div>
 
           {/* Right side - Status badges */}
@@ -121,14 +150,18 @@ export const MiAdminIngresosToolbar: React.FC<MiAdminIngresosToolbarProps> = ({
             {totalesComparison && (
               <span
                 className={`px-3 py-1 rounded-full border text-sm font-medium ${
-                  totalesComparison.isMatch
+                  totalesComparison.match
                     ? badgeStyles.totalesMatch
                     : badgeStyles.totalesMismatch
                 }`}
-                title={totalesComparison.tooltip}
+                title={
+                  totalesComparison.match
+                    ? "Los totales coinciden"
+                    : `Diferencia: $${totalesComparison.difference.toFixed(2)}`
+                }
               >
-                {totalesComparison.isMatch ? "✅" : "❌"} Totales{" "}
-                {totalesComparison.isMatch
+                {totalesComparison.match ? "✅" : "❌"} Totales{" "}
+                {totalesComparison.match
                   ? "OK"
                   : `Dif: $${totalesComparison.difference.toFixed(2)}`}
               </span>
