@@ -2,11 +2,13 @@ import {
     Injectable,
     NotFoundException,
     ConflictException,
+    BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Trabajo, ReporteBaseAnual } from '../entities';
 import { CreateTrabajoDto, UpdateTrabajoDto } from '../dto';
+import * as XLSX from 'xlsx';
 
 @Injectable()
 export class TrabajosService {
@@ -87,6 +89,44 @@ export class TrabajosService {
     async remove(id: string): Promise<void> {
         const trabajo = await this.findOne(id);
         await this.trabajoRepository.remove(trabajo);
+    }
+
+    async importarReporteBase(trabajoId: string, fileBuffer: Buffer): Promise<ReporteBaseAnual> {
+        const trabajo = await this.findOne(trabajoId);
+
+        try {
+            // Leer el archivo Excel
+            const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+
+            // Validar que tenga al menos una hoja
+            if (workbook.SheetNames.length === 0) {
+                throw new BadRequestException('El archivo Excel no contiene hojas');
+            }
+
+            // Extraer todas las hojas
+            const hojas = workbook.SheetNames.map((sheetName) => {
+                const worksheet = workbook.Sheets[sheetName];
+                const datos = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                return {
+                    nombre: sheetName,
+                    datos: datos,
+                };
+            });
+
+            // Actualizar el reporte base anual
+            trabajo.reporteBaseAnual.hojas = hojas;
+            await this.reporteBaseRepository.save(trabajo.reporteBaseAnual);
+
+            return trabajo.reporteBaseAnual;
+        } catch (error) {
+            if (error instanceof BadRequestException) {
+                throw error;
+            }
+            throw new BadRequestException(
+                `Error al procesar el archivo Excel: ${error.message}`,
+            );
+        }
     }
 
     private getHojasIniciales(): any[] {

@@ -11,6 +11,7 @@
 ### ✅ HACER COMMIT cuando:
 
 1. **Completas una funcionalidad**
+
    ```bash
    # Ejemplo: Terminaste de crear el componente ReporteViewer
    git add frontend/src/components/trabajos/ReporteViewer.tsx
@@ -18,18 +19,21 @@
    ```
 
 2. **Implementas un endpoint**
+
    ```bash
    git add backend/src/trabajos/controllers/trabajos.controller.ts
    git commit -m "feat: agregar endpoint POST /trabajos/:id/reporte-base/importar"
    ```
 
 3. **Corriges un bug**
+
    ```bash
    git add backend/src/trabajos/services/reportes-mensuales.service.ts
    git commit -m "fix: corregir cálculo de IVA en consolidación de reportes"
    ```
 
 4. **Actualizas documentación**
+
    ```bash
    git add docs/
    git commit -m "docs: actualizar FASE-4-VISUALIZACION-REPORTES.md con ejemplos"
@@ -53,6 +57,7 @@
 ## 📝 Formato de Commits (Conventional Commits)
 
 ### Estructura:
+
 ```
 <tipo>(<scope>): <descripción>
 
@@ -63,16 +68,16 @@
 
 ### Tipos de Commit:
 
-| Tipo | Descripción | Ejemplo |
-|------|-------------|---------|
-| `feat` | Nueva funcionalidad | `feat: agregar visualización de reportes` |
-| `fix` | Corrección de bug | `fix: solucionar error en cálculo de totales` |
-| `docs` | Documentación | `docs: actualizar README con nueva fase` |
-| `style` | Formato, espacios (no afecta lógica) | `style: formatear código con prettier` |
+| Tipo       | Descripción                                         | Ejemplo                                         |
+| ---------- | --------------------------------------------------- | ----------------------------------------------- |
+| `feat`     | Nueva funcionalidad                                 | `feat: agregar visualización de reportes`       |
+| `fix`      | Corrección de bug                                   | `fix: solucionar error en cálculo de totales`   |
+| `docs`     | Documentación                                       | `docs: actualizar README con nueva fase`        |
+| `style`    | Formato, espacios (no afecta lógica)                | `style: formatear código con prettier`          |
 | `refactor` | Refactorización (no añade features ni arregla bugs) | `refactor: extraer lógica de cálculo a service` |
-| `test` | Agregar o modificar tests | `test: agregar tests para consolidación` |
-| `chore` | Mantenimiento, dependencias | `chore: actualizar dependencias` |
-| `perf` | Mejora de performance | `perf: optimizar query de reportes` |
+| `test`     | Agregar o modificar tests                           | `test: agregar tests para consolidación`        |
+| `chore`    | Mantenimiento, dependencias                         | `chore: actualizar dependencias`                |
+| `perf`     | Mejora de performance                               | `perf: optimizar query de reportes`             |
 
 ### Ejemplos Reales del Proyecto:
 
@@ -128,6 +133,7 @@ git push origin main
 ```
 
 **Ventajas:**
+
 - ✅ Historial detallado localmente
 - ✅ Un solo push al final (menos ruido en GitHub)
 - ✅ Puedes hacer rollback local si algo falla
@@ -148,10 +154,12 @@ git push origin main
 ```
 
 **Ventajas:**
+
 - ✅ Backup inmediato en la nube
 - ✅ Otros pueden ver tu progreso en tiempo real
 
 **Desventajas:**
+
 - ❌ Más lento (esperas push cada vez)
 - ❌ Más ruido en el historial de GitHub
 
@@ -177,47 +185,56 @@ git push origin main
 ## 🔀 Comandos Git Útiles
 
 ### Ver estado actual
+
 ```bash
 git status
 ```
 
 ### Ver commits recientes
+
 ```bash
 git log --oneline -10
 ```
 
 ### Ver cambios antes de commit
+
 ```bash
 git diff
 ```
 
 ### Agregar todos los archivos modificados
+
 ```bash
 git add .
 ```
 
 ### Agregar archivos específicos
+
 ```bash
 git add backend/src/trabajos/
 git add docs/FASE-4*.md
 ```
 
 ### Ver historial con gráfico
+
 ```bash
 git log --graph --oneline --all
 ```
 
 ### Deshacer último commit (mantener cambios)
+
 ```bash
 git reset --soft HEAD~1
 ```
 
 ### Deshacer cambios en archivo (antes de commit)
+
 ```bash
 git checkout -- archivo.ts
 ```
 
 ### Ver diferencias entre commits
+
 ```bash
 git diff HEAD~1 HEAD
 ```
@@ -314,6 +331,7 @@ yza3456 docs: crear MEJORA-CONSOLIDACION-AUTOMATICA.md
 ```
 
 **Ventajas de este historial:**
+
 - ✅ Cada commit tiene sentido por sí solo
 - ✅ Fácil de entender qué se hizo
 - ✅ Fácil de hacer rollback si algo falla
@@ -364,6 +382,7 @@ git branch -d feature/visualizacion-reportes
 ## 🔧 Configuración Inicial de Git
 
 ### Primera vez:
+
 ```bash
 # Configurar nombre
 git config --global user.name "Tu Nombre"

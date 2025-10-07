@@ -9,6 +9,7 @@
 ## 📋 Resumen
 
 Se ha implementado la funcionalidad completa para:
+
 1. **Visualizar reportes mensuales** importados (Ingresos, Auxiliar, Mi Admin)
 2. **Visualizar reporte base anual** con todas sus hojas
 3. **Importar reporte base anual** desde archivo Excel
@@ -25,6 +26,7 @@ Cada reporte mensual ahora tiene un botón **"Ver"** que muestra los datos impor
 **Ubicación:** `ReporteCard.tsx`
 
 **Características:**
+
 - Botón "Ver/Ocultar" para mostrar/ocultar datos
 - Integración con componente ReporteViewer
 - Solo visible cuando el reporte tiene datos importados
@@ -37,6 +39,7 @@ El reporte base anual ahora puede visualizarse directamente en la interfaz.
 **Ubicación:** `TrabajoDetail.tsx`
 
 **Características:**
+
 - Botón "Ver Reporte/Ocultar Reporte" para toggle
 - Muestra todas las hojas del Excel
 - Navegación por tabs entre diferentes hojas
@@ -47,6 +50,7 @@ El reporte base anual ahora puede visualizarse directamente en la interfaz.
 Nueva funcionalidad para importar el reporte base desde archivo Excel.
 
 **Backend Endpoint:**
+
 ```
 POST /trabajos/:id/reporte-base/importar
 Content-Type: multipart/form-data
@@ -54,6 +58,7 @@ Body: file (Excel .xlsx o .xls)
 ```
 
 **Frontend:**
+
 - Dialog `ImportReporteBaseDialog` para subir archivo
 - Validación de tipo de archivo (.xlsx, .xls)
 - Botón "Importar Reporte Base" visible cuando no hay datos
@@ -64,6 +69,7 @@ Body: file (Excel .xlsx o .xls)
 Componente reutilizable para visualizar datos tabulares de Excel.
 
 **Características:**
+
 - Sistema de tabs para múltiples hojas
 - Tabla responsive con scroll horizontal
 - Primera fila destacada como encabezados
@@ -77,7 +83,9 @@ Componente reutilizable para visualizar datos tabulares de Excel.
 ### Nuevos Archivos
 
 #### Frontend
+
 1. **`frontend/src/components/trabajos/ReporteViewer.tsx`**
+
    - Componente para visualizar datos tabulares
    - Props: `hojas`, `titulo`
    - Sistema de tabs para múltiples hojas
@@ -94,6 +102,7 @@ Componente reutilizable para visualizar datos tabulares de Excel.
 #### Backend
 
 1. **`backend/src/trabajos/controllers/trabajos.controller.ts`**
+
    ```typescript
    // Nuevo endpoint
    @Post(':id/reporte-base/importar')
@@ -118,6 +127,7 @@ Componente reutilizable para visualizar datos tabulares de Excel.
 #### Frontend
 
 3. **`frontend/src/services/trabajos.service.ts`**
+
    ```typescript
    // Nuevo método
    async importarReporteBase(trabajoId: string, file: File): Promise<ReporteBaseAnual> {
@@ -129,12 +139,14 @@ Componente reutilizable para visualizar datos tabulares de Excel.
    ```
 
 4. **`frontend/src/components/trabajos/TrabajoDetail.tsx`**
+
    - Agregados estados: `verReporteBase`, `mostrarImportDialog`
    - Lógica condicional: Mostrar botón "Importar" o "Ver/Descargar"
    - Integración con `ReporteViewer` y `ImportReporteBaseDialog`
    - Prop `onReload` para refrescar después de importar
 
 5. **`frontend/src/components/trabajos/ReporteCard.tsx`**
+
    - Agregados estados: `verDatos`, `tieneDatos`
    - Botón "Ver/Ocultar" junto al botón de importar
    - Integración con `ReporteViewer` para mostrar datos
@@ -161,6 +173,7 @@ Componente reutilizable para visualizar datos tabulares de Excel.
 ### Para Reporte Base Anual:
 
 #### Caso 1: Sin Reporte Base Importado
+
 1. Usuario navega a un Trabajo
 2. Ve sección "Reporte Base Anual" vacía
 3. **NUEVO:** Hace clic en "Importar Reporte Base"
@@ -170,6 +183,7 @@ Componente reutilizable para visualizar datos tabulares de Excel.
 7. **NUEVO:** Botones cambian a "Ver Reporte" y "Descargar Excel"
 
 #### Caso 2: Con Reporte Base Importado
+
 1. Usuario navega a un Trabajo con reporte base
 2. Ve botones "Ver Reporte" y "Descargar Excel"
 3. **NUEVO:** Hace clic en "Ver Reporte"
@@ -184,6 +198,7 @@ Componente reutilizable para visualizar datos tabulares de Excel.
 ### ReporteViewer Component
 
 **Props:**
+
 ```typescript
 interface ReporteViewerProps {
   hojas: Hoja[];
@@ -197,6 +212,7 @@ interface Hoja {
 ```
 
 **Características:**
+
 - Estado `hojaActiva` para tracking de tab actual
 - Validación de datos vacíos
 - Renderizado condicional para hojas sin datos
@@ -207,6 +223,7 @@ interface Hoja {
 ### ImportReporteBaseDialog Component
 
 **Props:**
+
 ```typescript
 interface ImportReporteBaseDialogProps {
   trabajoId: string;
@@ -217,6 +234,7 @@ interface ImportReporteBaseDialogProps {
 ```
 
 **Validaciones:**
+
 - Solo acepta archivos .xlsx y .xls
 - Muestra tamaño del archivo seleccionado
 - Deshabilita acciones durante carga
@@ -225,6 +243,7 @@ interface ImportReporteBaseDialogProps {
 ### Backend Service - importarReporteBase
 
 **Proceso:**
+
 1. Leer buffer del archivo con XLSX.read()
 2. Validar que tenga al menos una hoja
 3. Extraer todas las hojas con XLSX.utils.sheet_to_json()
@@ -233,6 +252,7 @@ interface ImportReporteBaseDialogProps {
 6. Retornar reporte actualizado
 
 **Manejo de Errores:**
+
 - BadRequestException si no hay archivo
 - BadRequestException si no hay hojas en Excel
 - BadRequestException para errores de parsing
@@ -305,12 +325,14 @@ interface ImportReporteBaseDialogProps {
 ### Prioridad Media
 
 1. **Descargar Reporte Base en Excel**
+
    - Endpoint: `GET /trabajos/:id/reporte-base/download`
    - Convertir JSON a archivo Excel
    - Usar biblioteca como ExcelJS
    - Trigger de descarga en frontend
 
 2. **Crear Reporte Base Vacío**
+
    - Para clientes nuevos o inicio de año
    - Estructura predefinida con 12 meses
    - Hojas: Resumen Anual, Ingresos Consolidados, Comparativas
@@ -324,11 +346,13 @@ interface ImportReporteBaseDialogProps {
 ### Prioridad Baja
 
 4. **Filtros y Búsqueda**
+
    - Filtrar filas por contenido
    - Búsqueda en todas las hojas
    - Exportar vista filtrada
 
 5. **Gráficos y Visualizaciones**
+
    - Gráficos basados en datos tabulares
    - Comparativas visuales entre meses
    - Dashboard de métricas clave
@@ -343,16 +367,19 @@ interface ImportReporteBaseDialogProps {
 ## 🚀 Próximos Pasos Sugeridos
 
 1. **Testing con usuarios reales**
+
    - Probar con archivos Excel reales
    - Validar que la estructura se preserva correctamente
    - Ajustar layout si es necesario
 
 2. **Optimización de Performance**
+
    - Lazy loading para tablas grandes
    - Paginación para reportes con muchas filas
    - Virtual scrolling
 
 3. **Mejoras de UX**
+
    - Tooltips informativos
    - Toast notifications en lugar de alerts
    - Animaciones suaves
@@ -400,6 +427,7 @@ interface ImportReporteBaseDialogProps {
 ## ✨ Conclusión
 
 La **Fase 4** ha sido completada exitosamente. El sistema ahora permite:
+
 - ✅ Ver reportes mensuales importados
 - ✅ Ver reporte base anual con navegación por tabs
 - ✅ Importar reporte base desde Excel

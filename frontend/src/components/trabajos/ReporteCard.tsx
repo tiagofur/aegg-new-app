@@ -9,16 +9,14 @@ interface ReporteCardProps {
   trabajoId: string;
 }
 
-export const ReporteCard: React.FC<ReporteCardProps> = ({
-  reporte,
-  mesId,
-}) => {
+export const ReporteCard: React.FC<ReporteCardProps> = ({ reporte, mesId }) => {
   const [loading, setLoading] = useState(false);
   const [localReporte, setLocalReporte] = useState(reporte);
   const [verDatos, setVerDatos] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const tieneDatos = localReporte.datos && Object.keys(localReporte.datos).length > 0;
+  const tieneDatos =
+    localReporte.datos && Object.keys(localReporte.datos).length > 0;
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -242,7 +240,7 @@ export const ReporteCard: React.FC<ReporteCardProps> = ({
                   clipRule="evenodd"
                 />
               </svg>
-              {verDatos ? 'Ocultar' : 'Ver'}
+              {verDatos ? "Ocultar" : "Ver"}
             </button>
           )}
         </div>

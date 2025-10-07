@@ -8,7 +8,11 @@ import {
     Delete,
     Query,
     UseGuards,
+    UseInterceptors,
+    UploadedFile,
+    BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { TrabajosService } from '../services/trabajos.service';
 import { CreateTrabajoDto, UpdateTrabajoDto } from '../dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -41,5 +45,18 @@ export class TrabajosController {
     @Delete(':id')
     remove(@Param('id') id: string) {
         return this.trabajosService.remove(id);
+    }
+
+    @Post(':id/reporte-base/importar')
+    @UseInterceptors(FileInterceptor('file'))
+    async importarReporteBase(
+        @Param('id') id: string,
+        @UploadedFile() file: Express.Multer.File,
+    ) {
+        if (!file) {
+            throw new BadRequestException('No se proporcionó ningún archivo');
+        }
+
+        return this.trabajosService.importarReporteBase(id, file.buffer);
     }
 }

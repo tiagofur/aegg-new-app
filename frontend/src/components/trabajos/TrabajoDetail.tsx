@@ -23,9 +23,10 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
   const progreso =
     ((trabajo.reporteBaseAnual?.mesesCompletados.length || 0) / 12) * 100;
 
-  const tieneHojas = trabajo.reporteBaseAnual?.hojas && 
-                     trabajo.reporteBaseAnual.hojas.length > 0 &&
-                     trabajo.reporteBaseAnual.hojas.some(h => h.datos && h.datos.length > 0);
+  const tieneHojas =
+    trabajo.reporteBaseAnual?.hojas &&
+    trabajo.reporteBaseAnual.hojas.length > 0 &&
+    trabajo.reporteBaseAnual.hojas.some((h) => h.datos && h.datos.length > 0);
 
   return (
     <div className="container mx-auto p-6">
@@ -117,10 +118,10 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
                     clipRule="evenodd"
                   />
                 </svg>
-                {verReporteBase ? 'Ocultar Reporte' : 'Ver Reporte'}
+                {verReporteBase ? "Ocultar Reporte" : "Ver Reporte"}
               </button>
               <button
-                onClick={() => alert('Funcionalidad de descarga en desarrollo')}
+                onClick={() => alert("Funcionalidad de descarga en desarrollo")}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
               >
                 <svg

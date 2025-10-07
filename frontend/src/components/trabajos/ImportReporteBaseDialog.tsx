@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { trabajosService } from '../../services/trabajos.service';
+import React, { useState } from "react";
+import { trabajosService } from "../../services/trabajos.service";
 
 interface ImportReporteBaseDialogProps {
   trabajoId: string;
@@ -8,12 +8,9 @@ interface ImportReporteBaseDialogProps {
   onSuccess: () => void;
 }
 
-export const ImportReporteBaseDialog: React.FC<ImportReporteBaseDialogProps> = ({
-  trabajoId,
-  isOpen,
-  onClose,
-  onSuccess,
-}) => {
+export const ImportReporteBaseDialog: React.FC<
+  ImportReporteBaseDialogProps
+> = ({ trabajoId, isOpen, onClose, onSuccess }) => {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,12 +18,12 @@ export const ImportReporteBaseDialog: React.FC<ImportReporteBaseDialogProps> = (
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
-      const extension = selectedFile.name.split('.').pop()?.toLowerCase();
-      if (extension === 'xlsx' || extension === 'xls') {
+      const extension = selectedFile.name.split(".").pop()?.toLowerCase();
+      if (extension === "xlsx" || extension === "xls") {
         setFile(selectedFile);
         setError(null);
       } else {
-        setError('Por favor selecciona un archivo Excel (.xlsx o .xls)');
+        setError("Por favor selecciona un archivo Excel (.xlsx o .xls)");
         setFile(null);
       }
     }
@@ -36,7 +33,7 @@ export const ImportReporteBaseDialog: React.FC<ImportReporteBaseDialogProps> = (
     e.preventDefault();
 
     if (!file) {
-      setError('Por favor selecciona un archivo');
+      setError("Por favor selecciona un archivo");
       return;
     }
 
@@ -45,11 +42,13 @@ export const ImportReporteBaseDialog: React.FC<ImportReporteBaseDialogProps> = (
 
     try {
       await trabajosService.importarReporteBase(trabajoId, file);
-      alert('Reporte base importado exitosamente');
+      alert("Reporte base importado exitosamente");
       onSuccess();
       handleClose();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al importar el reporte base');
+      setError(
+        err.response?.data?.message || "Error al importar el reporte base"
+      );
     } finally {
       setLoading(false);
     }
@@ -68,7 +67,9 @@ export const ImportReporteBaseDialog: React.FC<ImportReporteBaseDialogProps> = (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
         <div className="p-6">
-          <h2 className="text-xl font-bold mb-4">Importar Reporte Base Anual</h2>
+          <h2 className="text-xl font-bold mb-4">
+            Importar Reporte Base Anual
+          </h2>
 
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
@@ -106,8 +107,8 @@ export const ImportReporteBaseDialog: React.FC<ImportReporteBaseDialogProps> = (
                 </div>
                 <div className="ml-3">
                   <p className="text-sm text-blue-700">
-                    El archivo debe ser un Excel con las hojas del reporte base anual.
-                    Se importarán todas las hojas del archivo.
+                    El archivo debe ser un Excel con las hojas del reporte base
+                    anual. Se importarán todas las hojas del archivo.
                   </p>
                 </div>
               </div>
@@ -133,7 +134,7 @@ export const ImportReporteBaseDialog: React.FC<ImportReporteBaseDialogProps> = (
                 disabled={loading || !file}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
-                {loading ? 'Importando...' : 'Importar'}
+                {loading ? "Importando..." : "Importar"}
               </button>
             </div>
           </form>
