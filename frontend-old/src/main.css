@@ -1,0 +1,286 @@
+/* /Users/tiago/Desktop/creapolis/foofie_nuevo/AEGG/src/index.css */
+@import "tailwindcss";
+
+:root {
+  margin: 0 auto;
+  text-align: center;
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  /* Variables para el tema claro */
+  /* Variables para el tema claro */
+  --text-color: #213547; /* Texto oscuro */
+  --background-color: #ffffff; /* Fondo blanco */
+  --link-color: #b09c46; /* Color primario para enlaces */
+  --link-hover-color: #8e7a3a; /* Color más oscuro para hover */
+  --button-bg-color: #b09c46; /* Fondo de botones */
+  --button-hover-border-color: #8e7a3a; /* Borde de botones al pasar el cursor */
+  --button-text-color: #ffffff; /* Texto blanco en botones */
+  --input-border-color: #ccc; /* Borde claro para inputs */
+  --input-bg-color: #ffffff; /* Fondo blanco para inputs */
+  --input-text-color: #213547; /* Texto oscuro en inputs */
+  --card-bg-color: #f9f9f9; /* Fondo claro para tarjetas */
+  --card-border-color: #ddd; /* Borde claro para tarjetas */
+  --card-text-color: #333; /* Texto oscuro en tarjetas */
+  --table-border-color: #ddd; /* Borde claro para tablas */
+  --table-header-bg-color: #f2f2f2; /* Fondo claro para encabezados de tablas */
+  --table-row-even-bg-color: #f9f9f9; /* Fondo claro para filas pares */
+  --table-row-hover-bg-color: #e2e2e2; /* Fondo gris claro al pasar el cursor */
+  --error-color: #dc3545; /* Rojo estándar para errores */
+  --spinner-track-color: #f3f3f3; /* Gris claro para el track del spinner */
+  --spinner-color: #b09c46; /* Color primario para el spinner */
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- TEXT COLORS --- */
+.text-gold {
+  color: #b09c46;
+}
+
+.bg-gold {
+  background-color: #b09c46;
+}
+
+/* --- Global Resets & Base Styles --- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box; /* Better box model */
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  font-family: inherit; /* Inherit from :root */
+  line-height: 1.5;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 0; /* Remove default top margin */
+  line-height: 1.2; /* Adjust line height for headings */
+  /* Add margin-bottom as needed */
+  margin-bottom: 1rem;
+}
+
+h1 {
+  font-size: 2.5em; /* Slightly adjusted from 3.2em */
+}
+h2 { font-size: 2em; }
+h3 { font-size: 1.75em; }
+/* etc. */
+
+p {
+  margin-top: 0;
+  margin-bottom: 1rem; /* Default paragraph spacing */
+}
+
+a {
+  font-weight: 500;
+  color: var(--link-color);
+  text-decoration: none; /* Remove underline by default */
+  transition: color 0.2s ease;
+}
+a:hover {
+  color: var(--link-hover-color);
+  text-decoration: underline; /* Add underline on hover */
+}
+
+/* --- Base Button Styles --- */
+button,
+.button-style /* Class for styling <a> like buttons */
+{
+  display: inline-block; /* Correct layout */
+  padding: 0.8rem 1.5rem; /* Consistent padding */
+  font-size: 1rem;
+  font-weight: bold; /* Make buttons stand out */
+  font-family: inherit;
+  color: var(--button-text-color);
+  background-color: var(--button-bg-color);
+  border: 1px solid transparent; /* Consistent border */
+  border-radius: 6px; /* Slightly adjusted radius */
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none; /* For .button-style on <a> */
+  transition: background-color 0.2s ease, border-color 0.25s ease, color 0.2s ease;
+  /* Use theme variables for colors */
+}
+
+button:hover,
+.button-style:hover {
+  /* Define hover state - adjust colors if needed */
+  /* Example: Slightly darken/lighten background or change border */
+   border-color: var(--button-hover-border-color);
+   /* background-color: #535bf2; /* Example explicit color if needed */
+   /* color: white; /* Ensure text color remains readable */
+}
+
+button:focus,
+button:focus-visible,
+.button-style:focus,
+.button-style:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+  outline-offset: 2px;
+}
+
+button:disabled,
+.button-style:disabled {
+  background-color: #cccccc; /* Generic disabled style */
+  border-color: #cccccc;
+  color: #666666;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* --- Base Form Styles --- */
+.form-group {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+  color: var(--text-color); /* Use theme text color */
+}
+
+.form-group input,
+.form-group select, /* Add select if you use it */
+.form-group textarea /* Add textarea if you use it */
+{
+  width: 100%;
+  padding: 0.8rem; /* Consistent padding */
+  border: 1px solid var(--input-border-color);
+  border-radius: 4px;
+  font-size: 1rem;
+  font-family: inherit;
+  background-color: var(--input-bg-color);
+  color: var(--input-text-color);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--link-color); /* Highlight focus with link color */
+  box-shadow: 0 0 0 2px rgba(var(--link-color), 0.3); /* Optional focus ring */
+}
+
+/* --- Utility Classes --- */
+.container {
+  max-width: 1280px; /* Or your preferred max width */
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.error-message {
+  color: var(--error-color);
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.loading-spinner {
+  display: inline-block; /* Allow placement next to text */
+  border: 4px solid var(--spinner-track-color);
+  border-top: 4px solid var(--spinner-color);
+  border-radius: 50%;
+  width: 24px; /* Slightly smaller default size */
+  height: 24px;
+  animation: spin 1s linear infinite;
+  margin: 1rem auto; /* Default margin */
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* --- Base Table Styles --- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--table-border-color);
+  margin-bottom: 1rem; /* Space below tables */
+}
+
+th,
+td {
+  border: 1px solid var(--table-border-color);
+  padding: 0.75rem; /* Consistent padding */
+  text-align: left;
+  vertical-align: top; /* Align content top */
+}
+
+th {
+  background-color: var(--table-header-bg-color);
+  font-weight: bold;
+  white-space: nowrap; /* Prevent header text wrapping */
+}
+
+tbody tr:nth-child(even) {
+  background-color: var(--table-row-even-bg-color);
+}
+
+tbody tr:hover {
+  background-color: var(--table-row-hover-bg-color);
+}
+
+/* --- Card Style (Example) --- */
+.card {
+  padding: 1.5rem; /* Default card padding */
+  border: 1px solid var(--card-border-color);
+  border-radius: 8px;
+  background-color: var(--card-bg-color);
+  color: var(--card-text-color);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+  margin-bottom: 1.5rem; /* Space below cards */
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.read-the-docs {
+  color: #888;
+}
