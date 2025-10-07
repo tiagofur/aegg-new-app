@@ -94,19 +94,19 @@ export const TrabajoDetail: React.FC = () => {
     });
   };
 
-  const getTipoLabel = (tipo: Reporte["tipo"]) => {
-    const labels: Record<Reporte["tipo"], string> = {
+  const getTipoLabel = (tipo: string) => {
+    const labels: Record<string, string> = {
       mensual: "Reporte Mensual",
-      balance: "Balance",
       ingresos: "Ingresos",
-      gastos: "Gastos",
-      flujo: "Flujo de Caja",
-      proyecciones: "Proyecciones",
-      comparativo: "Comparativo",
-      consolidado: "Consolidado",
-      personalizado: "Personalizado",
+      auxiliar_ingresos: "Auxiliar Ingresos",
+      admin_ingresos: "Admin Ingresos",
+      egresos: "Egresos",
+      auxiliar_egresos: "Auxiliar Egresos",
+      balance: "Balance",
+      resumen: "Resumen",
+      otro: "Otro",
     };
-    return labels[tipo];
+    return labels[tipo] || tipo;
   };
 
   if (loading) {
@@ -148,7 +148,7 @@ export const TrabajoDetail: React.FC = () => {
         <div className="flex items-center gap-4 text-sm text-gray-500">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
-            <span>Creado: {formatDate(trabajo.fechaCreacion)}</span>
+            <span>Creado: {formatDate(trabajo.createdAt)}</span>
           </div>
           <div className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
@@ -201,10 +201,10 @@ export const TrabajoDetail: React.FC = () => {
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
                         <h3 className="font-medium text-gray-900">
-                          {reporte.nombre}
+                          {getTipoLabel(reporte.tipoReporte)}
                         </h3>
                         <p className="text-sm text-gray-500">
-                          {getTipoLabel(reporte.tipo)}
+                          {formatDate(reporte.fechaImportacion)}
                         </p>
                       </div>
                       <button
@@ -218,16 +218,10 @@ export const TrabajoDetail: React.FC = () => {
                       </button>
                     </div>
 
-                    {reporte.descripcion && (
-                      <p className="text-sm text-gray-600 mb-2">
-                        {reporte.descripcion}
-                      </p>
-                    )}
-
-                    {reporte.nombreArchivoOriginal && (
+                    {reporte.archivoOriginal && (
                       <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded">
                         <Upload className="h-3 w-3" />
-                        {reporte.nombreArchivoOriginal}
+                        {reporte.archivoOriginal}
                       </div>
                     )}
                   </div>
@@ -247,7 +241,7 @@ export const TrabajoDetail: React.FC = () => {
             <ImportExcel
               trabajoId={id!}
               reporteId={selectedReporte.id}
-              reporteTipo={selectedReporte.tipo}
+              reporteTipo={selectedReporte.tipoReporte}
               onSuccess={() => {
                 loadData(); // Recargar datos después de importar
               }}
@@ -282,31 +276,25 @@ const CreateReporteModal: React.FC<CreateReporteModalProps> = ({
   onClose,
   onCreate,
 }) => {
-  const [nombre, setNombre] = useState("");
-  const [descripcion, setDescripcion] = useState("");
-  const [tipo, setTipo] = useState<Reporte["tipo"]>("mensual");
+  const [tipoReporte, setTipoReporte] = useState("mensual");
 
-  const tiposReporte: { value: Reporte["tipo"]; label: string }[] = [
+  const tiposReporte: { value: string; label: string }[] = [
     { value: "mensual", label: "Reporte Mensual (Multi-hoja)" },
-    { value: "balance", label: "Balance" },
     { value: "ingresos", label: "Ingresos" },
-    { value: "gastos", label: "Gastos" },
-    { value: "flujo", label: "Flujo de Caja" },
-    { value: "proyecciones", label: "Proyecciones" },
-    { value: "comparativo", label: "Comparativo" },
-    { value: "consolidado", label: "Consolidado" },
-    { value: "personalizado", label: "Personalizado" },
+    { value: "auxiliar_ingresos", label: "Auxiliar Ingresos" },
+    { value: "admin_ingresos", label: "Admin Ingresos" },
+    { value: "egresos", label: "Egresos" },
+    { value: "auxiliar_egresos", label: "Auxiliar Egresos" },
+    { value: "balance", label: "Balance" },
+    { value: "resumen", label: "Resumen" },
+    { value: "otro", label: "Otro" },
   ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (nombre.trim()) {
-      onCreate({
-        nombre: nombre.trim(),
-        descripcion: descripcion.trim() || undefined,
-        tipo,
-      });
-    }
+    onCreate({
+      tipoReporte,
+    });
   };
 
   return (
@@ -317,27 +305,13 @@ const CreateReporteModal: React.FC<CreateReporteModalProps> = ({
         </h2>
 
         <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nombre *
-            </label>
-            <input
-              type="text"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="Ej: Reporte Enero 2024"
-              required
-            />
-          </div>
-
-          <div className="mb-4">
+          <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Tipo de Reporte *
             </label>
             <select
-              value={tipo}
-              onChange={(e) => setTipo(e.target.value as Reporte["tipo"])}
+              value={tipoReporte}
+              onChange={(e) => setTipoReporte(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
               {tiposReporte.map((t) => (
@@ -346,24 +320,11 @@ const CreateReporteModal: React.FC<CreateReporteModalProps> = ({
                 </option>
               ))}
             </select>
-            {tipo === "mensual" && (
+            {tipoReporte === "mensual" && (
               <p className="mt-1 text-xs text-blue-600">
                 ℹ️ Este tipo soporta múltiples hojas en el Excel
               </p>
             )}
-          </div>
-
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Descripción
-            </label>
-            <textarea
-              value={descripcion}
-              onChange={(e) => setDescripcion(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="Descripción opcional..."
-              rows={3}
-            />
           </div>
 
           <div className="flex gap-3">
@@ -377,7 +338,6 @@ const CreateReporteModal: React.FC<CreateReporteModalProps> = ({
             <button
               type="submit"
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              disabled={!nombre.trim()}
             >
               Crear
             </button>

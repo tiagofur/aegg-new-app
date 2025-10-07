@@ -6,8 +6,8 @@ export class CreateTrabajoDto {
     nombre: string;
 
     @IsDateString()
-    @IsNotEmpty()
-    mes: string; // formato: "2024-10-01"
+    @IsOptional()
+    mes?: string; // formato: "2024-10-01"
 
     @IsString()
     @IsOptional()

@@ -19,7 +19,7 @@ export class Trabajo {
     @Column()
     nombre: string;
 
-    @Column({ type: 'date' })
+    @Column({ type: 'date', nullable: true })
     mes: Date;
 
     @Column({ type: 'text', nullable: true })

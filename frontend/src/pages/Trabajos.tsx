@@ -40,11 +40,17 @@ export const Trabajos: React.FC = () => {
   const handleCreateTrabajo = async (data: CreateTrabajoDto) => {
     try {
       setCreating(true);
+      console.log("Sending trabajo data:", data);
       const newTrabajo = await trabajosApi.create(data);
       setTrabajos([newTrabajo, ...trabajos]);
       setShowCreateModal(false);
     } catch (err: any) {
-      alert(err.response?.data?.message || "Error al crear el trabajo");
+      console.error("Error creating trabajo:", err.response?.data);
+      alert(
+        err.response?.data?.message ||
+          JSON.stringify(err.response?.data) ||
+          "Error al crear el trabajo"
+      );
     } finally {
       setCreating(false);
     }
@@ -77,26 +83,26 @@ export const Trabajos: React.FC = () => {
     }
   };
 
-  const getEstadoBadge = (estado: Trabajo["estado"]) => {
-    const styles = {
-      borrador: "bg-gray-100 text-gray-800",
-      en_progreso: "bg-blue-100 text-blue-800",
+  const getEstadoBadge = (estado: string) => {
+    const styles: Record<string, string> = {
+      activo: "bg-blue-100 text-blue-800",
       completado: "bg-green-100 text-green-800",
       archivado: "bg-yellow-100 text-yellow-800",
     };
 
-    const labels = {
-      borrador: "Borrador",
-      en_progreso: "En Progreso",
+    const labels: Record<string, string> = {
+      activo: "Activo",
       completado: "Completado",
       archivado: "Archivado",
     };
 
     return (
       <span
-        className={`px-2 py-1 rounded-full text-xs font-medium ${styles[estado]}`}
+        className={`px-2 py-1 rounded-full text-xs font-medium ${
+          styles[estado] || styles.activo
+        }`}
       >
-        {labels[estado]}
+        {labels[estado] || estado}
       </span>
     );
   };
@@ -186,7 +192,7 @@ export const Trabajos: React.FC = () => {
                 <div className="space-y-2 text-sm text-gray-500">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    <span>Creado: {formatDate(trabajo.fechaCreacion)}</span>
+                    <span>Creado: {formatDate(trabajo.createdAt)}</span>
                   </div>
                   {trabajo.reportes && (
                     <div className="flex items-center gap-2">

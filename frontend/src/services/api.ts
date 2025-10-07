@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosHeaders } from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -14,11 +14,40 @@ api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
         if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+            if (!config.headers) {
+                config.headers = new AxiosHeaders();
+            }
+
+            if (typeof (config.headers as AxiosHeaders).set === 'function') {
+                (config.headers as AxiosHeaders).set('Authorization', `Bearer ${token}`);
+            } else {
+                (config.headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+            }
         }
         return config;
     },
     (error) => {
+        return Promise.reject(error);
+    }
+);
+
+// Interceptor para manejar errores de respuesta
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        // Solo limpiar el token si es un 401 real del servidor (no error de conexión)
+        if (error.response?.status === 401) {
+            console.warn('Token inválido o expirado, limpiando autenticación');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            // Redirigir al login si no estamos ya ahí
+            if (!window.location.pathname.includes('/login')) {
+                window.location.href = '/login';
+            }
+        } else if (error.code === 'ERR_NETWORK' || !error.response) {
+            // Error de conexión - no limpiar el token
+            console.warn('Error de conexión con el servidor, manteniendo autenticación');
+        }
         return Promise.reject(error);
     }
 );
@@ -59,52 +88,52 @@ export const authApi = {
 export interface Trabajo {
     id: string;
     nombre: string;
+    mes?: string;
     descripcion?: string;
-    estado: 'borrador' | 'en_progreso' | 'completado' | 'archivado';
-    fechaCreacion: string;
-    fechaActualizacion: string;
-    userId: string;
+    estado: string; // 'activo', 'archivado', 'completado'
+    createdAt: string;
+    updatedAt: string;
+    usuarioId: string;
     reportes?: Reporte[];
 }
 
 export interface CreateTrabajoDto {
     nombre: string;
     descripcion?: string;
+    mes?: string; // formato: "2024-10-01"
 }
 
 export interface UpdateTrabajoDto {
     nombre?: string;
     descripcion?: string;
-    estado?: 'borrador' | 'en_progreso' | 'completado' | 'archivado';
+    mes?: string;
+    estado?: string; // 'activo', 'archivado', 'completado'
 }
 
 // Interfaces para Reportes
 export interface Reporte {
     id: string;
     trabajoId: string;
-    tipo: 'mensual' | 'balance' | 'ingresos' | 'gastos' | 'flujo' | 'proyecciones' | 'comparativo' | 'consolidado' | 'personalizado';
-    nombre: string;
-    descripcion?: string;
-    nombreArchivoOriginal?: string;
+    tipoReporte: string;
+    archivoOriginal?: string;
+    metadata?: any;
     datosOriginales: any;
     datosModificados?: any;
-    metadata?: any;
     configuracion?: any;
-    fechaCreacion: string;
-    fechaActualizacion: string;
+    estado?: string;
+    fechaImportacion: string;
+    updatedAt: string;
 }
 
 export interface CreateReporteDto {
-    tipo: Reporte['tipo'];
-    nombre: string;
-    descripcion?: string;
+    tipoReporte: string;
+    archivoOriginal?: string;
 }
 
 export interface UpdateReporteDto {
-    nombre?: string;
-    descripcion?: string;
     datosModificados?: any;
     configuracion?: any;
+    estado?: string;
 }
 
 export interface ImportExcelResponse {
