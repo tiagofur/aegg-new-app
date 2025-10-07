@@ -6,6 +6,7 @@ import {
     Mes,
     ReporteMensual,
 } from './entities';
+import { ReporteAnual } from './entities/reporte-anual.entity';
 import {
     TrabajosService,
     MesesService,
@@ -13,11 +14,13 @@ import {
     FormulaService,
     ExcelParserService,
 } from './services';
+import { ReporteAnualService } from './services/reporte-anual.service';
 import {
     TrabajosController,
     MesesController,
     ReportesMensualesController,
 } from './controllers';
+import { ReporteAnualController } from './controllers/reporte-anual.controller';
 
 @Module({
     imports: [
@@ -26,12 +29,14 @@ import {
             ReporteBaseAnual,
             Mes,
             ReporteMensual,
+            ReporteAnual,
         ]),
     ],
     controllers: [
         TrabajosController,
         MesesController,
         ReportesMensualesController,
+        ReporteAnualController,
     ],
     providers: [
         TrabajosService,
@@ -39,6 +44,7 @@ import {
         ReportesMensualesService,
         FormulaService,
         ExcelParserService,
+        ReporteAnualService,
     ],
     exports: [
         TrabajosService,
@@ -46,6 +52,7 @@ import {
         ReportesMensualesService,
         FormulaService,
         ExcelParserService,
+        ReporteAnualService,
     ],
 })
 export class TrabajosModule { }

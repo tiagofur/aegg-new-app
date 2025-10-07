@@ -37,7 +37,7 @@ export const useMiAdminIngresosData = ({
             if (!mesId || !reporteId) return [];
 
             const response = await reportesMensualesService.obtenerDatos(mesId, reporteId);
-            
+
             if (!response?.datos) return [];
 
             // Parsear Excel e integrar con datos de Auxiliar
@@ -68,21 +68,21 @@ export const useMiAdminIngresosData = ({
         onSuccess: () => {
             // Invalidar cache para refrescar datos
             queryClient.invalidateQueries({ queryKey });
-            
+
             // También invalidar auxiliar por si hay cambios relacionados
-            queryClient.invalidateQueries({ 
-                queryKey: ['reporte-auxiliar-ingresos', mesId] 
+            queryClient.invalidateQueries({
+                queryKey: ['reporte-auxiliar-ingresos', mesId]
             });
-            
+
             queryClient.invalidateQueries({
                 queryKey: ['reporte-anual'],
             });
-            
+
             queryClient.invalidateQueries({
                 queryKey: ['mes', mesId],
             });
         },
-    });    const handleSave = async (data: MiAdminIngresosRow[]) => {
+    }); const handleSave = async (data: MiAdminIngresosRow[]) => {
         await saveMutation.mutateAsync(data);
     };
 

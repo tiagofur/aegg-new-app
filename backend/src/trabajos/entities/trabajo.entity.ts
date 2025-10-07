@@ -13,6 +13,7 @@ import {
 import { User } from '../../auth/entities/user.entity';
 import { ReporteBaseAnual } from './reporte-base-anual.entity';
 import { Mes } from './mes.entity';
+import { ReporteAnual } from './reporte-anual.entity';
 
 export enum EstadoTrabajo {
     ACTIVO = 'ACTIVO',
@@ -70,4 +71,10 @@ export class Trabajo {
         eager: false,
     })
     meses: Mes[];
+
+    @OneToMany(() => ReporteAnual, (reporte) => reporte.trabajo, {
+        cascade: true,
+        eager: false,
+    })
+    reportesAnuales: ReporteAnual[];
 }
