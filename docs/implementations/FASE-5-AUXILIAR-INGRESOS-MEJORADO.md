@@ -467,13 +467,16 @@ Sistema → Muestra toast de éxito
 ### Archivos Modificados
 
 **1. `frontend/src/components/trabajos/MesCard.tsx`**
+
 - Agregado prop `trabajoYear: number`
 - Se pasa `trabajoYear` y `mesNumber` a `ReporteCard`
 
 **2. `frontend/src/components/trabajos/TrabajoDetail.tsx`**
+
 - Se pasa `trabajoYear={trabajo.anio}` a `MesCard`
 
 **3. `frontend/src/components/trabajos/ReporteCard.tsx`**
+
 - Agregado import de `AuxiliarIngresosTable`
 - Nuevos props: `trabajoYear: number`, `mesNumber: number`
 - Lógica condicional para mostrar `AuxiliarIngresosTable` si tipo es `INGRESOS_AUXILIAR`
@@ -506,9 +509,9 @@ TrabajoDetail
 
 ```typescript
 <AuxiliarIngresosTable
-  year={trabajoYear}      // Año del trabajo (ej: 2025)
-  month={mesNumber}        // Mes (1-12)
-  fileName={archivoOriginal || ''}  // Nombre del archivo Excel
+  year={trabajoYear} // Año del trabajo (ej: 2025)
+  month={mesNumber} // Mes (1-12)
+  fileName={archivoOriginal || ""} // Nombre del archivo Excel
 />
 ```
 

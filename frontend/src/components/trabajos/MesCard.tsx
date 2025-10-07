@@ -9,7 +9,11 @@ interface MesCardProps {
   trabajoYear: number;
 }
 
-export const MesCard: React.FC<MesCardProps> = ({ mes, trabajoId, trabajoYear }) => {
+export const MesCard: React.FC<MesCardProps> = ({
+  mes,
+  trabajoId,
+  trabajoYear,
+}) => {
   const [expanded, setExpanded] = useState(false);
   const [processing, setProcessing] = useState(false);
 

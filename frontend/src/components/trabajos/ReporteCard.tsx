@@ -12,11 +12,11 @@ interface ReporteCardProps {
   mesNumber: number;
 }
 
-export const ReporteCard: React.FC<ReporteCardProps> = ({ 
-  reporte, 
-  mesId, 
-  trabajoYear, 
-  mesNumber 
+export const ReporteCard: React.FC<ReporteCardProps> = ({
+  reporte,
+  mesId,
+  trabajoYear,
+  mesNumber,
 }) => {
   const [loading, setLoading] = useState(false);
   const [localReporte, setLocalReporte] = useState(reporte);
@@ -257,12 +257,12 @@ export const ReporteCard: React.FC<ReporteCardProps> = ({
       {/* Visualización de datos */}
       {verDatos && tieneDatos && (
         <div className="border-t border-gray-200 p-4">
-          {reporte.tipo === 'INGRESOS_AUXILIAR' ? (
+          {reporte.tipo === "INGRESOS_AUXILIAR" ? (
             <div className="h-[600px]">
               <AuxiliarIngresosTable
                 year={trabajoYear}
                 month={mesNumber}
-                fileName={localReporte.archivoOriginal || ''}
+                fileName={localReporte.archivoOriginal || ""}
               />
             </div>
           ) : (
