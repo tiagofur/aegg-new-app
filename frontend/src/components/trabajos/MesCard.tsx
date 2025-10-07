@@ -6,9 +6,10 @@ import { reportesMensualesService } from "../../services";
 interface MesCardProps {
   mes: Mes;
   trabajoId: string;
+  trabajoYear: number;
 }
 
-export const MesCard: React.FC<MesCardProps> = ({ mes, trabajoId }) => {
+export const MesCard: React.FC<MesCardProps> = ({ mes, trabajoId, trabajoYear }) => {
   const [expanded, setExpanded] = useState(false);
   const [processing, setProcessing] = useState(false);
 
@@ -93,6 +94,8 @@ export const MesCard: React.FC<MesCardProps> = ({ mes, trabajoId }) => {
                 reporte={reporte}
                 mesId={mes.id}
                 trabajoId={trabajoId}
+                trabajoYear={trabajoYear}
+                mesNumber={mes.mes}
               />
             ))}
           </div>

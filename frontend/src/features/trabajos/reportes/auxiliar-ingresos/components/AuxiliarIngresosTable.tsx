@@ -3,7 +3,7 @@
  * Integra todos los hooks y componentes del feature
  */
 
-import { useMemo } from 'react';
+import { useMemo } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -13,21 +13,21 @@ import {
   createColumnHelper,
   type SortingState,
   type ColumnFiltersState,
-} from '@tanstack/react-table';
-import { useState } from 'react';
+} from "@tanstack/react-table";
+import { useState } from "react";
 
-import { useAuxiliarIngresosData } from '../hooks/useAuxiliarIngresosData';
-import { useAuxiliarIngresosEdit } from '../hooks/useAuxiliarIngresosEdit';
-import { useAuxiliarIngresosCalculations } from '../hooks/useAuxiliarIngresosCalculations';
-import { useAuxiliarIngresosComparison } from '../hooks/useAuxiliarIngresosComparison';
+import { useAuxiliarIngresosData } from "../hooks/useAuxiliarIngresosData";
+import { useAuxiliarIngresosEdit } from "../hooks/useAuxiliarIngresosEdit";
+import { useAuxiliarIngresosCalculations } from "../hooks/useAuxiliarIngresosCalculations";
+import { useAuxiliarIngresosComparison } from "../hooks/useAuxiliarIngresosComparison";
 
-import { AuxiliarIngresosToolbar } from './AuxiliarIngresosToolbar';
-import { AuxiliarIngresosFooter } from './AuxiliarIngresosFooter';
-import { EditableTipoCambioCell } from './cells/EditableTipoCambioCell';
-import { EditableEstadoSatCell } from './cells/EditableEstadoSatCell';
+import { AuxiliarIngresosToolbar } from "./AuxiliarIngresosToolbar";
+import { AuxiliarIngresosFooter } from "./AuxiliarIngresosFooter";
+import { EditableTipoCambioCell } from "./cells/EditableTipoCambioCell";
+import { EditableEstadoSatCell } from "./cells/EditableEstadoSatCell";
 
-import { formatCurrency, formatDate, getRowBackgroundColor } from '../utils';
-import type { AuxiliarIngresosRow } from '../types';
+import { formatCurrency, formatDate, getRowBackgroundColor } from "../utils";
+import type { AuxiliarIngresosRow } from "../types";
 
 interface AuxiliarIngresosTableProps {
   /** Año del reporte */
@@ -71,12 +71,7 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
     toggleComparison,
     comparisonMap,
     totalesComparison,
-  } = useAuxiliarIngresosComparison(
-    year,
-    month,
-    mergedData,
-    totales
-  );
+  } = useAuxiliarIngresosComparison(year, month, mergedData, totales);
 
   // State local para sorting y filtering
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -85,25 +80,25 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
   // Definición de columnas
   const columns = useMemo(
     () => [
-      columnHelper.accessor('fecha', {
-        header: 'Fecha',
+      columnHelper.accessor("fecha", {
+        header: "Fecha",
         cell: (info) => formatDate(info.getValue()),
         size: 100,
       }),
-      columnHelper.accessor('rfc', {
-        header: 'RFC',
+      columnHelper.accessor("rfc", {
+        header: "RFC",
         cell: (info) => (
           <span className="font-mono text-sm">{info.getValue()}</span>
         ),
         size: 140,
       }),
-      columnHelper.accessor('subtotalAUX', {
-        header: 'Subtotal AUX',
+      columnHelper.accessor("subtotalAUX", {
+        header: "Subtotal AUX",
         cell: (info) => formatCurrency(info.getValue()),
         size: 120,
       }),
-      columnHelper.accessor('moneda', {
-        header: 'Moneda',
+      columnHelper.accessor("moneda", {
+        header: "Moneda",
         cell: (info) => (
           <span className="text-center block font-semibold">
             {info.getValue()}
@@ -111,8 +106,8 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
         ),
         size: 80,
       }),
-      columnHelper.accessor('tipoCambio', {
-        header: 'Tipo Cambio',
+      columnHelper.accessor("tipoCambio", {
+        header: "Tipo Cambio",
         cell: (info) => {
           const row = info.row.original;
           return (
@@ -120,19 +115,19 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
               value={info.getValue()}
               moneda={row.moneda}
               onChange={(newValue) => updateTipoCambio(row.id, newValue)}
-              disabled={row.moneda === 'MXN'}
+              disabled={row.moneda === "MXN"}
             />
           );
         },
         size: 120,
       }),
-      columnHelper.accessor('subtotalMXN', {
-        header: 'Subtotal MXN',
+      columnHelper.accessor("subtotalMXN", {
+        header: "Subtotal MXN",
         cell: (info) => formatCurrency(info.getValue()),
         size: 120,
       }),
-      columnHelper.accessor('estadoSat', {
-        header: 'Estado SAT',
+      columnHelper.accessor("estadoSat", {
+        header: "Estado SAT",
         cell: (info) => {
           const row = info.row.original;
           return (
@@ -148,29 +143,41 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
       ...(isComparisonActive
         ? [
             columnHelper.display({
-              id: 'comparison',
-              header: 'Comparación',
+              id: "comparison",
+              header: "Comparación",
               cell: (info) => {
                 const row = info.row.original;
                 const comparison = comparisonMap.get(row.id);
-                
+
                 if (!comparison) return null;
 
-                const icon = comparison.status === 'match' ? '✅' : 
-                             comparison.status === 'mismatch' ? '❌' : 
-                             comparison.status === 'only-auxiliar' ? '🔵' : '🟣';
+                const icon =
+                  comparison.status === "match"
+                    ? "✅"
+                    : comparison.status === "mismatch"
+                    ? "❌"
+                    : comparison.status === "only-auxiliar"
+                    ? "🔵"
+                    : "🟣";
 
-                const tooltip = 
-                  comparison.status === 'match'
-                    ? `Coincide (Dif: $${Math.abs(comparison.difference || 0).toFixed(2)})`
-                    : comparison.status === 'mismatch'
-                    ? `Discrepancia: $${Math.abs(comparison.difference || 0).toFixed(2)}`
-                    : comparison.status === 'only-auxiliar'
-                    ? 'Solo en Auxiliar'
-                    : 'Solo en Mi Admin';
+                const tooltip =
+                  comparison.status === "match"
+                    ? `Coincide (Dif: $${Math.abs(
+                        comparison.difference || 0
+                      ).toFixed(2)})`
+                    : comparison.status === "mismatch"
+                    ? `Discrepancia: $${Math.abs(
+                        comparison.difference || 0
+                      ).toFixed(2)}`
+                    : comparison.status === "only-auxiliar"
+                    ? "Solo en Auxiliar"
+                    : "Solo en Mi Admin";
 
                 return (
-                  <div className="flex items-center justify-center" title={tooltip}>
+                  <div
+                    className="flex items-center justify-center"
+                    title={tooltip}
+                  >
                     <span className="text-lg">{icon}</span>
                   </div>
                 );
@@ -222,7 +229,9 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded p-4 m-4">
-        <h3 className="text-red-800 font-semibold mb-2">Error al cargar reporte</h3>
+        <h3 className="text-red-800 font-semibold mb-2">
+          Error al cargar reporte
+        </h3>
         <p className="text-red-600">{error.message}</p>
       </div>
     );
@@ -257,8 +266,8 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
                       <div
                         className={
                           header.column.getCanSort()
-                            ? 'cursor-pointer select-none flex items-center gap-2'
-                            : ''
+                            ? "cursor-pointer select-none flex items-center gap-2"
+                            : ""
                         }
                         onClick={header.column.getToggleSortingHandler()}
                       >
@@ -267,8 +276,8 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
                           header.getContext()
                         )}
                         {{
-                          asc: ' 🔼',
-                          desc: ' 🔽',
+                          asc: " 🔼",
+                          desc: " 🔽",
                         }[header.column.getIsSorted() as string] ?? null}
                       </div>
                     )}

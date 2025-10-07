@@ -3,9 +3,9 @@
  * Muestra totales calculados y comparación de totales si está activa
  */
 
-import { formatCurrency } from '../utils';
-import { getFooterBackgroundColor } from '../utils';
-import type { AuxiliarIngresosTotales, TotalesComparison } from '../types';
+import { formatCurrency } from "../utils";
+import { getFooterBackgroundColor } from "../utils";
+import type { AuxiliarIngresosTotales, TotalesComparison } from "../types";
 
 interface AuxiliarIngresosFooterProps {
   /** Totales calculados */
@@ -36,7 +36,7 @@ export const AuxiliarIngresosFooter: React.FC<AuxiliarIngresosFooterProps> = ({
           <span className="text-lg">TOTALES</span>
           {isComparisonActive && totalesComparison && (
             <span className="ml-2 text-sm">
-              {totalesComparison.match ? '✅' : '❌'}
+              {totalesComparison.match ? "✅" : "❌"}
             </span>
           )}
         </div>
@@ -61,7 +61,7 @@ export const AuxiliarIngresosFooter: React.FC<AuxiliarIngresosFooterProps> = ({
         {isComparisonActive && totalesComparison && (
           <div className="col-span-2 flex flex-col">
             <span className="text-xs text-gray-600 uppercase">
-              {totalesComparison.match ? 'Diferencia' : 'Discrepancia'}
+              {totalesComparison.match ? "Diferencia" : "Discrepancia"}
             </span>
             <span className="text-base font-bold">
               {formatCurrency(Math.abs(totalesComparison.difference))}
@@ -74,21 +74,27 @@ export const AuxiliarIngresosFooter: React.FC<AuxiliarIngresosFooterProps> = ({
       <div className="mt-3 pt-3 border-t border-gray-300 flex items-center justify-between">
         <div className="flex items-center gap-6">
           <div className="flex flex-col">
-            <span className="text-xs text-gray-600 uppercase">Total Facturas</span>
-            <span className="text-sm font-semibold">{totales.cantidadTotal}</span>
+            <span className="text-xs text-gray-600 uppercase">
+              Total Facturas
+            </span>
+            <span className="text-sm font-semibold">
+              {totales.cantidadTotal}
+            </span>
           </div>
 
           <div className="flex flex-col">
             <span className="text-xs text-gray-600 uppercase">Vigentes</span>
             <span className="text-sm font-semibold text-green-700">
-              {totales.cantidadVigentes} ({totales.porcentajeVigentes.toFixed(1)}%)
+              {totales.cantidadVigentes} (
+              {totales.porcentajeVigentes.toFixed(1)}%)
             </span>
           </div>
 
           <div className="flex flex-col">
             <span className="text-xs text-gray-600 uppercase">Canceladas</span>
             <span className="text-sm font-semibold text-purple-700">
-              {totales.cantidadCanceladas} ({totales.porcentajeCanceladas.toFixed(1)}%)
+              {totales.cantidadCanceladas} (
+              {totales.porcentajeCanceladas.toFixed(1)}%)
             </span>
           </div>
 
@@ -108,23 +114,28 @@ export const AuxiliarIngresosFooter: React.FC<AuxiliarIngresosFooterProps> = ({
         {isComparisonActive && totalesComparison && (
           <div className="flex items-center gap-4">
             <div className="flex flex-col items-end">
-              <span className="text-xs text-gray-600 uppercase">Mi Admin Total</span>
+              <span className="text-xs text-gray-600 uppercase">
+                Mi Admin Total
+              </span>
               <span className="text-sm font-semibold">
                 {formatCurrency(totalesComparison.miadminTotal)}
               </span>
             </div>
-            
+
             <div className="flex flex-col items-end">
               <span className="text-xs text-gray-600 uppercase">
-                {totalesComparison.match ? 'Coincidencia' : 'Diferencia'}
+                {totalesComparison.match ? "Coincidencia" : "Diferencia"}
               </span>
-              <span className={`text-sm font-bold ${
-                totalesComparison.match ? 'text-green-700' : 'text-red-700'
-              }`}>
-                {totalesComparison.match 
+              <span
+                className={`text-sm font-bold ${
+                  totalesComparison.match ? "text-green-700" : "text-red-700"
+                }`}
+              >
+                {totalesComparison.match
                   ? `≈ $${Math.abs(totalesComparison.difference).toFixed(2)}`
-                  : `$${totalesComparison.difference >= 0 ? '+' : ''}${totalesComparison.difference.toFixed(2)}`
-                }
+                  : `$${
+                      totalesComparison.difference >= 0 ? "+" : ""
+                    }${totalesComparison.difference.toFixed(2)}`}
               </span>
             </div>
           </div>

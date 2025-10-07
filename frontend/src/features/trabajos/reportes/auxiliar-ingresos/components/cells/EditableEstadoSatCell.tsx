@@ -3,8 +3,8 @@
  * Select con opciones Vigente/Cancelada y estilos condicionales
  */
 
-import { getEstadoSatCellClasses } from '../../utils';
-import type { EstadoSat } from '../../types';
+import { getEstadoSatCellClasses } from "../../utils";
+import type { EstadoSat } from "../../types";
 
 interface EditableEstadoSatCellProps {
   /** Valor actual del estado */
@@ -37,7 +37,7 @@ export const EditableEstadoSatCell: React.FC<EditableEstadoSatCellProps> = ({
         focus:ring-2 focus:ring-blue-500 focus:border-blue-500
         transition-colors
         ${getEstadoSatCellClasses(value)}
-        ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
+        ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}
       `}
       title={`Estado SAT: ${value}`}
     >

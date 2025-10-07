@@ -3,8 +3,8 @@
  * Contiene botones de acción, toggle de comparación y badges de estado
  */
 
-import { badgeStyles } from '../utils';
-import type { AuxiliarIngresosTotales, TotalesComparison } from '../types';
+import { badgeStyles } from "../utils";
+import type { AuxiliarIngresosTotales, TotalesComparison } from "../types";
 
 interface AuxiliarIngresosToolbarProps {
   /** Si hay cambios sin guardar */
@@ -26,7 +26,9 @@ interface AuxiliarIngresosToolbarProps {
 /**
  * Componente de barra de herramientas
  */
-export const AuxiliarIngresosToolbar: React.FC<AuxiliarIngresosToolbarProps> = ({
+export const AuxiliarIngresosToolbar: React.FC<
+  AuxiliarIngresosToolbarProps
+> = ({
   isDirty,
   onSave,
   isSaving,
@@ -47,13 +49,13 @@ export const AuxiliarIngresosToolbar: React.FC<AuxiliarIngresosToolbarProps> = (
               px-4 py-2 rounded font-medium transition-colors
               ${
                 isDirty && !isSaving
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
               }
             `}
-            title={isDirty ? 'Guardar cambios' : 'No hay cambios'}
+            title={isDirty ? "Guardar cambios" : "No hay cambios"}
           >
-            {isSaving ? 'Guardando...' : 'Guardar'}
+            {isSaving ? "Guardando..." : "Guardar"}
           </button>
 
           <button
@@ -62,13 +64,19 @@ export const AuxiliarIngresosToolbar: React.FC<AuxiliarIngresosToolbarProps> = (
               px-4 py-2 rounded font-medium transition-colors
               ${
                 isComparisonActive
-                  ? 'bg-purple-600 text-white hover:bg-purple-700'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  ? "bg-purple-600 text-white hover:bg-purple-700"
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
               }
             `}
-            title={isComparisonActive ? 'Desactivar comparación' : 'Activar comparación'}
+            title={
+              isComparisonActive
+                ? "Desactivar comparación"
+                : "Activar comparación"
+            }
           >
-            {isComparisonActive ? '🔍 Comparación Activa' : '🔍 Comparar con Mi Admin'}
+            {isComparisonActive
+              ? "🔍 Comparación Activa"
+              : "🔍 Comparar con Mi Admin"}
           </button>
         </div>
 
@@ -90,7 +98,8 @@ export const AuxiliarIngresosToolbar: React.FC<AuxiliarIngresosToolbarProps> = (
               className={`px-3 py-1 rounded-full border text-sm font-medium ${badgeStyles.canceladas}`}
               title={`${totales.cantidadCanceladas} facturas canceladas`}
             >
-              🚫 {totales.cantidadCanceladas} Canceladas ({totales.porcentajeCanceladas.toFixed(1)}%)
+              🚫 {totales.cantidadCanceladas} Canceladas (
+              {totales.porcentajeCanceladas.toFixed(1)}%)
             </span>
           )}
 
@@ -104,12 +113,16 @@ export const AuxiliarIngresosToolbar: React.FC<AuxiliarIngresosToolbarProps> = (
               }`}
               title={
                 totalesComparison.match
-                  ? 'Los totales coinciden'
-                  : `Diferencia: $${Math.abs(totalesComparison.difference).toFixed(2)}`
+                  ? "Los totales coinciden"
+                  : `Diferencia: $${Math.abs(
+                      totalesComparison.difference
+                    ).toFixed(2)}`
               }
             >
-              {totalesComparison.match ? '✅' : '❌'} Totales{' '}
-              {totalesComparison.match ? 'OK' : `Dif: $${Math.abs(totalesComparison.difference).toFixed(2)}`}
+              {totalesComparison.match ? "✅" : "❌"} Totales{" "}
+              {totalesComparison.match
+                ? "OK"
+                : `Dif: $${Math.abs(totalesComparison.difference).toFixed(2)}`}
             </span>
           )}
         </div>

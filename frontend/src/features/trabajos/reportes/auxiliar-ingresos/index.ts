@@ -19,21 +19,21 @@ export { useAuxiliarIngresosComparison } from './hooks/useAuxiliarIngresosCompar
 
 // Types
 export type {
-  AuxiliarIngresosRow,
-  AuxiliarIngresosTotales,
-  ComparisonResult,
-  ComparisonStatus,
-  TotalesComparison,
-  EstadoSat,
+    AuxiliarIngresosRow,
+    AuxiliarIngresosTotales,
+    ComparisonResult,
+    ComparisonStatus,
+    TotalesComparison,
+    EstadoSat,
 } from './types';
 
 // Utils (por si se necesitan externamente)
 export {
-  formatCurrency,
-  formatDate,
-  calculateTotales,
-  parseExcelToAuxiliarIngresos,
-  getRowBackgroundColor,
-  getComparisonIcon,
-  getComparisonTooltipMessage,
+    formatCurrency,
+    formatDate,
+    calculateTotales,
+    parseExcelToAuxiliarIngresos,
+    getRowBackgroundColor,
+    getComparisonIcon,
+    getComparisonTooltipMessage,
 } from './utils';

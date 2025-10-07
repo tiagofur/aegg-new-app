@@ -3,8 +3,8 @@
  * Input numérico con validación
  */
 
-import { useState, useEffect } from 'react';
-import { inputStyles } from '../../utils';
+import { useState, useEffect } from "react";
+import { inputStyles } from "../../utils";
 
 interface EditableTipoCambioCellProps {
   /** Valor actual del tipo de cambio */
@@ -24,25 +24,25 @@ export const EditableTipoCambioCell: React.FC<EditableTipoCambioCellProps> = ({
   value,
   onChange,
   disabled = false,
-  moneda = 'USD',
+  moneda = "USD",
 }) => {
-  const [localValue, setLocalValue] = useState(value?.toString() || '');
+  const [localValue, setLocalValue] = useState(value?.toString() || "");
   const [hasError, setHasError] = useState(false);
 
   // Sincronizar con prop value
   useEffect(() => {
-    setLocalValue(value?.toString() || '');
+    setLocalValue(value?.toString() || "");
   }, [value]);
 
   const handleBlur = () => {
     const numValue = parseFloat(localValue);
-    
+
     // Validar que sea un número positivo
     if (isNaN(numValue) || numValue <= 0) {
       setHasError(true);
       // Restaurar valor anterior
-      setLocalValue(value?.toString() || '');
-      
+      setLocalValue(value?.toString() || "");
+
       // Limpiar error después de 2 segundos
       setTimeout(() => setHasError(false), 2000);
       return;
@@ -54,12 +54,12 @@ export const EditableTipoCambioCell: React.FC<EditableTipoCambioCellProps> = ({
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     // Submit con Enter
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.currentTarget.blur();
     }
     // Cancelar con Escape
-    if (e.key === 'Escape') {
-      setLocalValue(value?.toString() || '');
+    if (e.key === "Escape") {
+      setLocalValue(value?.toString() || "");
       e.currentTarget.blur();
     }
   };
@@ -75,17 +75,17 @@ export const EditableTipoCambioCell: React.FC<EditableTipoCambioCellProps> = ({
         disabled={disabled}
         step="0.0001"
         min="0"
-        placeholder={disabled ? '1.0000' : '0.0000'}
+        placeholder={disabled ? "1.0000" : "0.0000"}
         className={`
           ${inputStyles.base}
-          ${disabled ? inputStyles.disabled : ''}
-          ${hasError ? inputStyles.error : ''}
+          ${disabled ? inputStyles.disabled : ""}
+          ${hasError ? inputStyles.error : ""}
           text-right
         `}
         title={
           disabled
             ? `Moneda ${moneda} - Tipo de cambio fijo 1.0`
-            : 'Tipo de cambio (ej: 19.5432)'
+            : "Tipo de cambio (ej: 19.5432)"
         }
       />
       {hasError && (

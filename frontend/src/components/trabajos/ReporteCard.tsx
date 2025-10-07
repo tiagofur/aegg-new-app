@@ -2,14 +2,22 @@ import React, { useState, useRef } from "react";
 import { ReporteMensual, TIPOS_REPORTE_NOMBRES } from "../../types/trabajo";
 import { reportesMensualesService } from "../../services";
 import { ReporteViewer } from "./ReporteViewer";
+import { AuxiliarIngresosTable } from "../../features/trabajos/reportes/auxiliar-ingresos";
 
 interface ReporteCardProps {
   reporte: ReporteMensual;
   mesId: string;
   trabajoId: string;
+  trabajoYear: number;
+  mesNumber: number;
 }
 
-export const ReporteCard: React.FC<ReporteCardProps> = ({ reporte, mesId }) => {
+export const ReporteCard: React.FC<ReporteCardProps> = ({ 
+  reporte, 
+  mesId, 
+  trabajoYear, 
+  mesNumber 
+}) => {
   const [loading, setLoading] = useState(false);
   const [localReporte, setLocalReporte] = useState(reporte);
   const [verDatos, setVerDatos] = useState(false);
@@ -249,15 +257,25 @@ export const ReporteCard: React.FC<ReporteCardProps> = ({ reporte, mesId }) => {
       {/* Visualización de datos */}
       {verDatos && tieneDatos && (
         <div className="border-t border-gray-200 p-4">
-          <ReporteViewer
-            hojas={[
-              {
-                nombre: TIPOS_REPORTE_NOMBRES[reporte.tipo],
-                datos: localReporte.datos as any[][],
-              },
-            ]}
-            titulo={`Datos de ${TIPOS_REPORTE_NOMBRES[reporte.tipo]}`}
-          />
+          {reporte.tipo === 'INGRESOS_AUXILIAR' ? (
+            <div className="h-[600px]">
+              <AuxiliarIngresosTable
+                year={trabajoYear}
+                month={mesNumber}
+                fileName={localReporte.archivoOriginal || ''}
+              />
+            </div>
+          ) : (
+            <ReporteViewer
+              hojas={[
+                {
+                  nombre: TIPOS_REPORTE_NOMBRES[reporte.tipo],
+                  datos: localReporte.datos as any[][],
+                },
+              ]}
+              titulo={`Datos de ${TIPOS_REPORTE_NOMBRES[reporte.tipo]}`}
+            />
+          )}
         </div>
       )}
     </div>

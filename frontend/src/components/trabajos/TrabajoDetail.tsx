@@ -219,7 +219,7 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
             {trabajo.meses
               .sort((a, b) => a.mes - b.mes)
               .map((mes) => (
-                <MesCard key={mes.id} mes={mes} trabajoId={trabajo.id} />
+                <MesCard key={mes.id} mes={mes} trabajoId={trabajo.id} trabajoYear={trabajo.anio} />
               ))}
           </div>
         )}
