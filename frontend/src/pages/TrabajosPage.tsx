@@ -49,14 +49,16 @@ export const TrabajosPage: React.FC = () => {
     loadTrabajos();
   };
 
-  const handleViewReporteBase = () => {
-    // TODO: Implementar vista del reporte base
-    alert("Funcionalidad de visualización en desarrollo");
-  };
-
-  const handleDownloadReporteBase = () => {
-    // TODO: Implementar descarga del Excel
-    alert("Funcionalidad de descarga en desarrollo");
+  const handleReloadTrabajo = async () => {
+    if (selectedTrabajo) {
+      try {
+        const detailed = await trabajosService.getOne(selectedTrabajo.id);
+        setSelectedTrabajo(detailed);
+      } catch (error) {
+        console.error("Error al recargar detalle:", error);
+        alert("Error al recargar el detalle del trabajo");
+      }
+    }
   };
 
   if (loading) {
@@ -95,9 +97,8 @@ export const TrabajosPage: React.FC = () => {
         <TrabajoDetail
           trabajo={selectedTrabajo}
           onAddMes={() => setCreateMesOpen(true)}
-          onViewReporteBase={handleViewReporteBase}
-          onDownloadReporteBase={handleDownloadReporteBase}
           onBack={handleBackToList}
+          onReload={handleReloadTrabajo}
         />
       ) : (
         <TrabajosList

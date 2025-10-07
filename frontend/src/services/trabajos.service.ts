@@ -1,5 +1,5 @@
 import api from './api';
-import { Trabajo, CreateTrabajoDto, UpdateTrabajoDto } from '../types/trabajo';
+import { Trabajo, CreateTrabajoDto, UpdateTrabajoDto, ReporteBaseAnual } from '../types/trabajo';
 
 export const trabajosService = {
     async getAll(usuarioId?: string): Promise<Trabajo[]> {
@@ -25,5 +25,17 @@ export const trabajosService = {
 
     async delete(id: string): Promise<void> {
         await api.delete(`/trabajos/${id}`);
+    },
+
+    async importarReporteBase(trabajoId: string, file: File): Promise<ReporteBaseAnual> {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const { data } = await api.post(`/trabajos/${trabajoId}/reporte-base/importar`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return data;
     },
 };

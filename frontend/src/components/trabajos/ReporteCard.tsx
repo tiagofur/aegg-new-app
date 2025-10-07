@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { ReporteMensual, TIPOS_REPORTE_NOMBRES } from "../../types/trabajo";
 import { reportesMensualesService } from "../../services";
+import { ReporteViewer } from "./ReporteViewer";
 
 interface ReporteCardProps {
   reporte: ReporteMensual;
@@ -11,11 +12,13 @@ interface ReporteCardProps {
 export const ReporteCard: React.FC<ReporteCardProps> = ({
   reporte,
   mesId,
-  trabajoId,
 }) => {
   const [loading, setLoading] = useState(false);
   const [localReporte, setLocalReporte] = useState(reporte);
+  const [verDatos, setVerDatos] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const tieneDatos = localReporte.datos && Object.keys(localReporte.datos).length > 0;
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -129,95 +132,136 @@ export const ReporteCard: React.FC<ReporteCardProps> = ({
   };
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-      <div className="flex justify-between items-start mb-3">
-        <div className="flex items-center gap-2">
-          {getEstadoIcon()}
-          <h4 className="font-semibold text-gray-800">
-            {TIPOS_REPORTE_NOMBRES[reporte.tipo]}
-          </h4>
+    <div className="border border-gray-200 rounded-lg bg-gray-50">
+      <div className="p-4">
+        <div className="flex justify-between items-start mb-3">
+          <div className="flex items-center gap-2">
+            {getEstadoIcon()}
+            <h4 className="font-semibold text-gray-800">
+              {TIPOS_REPORTE_NOMBRES[reporte.tipo]}
+            </h4>
+          </div>
+          <span
+            className={`px-2 py-1 rounded-full text-xs font-semibold ${getEstadoColor()}`}
+          >
+            {localReporte.estado.replace("_", " ")}
+          </span>
         </div>
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-semibold ${getEstadoColor()}`}
-        >
-          {localReporte.estado.replace("_", " ")}
-        </span>
-      </div>
 
-      {localReporte.archivoOriginal && (
-        <p className="text-xs text-gray-600 mb-3">
-          📄 {localReporte.archivoOriginal}
-        </p>
-      )}
+        {localReporte.archivoOriginal && (
+          <p className="text-xs text-gray-600 mb-3">
+            📄 {localReporte.archivoOriginal}
+          </p>
+        )}
 
-      {localReporte.fechaImportacion && (
-        <p className="text-xs text-gray-500 mb-3">
-          Importado:{" "}
-          {new Date(localReporte.fechaImportacion).toLocaleString("es-ES")}
-        </p>
-      )}
+        {localReporte.fechaImportacion && (
+          <p className="text-xs text-gray-500 mb-3">
+            Importado:{" "}
+            {new Date(localReporte.fechaImportacion).toLocaleString("es-ES")}
+          </p>
+        )}
 
-      <input
-        ref={fileInputRef}
-        accept=".xlsx,.xls"
-        style={{ display: "none" }}
-        id={`file-input-${reporte.id}`}
-        type="file"
-        onChange={handleFileUpload}
-        disabled={loading || localReporte.estado === "PROCESADO"}
-      />
-      <label htmlFor={`file-input-${reporte.id}`}>
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={loading || localReporte.estado === "PROCESADO"}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
-          {loading ? (
-            <>
-              <svg
-                className="animate-spin h-5 w-5 text-white"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              Importando...
-            </>
-          ) : (
-            <>
+        <div className="flex gap-2">
+          <input
+            ref={fileInputRef}
+            accept=".xlsx,.xls"
+            style={{ display: "none" }}
+            id={`file-input-${reporte.id}`}
+            type="file"
+            onChange={handleFileUpload}
+            disabled={loading || localReporte.estado === "PROCESADO"}
+          />
+          <label htmlFor={`file-input-${reporte.id}`} className="flex-1">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={loading || localReporte.estado === "PROCESADO"}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <svg
+                    className="animate-spin h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Importando...
+                </>
+              ) : (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  {localReporte.estado === "SIN_IMPORTAR"
+                    ? "Importar"
+                    : "Re-importar"}
+                </>
+              )}
+            </button>
+          </label>
+
+          {tieneDatos && (
+            <button
+              onClick={() => setVerDatos(!verDatos)}
+              className="bg-white border border-blue-600 text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-5 w-5"
                 viewBox="0 0 20 20"
                 fill="currentColor"
               >
+                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
                 <path
                   fillRule="evenodd"
-                  d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z"
+                  d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
                   clipRule="evenodd"
                 />
               </svg>
-              {localReporte.estado === "SIN_IMPORTAR"
-                ? "Importar Archivo"
-                : "Re-importar"}
-            </>
+              {verDatos ? 'Ocultar' : 'Ver'}
+            </button>
           )}
-        </button>
-      </label>
+        </div>
+      </div>
+
+      {/* Visualización de datos */}
+      {verDatos && tieneDatos && (
+        <div className="border-t border-gray-200 p-4">
+          <ReporteViewer
+            hojas={[
+              {
+                nombre: TIPOS_REPORTE_NOMBRES[reporte.tipo],
+                datos: localReporte.datos as any[][],
+              },
+            ]}
+            titulo={`Datos de ${TIPOS_REPORTE_NOMBRES[reporte.tipo]}`}
+          />
+        </div>
+      )}
     </div>
   );
 };
