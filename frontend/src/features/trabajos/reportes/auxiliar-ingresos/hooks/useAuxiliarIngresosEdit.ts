@@ -9,7 +9,6 @@ import {
     EstadoSat
 } from '../types';
 import {
-    recalculateRowAfterTipoCambioChange,
     updateRowEstadoSat
 } from '../utils';
 
@@ -48,37 +47,9 @@ export const useAuxiliarIngresosEdit = ({
     >(new Map());
 
     /**
-     * Actualiza el tipo de cambio de una fila
-     * Recalcula automáticamente el subtotalMXN
-     */
-    const updateTipoCambio = useCallback((uuid: string, tipoCambio: number) => {
-        setEditedRows((prev) => {
-            const newMap = new Map(prev);
-
-            // Buscar la fila original
-            const originalRow = initialData.find((row) => row.id === uuid);
-            if (!originalRow) return prev;
-
-            // Recalcular fila completa
-            const updatedRow = recalculateRowAfterTipoCambioChange(
-                originalRow,
-                tipoCambio
-            );
-
-            // Guardar solo los cambios
-            const edits = newMap.get(uuid) || {};
-            newMap.set(uuid, {
-                ...edits,
-                tipoCambio: updatedRow.tipoCambio,
-                subtotalMXN: updatedRow.subtotalMXN,
-            });
-
-            return newMap;
-        });
-    }, [initialData]);
-
-    /**
      * Actualiza el estado SAT de una fila
+     * NOTA: El Tipo de Cambio en Auxiliar de Ingresos es solo informativo,
+     * no se puede editar porque el Subtotal ya viene calculado en MXN desde el SAT.
      */
     const updateEstadoSat = useCallback((uuid: string, estadoSat: EstadoSat) => {
         setEditedRows((prev) => {
@@ -146,7 +117,6 @@ export const useAuxiliarIngresosEdit = ({
         data: mergedData,
         editedRows,
         isDirty,
-        updateTipoCambio,
         updateEstadoSat,
         resetEdits,
         getRowEdits,

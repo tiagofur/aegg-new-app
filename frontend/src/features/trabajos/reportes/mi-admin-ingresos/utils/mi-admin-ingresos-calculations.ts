@@ -1,5 +1,6 @@
 /**
  * Utilidades de cálculo para Mi Admin Ingresos
+ * FASE 8: Implementación con parsing flexible y corrección de bug TC
  */
 
 import type {
@@ -8,97 +9,223 @@ import type {
 } from '../types';
 import { MI_ADMIN_INGRESOS_CONFIG } from '../types';
 
-// Tipo para datos de Auxiliar Ingresos (importado)
+// Importar utilities de FASE 8
+import {
+    COLUMN_KEYWORDS,
+    normalizeHeader,
+    findColumnIndex,
+    findHeaderRow,
+    validateRequiredColumns,
+    parseTipoCambio,
+    parseFecha,
+    parseAmount,
+    parseMoneda,
+} from '../../shared/utils/column-parser';
+
+// Tipo para datos de Auxiliar Ingresos (para TC lookup y comparación)
 interface AuxiliarIngresosRow {
-    folio: string;
+    id: string; // UUID/Folio Fiscal
     estadoSat: 'Vigente' | 'Cancelada';
-    subtotalMXN: number;
+    subtotal: number; // Ya está en MXN
+    tipoCambio: number | null;
+    moneda: string;
     [key: string]: any;
 }
 
 /**
  * Parsear datos de Excel y agregar datos de Auxiliar Ingresos
+ * FASE 8: Implementación con validación robusta y corrección de bug TC=1.0 para USD
+ * 
+ * BUG CRÍTICO RESUELTO:
+ * Mi Admin muestra TC=1.0 para facturas en USD cuando debería ser ~20.0 MXN/USD
+ * SOLUCIÓN: Si detectamos TC sospechoso (1.0 o 0) y moneda != MXN,
+ *           intentamos obtener el TC correcto desde auxiliarData por UUID
+ * 
  * @param excelData - Array bidimensional del Excel
- * @param auxiliarData - Datos de Auxiliar Ingresos para comparación
+ * @param auxiliarData - Datos de Auxiliar Ingresos para corrección de TC
  * @returns Array de filas tipadas
  */
 export const parseExcelToMiAdminIngresos = (
     excelData: any[][],
     auxiliarData: AuxiliarIngresosRow[] | undefined
 ): MiAdminIngresosRow[] => {
-    if (!excelData || excelData.length === 0) return [];
-
-    const headers = excelData[0];
-
-    // Encontrar índices de columnas (case-insensitive)
-    const findColumnIndex = (keywords: string[]) => {
-        return headers.findIndex((header: any) =>
-            keywords.some(keyword =>
-                header?.toString().toLowerCase().includes(keyword.toLowerCase())
-            )
-        );
-    };
-
-    const folioIndex = findColumnIndex(['folio', 'número', 'numero']);
-    const fechaIndex = findColumnIndex(['fecha']);
-    const rfcIndex = findColumnIndex(['rfc']);
-    const razonSocialIndex = findColumnIndex(['razón', 'razon', 'social', 'nombre']);
-    const subtotalIndex = findColumnIndex(['subtotal']);
-    const ivaIndex = findColumnIndex(['iva']);
-    const totalIndex = findColumnIndex(['total']);
-    const monedaIndex = findColumnIndex(['moneda', 'currency']);
-    const tipoCambioIndex = findColumnIndex(['tipo', 'cambio', 'tc', 'exchange']);
-    const estadoIndex = findColumnIndex(['estado', 'status', 'sat']);
-
-    // Crear lookup de Auxiliar por FOLIO (solo vigentes)
-    const auxiliarLookup = new Map<string, number>();
-    if (auxiliarData) {
-        auxiliarData
-            .filter(row => row.estadoSat === 'Vigente')
-            .forEach(row => {
-                auxiliarLookup.set(row.folio, row.subtotalMXN);
-            });
+    if (!excelData || excelData.length < 2) {
+        return [];
     }
 
-    // Parsear filas (saltear header)
-    return excelData.slice(1).map((row, index) => {
-        const folio = row[folioIndex]?.toString() || `row-${index}`;
-        const subtotal = parseFloat(row[subtotalIndex]) || 0;
-        const moneda = row[monedaIndex]?.toString() || 'MXN';
-        const tipoCambioRaw = parseFloat(row[tipoCambioIndex]);
-        const tipoCambio = moneda === 'MXN' ? null : (isNaN(tipoCambioRaw) ? 1 : tipoCambioRaw);
+    console.log('📊 Parseando Mi Admin Ingresos...');
+
+    // 🔍 Buscar fila del header dinámicamente (primera fila con 8+ columnas)
+    const headerRowIndex = findHeaderRow(excelData, 8);
+    if (headerRowIndex === -1) {
+        console.error('❌ No se encontró la fila de headers en el Excel');
+        throw new Error(
+            'No se pudo encontrar la fila de headers en el archivo Excel.\n' +
+            'El header debe tener al menos 8 columnas con datos.\n' +
+            'Por favor, verifica que el archivo tenga el formato correcto.'
+        );
+    }
+
+    const headers = excelData[headerRowIndex];
+    const dataStartRow = headerRowIndex + 1;
+
+    console.log(`📋 Headers encontrados en fila ${headerRowIndex + 1}:`, headers);
+
+    // ✅ Definir columnas obligatorias
+    const requiredColumns = {
+        'UUID/Folio Fiscal': COLUMN_KEYWORDS.UUID,
+        'Subtotal': COLUMN_KEYWORDS.SUBTOTAL,
+        'Moneda': COLUMN_KEYWORDS.MONEDA,
+    };
+
+    // ✅ Validar columnas obligatorias
+    const { missing, found, normalized } = validateRequiredColumns(
+        headers,
+        requiredColumns
+    );
+
+    if (missing.length > 0) {
+        console.error('❌ Columnas obligatorias faltantes:', missing);
+        console.warn('📋 Headers detectados:', headers);
+        throw new Error(
+            `No se encontraron las siguientes columnas obligatorias:\n` +
+            `${missing.map((col) => `  • ${col}`).join('\n')}\n\n` +
+            `Headers detectados en el Excel:\n` +
+            `${headers.map((h, i) => `  ${i + 1}. ${h}`).join('\n')}\n\n` +
+            `Por favor, verifica que tu archivo Excel contenga todas las columnas necesarias.`
+        );
+    }
+
+    // ✅ Obtener índices de columnas obligatorias
+    const uuidIndex = found['UUID/Folio Fiscal'];
+    const subtotalIndex = found['Subtotal'];
+    const monedaIndex = found['Moneda'];
+
+    // ✅ Obtener índices de columnas opcionales
+    const folioIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.FOLIO);
+    const tipoCambioIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.TIPO_CAMBIO);
+    const fechaIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.FECHA);
+    const rfcIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.RFC);
+    const razonSocialIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.RAZON_SOCIAL);
+    const ivaIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.IVA);
+    const totalIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.TOTAL);
+    const estadoIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.ESTADO_SAT);
+
+    console.log('✅ Columnas detectadas:', {
+        UUID: uuidIndex,
+        Folio: folioIndex,
+        Fecha: fechaIndex,
+        RFC: rfcIndex,
+        'Razón Social': razonSocialIndex,
+        Subtotal: subtotalIndex,
+        IVA: ivaIndex,
+        Total: totalIndex,
+        Moneda: monedaIndex,
+        'Tipo Cambio': tipoCambioIndex,
+        'Estado SAT': estadoIndex,
+    });
+
+    // ✅ Crear lookup de Auxiliar por UUID (solo vigentes)
+    const auxiliarLookup = new Map<string, AuxiliarIngresosRow>();
+    if (auxiliarData) {
+        auxiliarData
+            .filter((row) => row.estadoSat === 'Vigente')
+            .forEach((row) => {
+                auxiliarLookup.set(row.id, row);
+            });
+        console.log(`📚 ${auxiliarLookup.size} registros de Auxiliar disponibles para lookup`);
+    }
+
+    // ✅ Parsear filas de datos (desde la fila siguiente al header)
+    const rows: MiAdminIngresosRow[] = [];
+    let tcCorregidosCount = 0;
+
+    for (let i = dataStartRow; i < excelData.length; i++) {
+        const row = excelData[i];
+        if (!row || row.length === 0) continue;
+
+        const uuid = row[uuidIndex]?.toString().trim() || `row-${i}`;
+        if (!uuid || uuid === `row-${i}`) {
+            console.warn(`⚠️ Fila ${i + 1} sin UUID, se omitirá`);
+            continue;
+        }
+
+        // Parsear folio separadamente (puede ser diferente al UUID)
+        const folio = folioIndex !== -1
+            ? row[folioIndex]?.toString().trim() || uuid
+            : uuid;
+
+        // Parsear valores básicos
+        const moneda = parseMoneda(row[monedaIndex]);
+        const subtotal = parseAmount(row[subtotalIndex]);
+        const iva = ivaIndex !== -1 ? parseAmount(row[ivaIndex]) : 0;
+        const total = totalIndex !== -1 ? parseAmount(row[totalIndex]) : subtotal + iva;
+
+        // 🔥 CORRECCIÓN CRÍTICA DE BUG TC
+        let tipoCambio: number | null = null;
+        if (tipoCambioIndex !== -1) {
+            tipoCambio = parseTipoCambio(row[tipoCambioIndex], moneda);
+        }
+
+        // Si TC es sospechoso (1.0 o null) y moneda no es MXN, buscar en Auxiliar
+        if (moneda !== 'MXN' && (!tipoCambio || tipoCambio === 1.0)) {
+            const auxiliarRow = auxiliarLookup.get(uuid);
+            if (auxiliarRow && auxiliarRow.tipoCambio && auxiliarRow.tipoCambio > 1.0) {
+                console.warn(
+                    `🔧 Corrigiendo TC para ${uuid}: TC Mi Admin=${tipoCambio || 'null'} → TC Auxiliar=${auxiliarRow.tipoCambio}`
+                );
+                tipoCambio = auxiliarRow.tipoCambio;
+                tcCorregidosCount++;
+            } else {
+                console.warn(
+                    `⚠️ ${uuid}: TC sospechoso (${tipoCambio}) para ${moneda}, pero no se encontró en Auxiliar`
+                );
+            }
+        }
+
+        // Valores opcionales
+        const fecha = fechaIndex !== -1 ? parseFecha(row[fechaIndex]) : null;
+        const rfc = rfcIndex !== -1 ? row[rfcIndex]?.toString().trim() || null : null;
+        const razonSocial = razonSocialIndex !== -1 ? row[razonSocialIndex]?.toString().trim() || null : null;
 
         // Estado SAT
-        const estadoRaw = row[estadoIndex]?.toString().toLowerCase();
-        const estadoSat: 'Vigente' | 'Cancelada' =
-            estadoRaw?.includes('cancel') ? 'Cancelada' : 'Vigente';
+        const estadoRaw = estadoIndex !== -1 ? row[estadoIndex]?.toString().toLowerCase() || '' : '';
+        const estadoSat: 'Vigente' | 'Cancelada' = estadoRaw.includes('cancelad') ? 'Cancelada' : 'Vigente';
 
-        // Copiar SUBTOTAL AUX desde Auxiliar
-        const subtotalAUX = auxiliarLookup.get(folio) || null;
+        // Buscar subtotalAUX desde Auxiliar (ya viene en MXN)
+        const auxiliarRow = auxiliarLookup.get(uuid);
+        const subtotalAUX = auxiliarRow?.subtotal || null;
 
-        // Calcular SUBTOTAL MXN
+        // Calcular subtotal MXN
         const subtotalMXN = calculateSubtotalMXN(subtotal, moneda, tipoCambio);
 
-        // Calcular TC SUGERIDO
+        // Calcular TC Sugerido
         const tcSugerido = calculateTCSugerido(subtotalAUX, subtotal);
 
-        return {
-            id: folio,
-            folio,
-            fecha: row[fechaIndex] || null,
-            rfc: row[rfcIndex] || null,
-            razonSocial: row[razonSocialIndex] || null,
+        rows.push({
+            id: uuid,
+            folio: folio,
+            fecha,
+            rfc,
+            razonSocial,
             subtotal,
-            iva: parseFloat(row[ivaIndex]) || 0,
-            total: parseFloat(row[totalIndex]) || 0,
+            iva,
+            total,
             moneda,
             tipoCambio,
             estadoSat,
             subtotalAUX,
             subtotalMXN,
             tcSugerido,
-        };
-    });
+        });
+    }
+
+    console.log(`✅ ${rows.length} registros parseados de Mi Admin Ingresos`);
+    if (tcCorregidosCount > 0) {
+        console.log(`🔧 ${tcCorregidosCount} tipos de cambio corregidos usando datos de Auxiliar`);
+    }
+
+    return rows;
 };
 
 /**

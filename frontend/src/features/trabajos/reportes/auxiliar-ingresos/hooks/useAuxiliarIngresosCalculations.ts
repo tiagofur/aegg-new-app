@@ -59,8 +59,8 @@ export const useAuxiliarIngresosCalculations = ({
      */
     const promedioSubtotalVigentes = useMemo(() => {
         if (totales.cantidadVigentes === 0) return 0;
-        return totales.totalSubtotalMXN / totales.cantidadVigentes;
-    }, [totales.totalSubtotalMXN, totales.cantidadVigentes]);
+        return totales.totalSubtotal / totales.cantidadVigentes;
+    }, [totales.totalSubtotal, totales.cantidadVigentes]);
 
     return {
         totales,

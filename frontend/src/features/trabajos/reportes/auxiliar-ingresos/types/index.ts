@@ -14,6 +14,9 @@ export interface AuxiliarIngresosRow {
     /** UUID de la factura (identificador único) */
     id: string;
 
+    /** Folio de la factura (para comparación con Mi Admin) */
+    folio: string | null;
+
     /** Fecha de emisión de la factura */
     fecha: string | null;
 
@@ -23,17 +26,14 @@ export interface AuxiliarIngresosRow {
     /** Razón social del receptor */
     razonSocial: string | null;
 
-    /** Subtotal en moneda original (USD, EUR, MXN, etc.) */
-    subtotalAUX: number;
+    /** Subtotal en MXN (ya viene convertido en el Excel) */
+    subtotal: number;
 
-    /** Código de moneda (USD, EUR, MXN) */
+    /** Código de moneda original (USD, EUR, MXN) - solo informativo */
     moneda: string;
 
-    /** Tipo de cambio (editable, null si moneda = MXN) */
+    /** Tipo de cambio aplicado (solo informativo, no se usa para cálculos) */
     tipoCambio: number | null;
-
-    /** Subtotal convertido a MXN (calculado) */
-    subtotalMXN: number;
 
     /** Estado SAT de la factura (editable) */
     estadoSat: EstadoSat;
@@ -46,11 +46,8 @@ export interface AuxiliarIngresosRow {
  * Totales calculados del reporte
  */
 export interface AuxiliarIngresosTotales {
-    /** Suma de subtotales en moneda original (solo vigentes) */
-    totalSubtotalAUX: number;
-
     /** Suma de subtotales en MXN (solo vigentes) */
-    totalSubtotalMXN: number;
+    totalSubtotal: number;
 
     /** Cantidad de facturas vigentes */
     cantidadVigentes: number;

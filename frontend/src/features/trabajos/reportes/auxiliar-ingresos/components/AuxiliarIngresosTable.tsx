@@ -65,7 +65,6 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
   const {
     data: editedData,
     editedRows,
-    updateTipoCambio,
     updateEstadoSat,
     isDirty,
     resetEdits,
@@ -103,6 +102,13 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
   // Definición de columnas
   const columns = useMemo(
     () => [
+      columnHelper.accessor("folio", {
+        header: "Folio",
+        cell: (info) => (
+          <span className="font-mono text-xs">{info.getValue() || "-"}</span>
+        ),
+        size: 100,
+      }),
       columnHelper.accessor("fecha", {
         header: "Fecha",
         cell: (info) => formatDate(info.getValue()),
@@ -115,39 +121,31 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
         ),
         size: 140,
       }),
-      columnHelper.accessor("subtotalAUX", {
-        header: "Subtotal AUX",
+      columnHelper.accessor("subtotal", {
+        header: "Subtotal MXN",
         cell: (info) => formatCurrency(info.getValue()),
-        size: 120,
+        size: 130,
       }),
       columnHelper.accessor("moneda", {
         header: "Moneda",
         cell: (info) => (
-          <span className="text-center block font-semibold">
+          <span className="text-center block font-semibold text-xs">
             {info.getValue()}
           </span>
         ),
-        size: 80,
+        size: 70,
       }),
       columnHelper.accessor("tipoCambio", {
-        header: "Tipo Cambio",
+        header: "TC Aplicado",
         cell: (info) => {
-          const row = info.row.original;
+          const tc = info.getValue();
           return (
-            <EditableTipoCambioCell
-              value={info.getValue()}
-              moneda={row.moneda}
-              onChange={(newValue) => updateTipoCambio(row.id, newValue)}
-              disabled={row.moneda === "MXN"}
-            />
+            <span className="text-center block text-sm text-gray-600">
+              {tc ? tc.toFixed(4) : "-"}
+            </span>
           );
         },
-        size: 120,
-      }),
-      columnHelper.accessor("subtotalMXN", {
-        header: "Subtotal MXN",
-        cell: (info) => formatCurrency(info.getValue()),
-        size: 120,
+        size: 90,
       }),
       columnHelper.accessor("estadoSat", {
         header: "Estado SAT",
@@ -210,7 +208,7 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
           ]
         : []),
     ],
-    [isComparisonActive, comparisonMap, updateTipoCambio, updateEstadoSat]
+    [isComparisonActive, comparisonMap, updateEstadoSat]
   );
 
   // Configuración de TanStack Table

@@ -41,25 +41,17 @@ export const AuxiliarIngresosFooter: React.FC<AuxiliarIngresosFooterProps> = ({
           )}
         </div>
 
-        {/* Total Subtotal AUX */}
-        <div className="col-span-2 flex flex-col">
-          <span className="text-xs text-gray-600 uppercase">Subtotal AUX</span>
-          <span className="text-base font-bold">
-            {formatCurrency(totales.totalSubtotalAUX)}
-          </span>
-        </div>
-
         {/* Total Subtotal MXN */}
-        <div className="col-span-2 flex flex-col">
+        <div className="col-span-3 flex flex-col">
           <span className="text-xs text-gray-600 uppercase">Subtotal MXN</span>
-          <span className="text-base font-bold">
-            {formatCurrency(totales.totalSubtotalMXN)}
+          <span className="text-lg font-bold">
+            {formatCurrency(totales.totalSubtotal)}
           </span>
         </div>
 
         {/* Comparison info */}
         {isComparisonActive && totalesComparison && (
-          <div className="col-span-2 flex flex-col">
+          <div className="col-span-3 flex flex-col">
             <span className="text-xs text-gray-600 uppercase">
               {totalesComparison.match ? "Diferencia" : "Discrepancia"}
             </span>

@@ -114,26 +114,26 @@ const convertToExcelFormat = (data: AuxiliarIngresosRow[]): any[][] => {
     const firstRow = data[0];
     const headers = [
         'UUID',
+        'Folio',
         'Fecha',
         'RFC',
         'Razón Social',
-        'Subtotal AUX',
+        'Subtotal MXN',
         'Moneda',
         'Tipo de Cambio',
-        'Subtotal MXN',
         'Estado SAT',
     ];
 
     // Construir filas de datos
     const rows = data.map((row) => [
         row.id,
+        row.folio || '',
         row.fecha || '',
         row.rfc || '',
         row.razonSocial || '',
-        row.subtotalAUX,
+        row.subtotal,
         row.moneda,
         row.tipoCambio || '',
-        row.subtotalMXN,
         row.estadoSat,
     ]);
 

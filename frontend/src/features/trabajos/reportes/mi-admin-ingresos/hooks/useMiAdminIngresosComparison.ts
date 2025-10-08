@@ -31,7 +31,9 @@ export const useMiAdminIngresosComparison = ({
         auxiliarData
             .filter((row) => row.estadoSat === 'Vigente')
             .forEach((row) => {
-                map.set(row.folio, row);
+                // Usar folio si existe, de lo contrario usar id (UUID)
+                const key = row.folio || row.id;
+                map.set(key, row);
             });
         return map;
     }, [auxiliarData]);
@@ -82,16 +84,17 @@ export const useMiAdminIngresosComparison = ({
         auxiliarData
             .filter((row) => row.estadoSat === 'Vigente')
             .forEach((auxiliarRow) => {
+                const auxiliarKey = auxiliarRow.folio || auxiliarRow.id;
                 const miAdminRow = miAdminData.find(
-                    (r) => r.folio === auxiliarRow.folio && r.estadoSat === 'Vigente'
+                    (r) => r.folio === auxiliarKey && r.estadoSat === 'Vigente'
                 );
 
                 if (!miAdminRow) {
-                    map.set(auxiliarRow.folio, {
-                        folio: auxiliarRow.folio,
+                    map.set(auxiliarKey, {
+                        folio: auxiliarKey,
                         status: 'only-auxiliar',
                         auxiliarSubtotal: auxiliarRow.subtotal,
-                        tooltip: `Folio ${auxiliarRow.folio} solo existe en Auxiliar`,
+                        tooltip: `Folio ${auxiliarKey} solo existe en Auxiliar`,
                     });
                 }
             });
