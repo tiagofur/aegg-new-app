@@ -4,3 +4,7 @@ export * from './MesCard';
 export * from './ReporteCard';
 export * from './CreateTrabajoDialog';
 export * from './CreateMesDialog';
+export * from './MesesSelector';
+export * from './ReporteAnualHeader';
+export * from './ReporteMensualCard';
+export * from './ReportesMensualesList';

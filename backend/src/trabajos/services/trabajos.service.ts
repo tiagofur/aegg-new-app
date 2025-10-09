@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Trabajo, ReporteBaseAnual } from '../entities';
+import { Trabajo, ReporteBaseAnual, Mes, ReporteMensual, TipoReporteMensual } from '../entities';
 import { CreateTrabajoDto, UpdateTrabajoDto } from '../dto';
 import * as XLSX from 'xlsx';
 
@@ -17,6 +17,10 @@ export class TrabajosService {
         private trabajoRepository: Repository<Trabajo>,
         @InjectRepository(ReporteBaseAnual)
         private reporteBaseRepository: Repository<ReporteBaseAnual>,
+        @InjectRepository(Mes)
+        private mesRepository: Repository<Mes>,
+        @InjectRepository(ReporteMensual)
+        private reporteMensualRepository: Repository<ReporteMensual>,
     ) { }
 
     async create(createTrabajoDto: CreateTrabajoDto): Promise<Trabajo> {
@@ -46,7 +50,10 @@ export class TrabajosService {
         });
         await this.reporteBaseRepository.save(reporteBase);
 
-        // Retornar trabajo con reporte base
+        // Crear los 12 meses automáticamente
+        await this.crearMesesAutomaticos(trabajoGuardado.id);
+
+        // Retornar trabajo con reporte base y meses
         return this.findOne(trabajoGuardado.id);
     }
 
@@ -155,5 +162,60 @@ export class TrabajosService {
                 datos: [],
             },
         ];
+    }
+
+    /**
+     * Crea los 12 meses del año automáticamente para un trabajo
+     * Cada mes tiene 3 reportes mensuales vacíos (INGRESOS, INGRESOS_AUXILIAR, INGRESOS_MI_ADMIN)
+     */
+    private async crearMesesAutomaticos(trabajoId: string): Promise<void> {
+        const mesesCreados: Mes[] = [];
+
+        // Crear los 12 meses
+        for (let mes = 1; mes <= 12; mes++) {
+            const nuevoMes = this.mesRepository.create({
+                trabajoId,
+                mes,
+            });
+            mesesCreados.push(nuevoMes);
+        }
+
+        // Guardar todos los meses
+        const mesesGuardados = await this.mesRepository.save(mesesCreados);
+
+        // Crear los 3 reportes mensuales para cada mes
+        const reportes: ReporteMensual[] = [];
+
+        for (const mes of mesesGuardados) {
+            // Reporte Ingresos
+            reportes.push(
+                this.reporteMensualRepository.create({
+                    mesId: mes.id,
+                    tipo: TipoReporteMensual.INGRESOS,
+                    datos: [],
+                }),
+            );
+
+            // Reporte Ingresos Auxiliar
+            reportes.push(
+                this.reporteMensualRepository.create({
+                    mesId: mes.id,
+                    tipo: TipoReporteMensual.INGRESOS_AUXILIAR,
+                    datos: [],
+                }),
+            );
+
+            // Reporte MI Admin Ingresos
+            reportes.push(
+                this.reporteMensualRepository.create({
+                    mesId: mes.id,
+                    tipo: TipoReporteMensual.INGRESOS_MI_ADMIN,
+                    datos: [],
+                }),
+            );
+        }
+
+        // Guardar todos los reportes
+        await this.reporteMensualRepository.save(reportes);
     }
 }
