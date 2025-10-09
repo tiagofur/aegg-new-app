@@ -94,6 +94,17 @@ export class TrabajosService {
     async importarReporteBase(trabajoId: string, fileBuffer: Buffer): Promise<ReporteBaseAnual> {
         const trabajo = await this.findOne(trabajoId);
 
+        if (!trabajo.reporteBaseAnual) {
+            const nuevoReporteBase = this.reporteBaseRepository.create({
+                trabajoId: trabajo.id,
+                mesesCompletados: [],
+                hojas: this.getHojasIniciales(),
+            });
+            trabajo.reporteBaseAnual = await this.reporteBaseRepository.save(
+                nuevoReporteBase,
+            );
+        }
+
         try {
             // Leer el archivo Excel
             const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
