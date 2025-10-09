@@ -1,53 +1,61 @@
-# � Sistema de Gestión de Reportes Contables
+# 📊 Sistema de Gestión de Trabajos Contables V2
 
-Sistema fullstack para importar, gestionar y visualizar reportes contables desde archivos Excel. Construido con NestJS, React, TypeScript y PostgreSQL.
+Sistema fullstack completo para importar, procesar, consolidar y visualizar reportes contables desde archivos Excel. Construido con NestJS, React, TypeScript y PostgreSQL.
 
 ## ✨ Características Principales
 
-### ✅ **Implementado (FASE 1-3)**
+### ✅ **Implementado (Fases 1-9)**
 
-- 🔐 **Autenticación JWT** - Login/registro seguro
-- 📁 **Gestión de Trabajos** - CRUD completo con duplicación
-- 📄 **Gestión de Reportes** - 9 tipos diferentes de reportes
-- 📤 **Importación Excel** - Soporte multi-hoja y single-hoja
-- 🎨 **UI/UX Profesional** - Tailwind CSS + Lucide Icons
-- 💾 **Almacenamiento JSONB** - Flexible y escalable
-- ✅ **Validaciones** - Tamaño, formato y estructura
-- 🔄 **Drag & Drop** - Upload intuitivo de archivos
+- 🔐 **Autenticación JWT** - Login/registro seguro con bcrypt
+- 📁 **Gestión de Trabajos** - CRUD completo (crear, editar, eliminar)
+- � **Gestión de Meses** - Agregar, eliminar, reabrir, procesar meses (1-12)
+- 📄 **Reportes Mensuales** - 3 tipos automáticos por mes
+- 📤 **Importación Excel** - Soporte multi-hoja con validaciones
+- 🎨 **UI/UX Profesional** - Tailwind CSS + React + TypeScript
+- 💾 **Almacenamiento JSONB** - Flexible y escalable en PostgreSQL
+- 🔄 **Consolidación Automática** - Cálculos reales + estimación IVA
+- 📊 **Reporte Base Anual** - 3 hojas consolidadas (Resumen, Ingresos, Comparativas)
+- 👁️ **Visualización Completa** - Tabs, tablas responsive, contadores
+- ✏️ **Edición de Trabajos** - Modificar cliente, RFC, estado
+- 🔄 **Reabrir Meses** - Correcciones en meses completados
+- 🗑️ **Eliminación Segura** - Confirmación doble para meses y proyectos
 
-### 🚧 **Próximamente (FASE 4+)**
+### 🚧 **Próximamente (Fase 10+)**
 
-- 📊 Visualización de datos en tablas
-- ✏️ Edición de celdas
-- 🧮 Recálculo de fórmulas
+- ✏️ Edición de celdas individuales
 - 📥 Exportación a Excel/PDF
+- 📈 Gráficas y análisis avanzado
+- � Colaboración entre usuarios
 - 🔍 Búsqueda y filtros avanzados
 
 ## 🏗️ Stack Tecnológico
 
 ### **Backend**
 
-- NestJS 10
-- TypeORM
+- NestJS 10.3.0
+- TypeORM 0.3.20
 - PostgreSQL 15
 - JWT Authentication
-- Multer (file upload)
-- XLSX + ExcelJS
+- XLSX 0.18.5
+- Bcrypt
+- Class-validator
 
 ### **Frontend**
 
 - React 18
 - TypeScript
+- Vite 5.4.20
 - React Router DOM
-- Axios
+- Axios + React Query
 - Tailwind CSS
 - Lucide React Icons
-- Vite
+- React Modal
 
 ### **DevOps**
 
 - Docker Compose
-- Docker Desktop
+- PostgreSQL Alpine
+- Hot reload en desarrollo
 
 ## 🚀 Inicio Rápido (5 minutos)
 
@@ -135,85 +143,85 @@ new-app/
 └── README.md                        # Este archivo
 ```
 
-## 🎯 Flujo de Uso
+## 🎯 Flujo de Uso Completo
 
 ### **1. Crear Trabajo**
 
 ```
 Dashboard → Mis Trabajos → Nuevo Trabajo
+Complete: Nombre, Cliente, RFC, Año
+→ Se crea automáticamente el Reporte Base Anual
 ```
 
-### **2. Crear Reporte**
+### **2. Agregar Mes**
 
 ```
-Abrir Trabajo → Nuevo Reporte → Seleccionar tipo
+Detalle del Trabajo → Agregar Mes → Seleccionar mes (1-12)
+→ Se crean automáticamente 3 reportes mensuales:
+  - Ingresos
+  - Ingresos Auxiliar
+  - Ingresos Mi Admin
 ```
 
-**Tipos de reportes disponibles:**
-
-- **Mensual** ⭐ (soporta múltiples hojas)
-- Balance
-- Ingresos
-- Gastos
-- Flujo de Caja
-- Proyecciones
-- Comparativo
-- Consolidado
-- Personalizado
-
-### **3. Importar Excel**
+### **3. Importar Reportes del Mes**
 
 ```
-Seleccionar Reporte → Drag & Drop Excel → Importar
-```
-
-**Validaciones automáticas:**
-
+Expandir Mes → Importar en cada reporte → Upload Excel
+Validaciones:
 - ✅ Máximo 10MB
 - ✅ Solo .xlsx y .xls
-- ✅ Estructura válida
+- ✅ Formato válido
+```
 
-### **4. Ver Resultado**
+### **4. Procesar y Guardar Mes**
 
 ```
-Success message con:
-- Nombre del archivo
-- Hojas importadas (si multi-hoja)
-- Total filas/columnas
+Cuando los 3 reportes estén importados:
+→ Click "Procesar y Guardar Mes"
+→ Backend consolida datos reales
+→ Actualiza Reporte Base Anual (3 hojas)
+→ Mes marcado como COMPLETADO
+```
+
+### **5. Ver Reporte Base Consolidado**
+
+```
+Click "Ver Reporte" en Reporte Base Anual
+→ Navegación por tabs (3 hojas)
+→ Tabla con datos consolidados
+→ Comparativa mes vs mes
 ```
 
 ## 📡 API Endpoints
 
-### **Autenticación**
+Ver documentación completa en [`docs/BACKEND-API.md`](./docs/BACKEND-API.md)
+
+### **Principales Endpoints:**
 
 ```
-POST   /auth/register              - Registrar usuario
-POST   /auth/login                 - Login
-```
+# Autenticación
+POST   /auth/register
+POST   /auth/login
 
-### **Trabajos**
+# Trabajos
+GET    /trabajos
+POST   /trabajos
+PATCH  /trabajos/:id
+DELETE /trabajos/:id
 
-```
-GET    /trabajos                   - Listar trabajos
-GET    /trabajos/:id               - Obtener trabajo
-POST   /trabajos                   - Crear trabajo
-PATCH  /trabajos/:id               - Actualizar trabajo
-DELETE /trabajos/:id               - Eliminar trabajo
-POST   /trabajos/:id/duplicar      - Duplicar trabajo
-```
+# Meses
+POST   /trabajos/:trabajoId/meses
+POST   /meses/:id/procesar
+POST   /meses/:id/reabrir
+DELETE /meses/:id
 
-### **Reportes**
+# Reportes Mensuales
+POST   /trabajos/:trabajoId/reportes/:id/importar
+GET    /trabajos/:trabajoId/reportes/:id/datos
 
-```
-GET    /trabajos/:trabajoId/reportes                      - Listar reportes
-GET    /trabajos/:trabajoId/reportes/:id                  - Obtener reporte
-POST   /trabajos/:trabajoId/reportes                      - Crear reporte
-PATCH  /trabajos/:trabajoId/reportes/:id                  - Actualizar reporte
-DELETE /trabajos/:trabajoId/reportes/:id                  - Eliminar reporte
-POST   /trabajos/:trabajoId/reportes/:id/importar-excel   - Importar Excel
-GET    /trabajos/:trabajoId/reportes/:id/datos            - Obtener datos (paginados)
-GET    /trabajos/:trabajoId/reportes/:id/hojas            - Listar hojas
-GET    /trabajos/:trabajoId/reportes/:id/estadisticas     - Obtener estadísticas
+# Reporte Base Anual
+POST   /trabajos/:id/reporte-base/importar
+GET    /trabajos/:id/reporte-base
 ```
 
 ## 🔧 Comandos Útiles
@@ -255,20 +263,25 @@ SELECT * FROM reportes;      # Ver reportes
 \q                           # Salir
 ```
 
-## 📚 Documentación Detallada
+## 📚 Documentación
 
-### **Para Desarrolladores**
+### **🎯 Empezar Aquí:**
 
-- 📖 [`ESTADO-ACTUAL-DEL-PROYECTO.md`](./ESTADO-ACTUAL-DEL-PROYECTO.md) - Estado completo y detallado
-- ⚡ [`INICIO-RAPIDO.md`](./INICIO-RAPIDO.md) - Guía de inicio en 5 minutos
-- 🎯 [`PROXIMA-TAREA.md`](./PROXIMA-TAREA.md) - FASE 4: Visualización
+- 📋 [`docs/INDICE.md`](./docs/INDICE.md) - **Índice completo de documentación**
+- 📖 [`docs/FUNCIONALIDADES.md`](./docs/FUNCIONALIDADES.md) - Lista de todas las features
+- ⚡ [`docs/INICIO-RAPIDO.md`](./docs/INICIO-RAPIDO.md) - Setup en 5 minutos
+- 🔌 [`docs/BACKEND-API.md`](./docs/BACKEND-API.md) - Referencia de API
 
-### **Documentación de Fases**
+### **Para Desarrolladores:**
 
-- 📦 [`FASE-1-IMPORTACION-COMPLETADA.md`](./docs/FASE-1-IMPORTACION-COMPLETADA.md) - Backend import
-- 📊 [`FASE-2-VISUALIZACION-COMPLETADA.md`](./docs/FASE-2-VISUALIZACION-COMPLETADA.md) - Backend endpoints
-- 🎨 [`FASE-3-FRONTEND-IMPORTACION-COMPLETADA.md`](./docs/FASE-3-FRONTEND-IMPORTACION-COMPLETADA.md) - Frontend completo
-- 🧪 [`GUIA-PRUEBAS-FASE-3.md`](./docs/GUIA-PRUEBAS-FASE-3.md) - Testing guide
+- 🏗️ [`docs/PLAN-SISTEMA-TRABAJOS-V2.md`](./docs/PLAN-SISTEMA-TRABAJOS-V2.md) - Arquitectura completa
+- � [`docs/GIT-WORKFLOW.md`](./docs/GIT-WORKFLOW.md) - Guía de commits
+- 🐛 [`docs/TROUBLESHOOTING.md`](./docs/TROUBLESHOOTING.md) - Solución de problemas
+- 🔧 [`docs/soluctions/COMANDOS-RAPIDOS.md`](./docs/soluctions/COMANDOS-RAPIDOS.md) - Comandos útiles
+
+### **Historial de Implementaciones:**
+
+- [`docs/implementations/`](./docs/implementations/) - Documentación de Fases 1-9
 
 ## 🐛 Troubleshooting
 
@@ -305,26 +318,28 @@ docker-compose up -d --build
 
 ## 🎯 Roadmap
 
-### **✅ FASE 1-3: COMPLETADO**
+### **✅ Fases 1-9: COMPLETADO**
 
-- [x] Backend de importación
-- [x] Endpoints de visualización
+- [x] Backend de importación y procesamiento
+- [x] Parser Excel multi-hoja
+- [x] Endpoints API completos (16+)
 - [x] Frontend completo de importación
-- [x] UI/UX profesional
+- [x] Gestión de trabajos (CRUD + editar + eliminar)
+- [x] Gestión de meses (crear, eliminar, reabrir, procesar)
+- [x] Consolidación automática con cálculos reales
+- [x] Reporte base anual con 3 hojas
+- [x] Visualización completa de reportes
+- [x] UI/UX profesional y responsive
 
-### **🚧 FASE 4: En Planificación**
+### **📋 Fase 10+: Futuro**
 
-- [ ] Componente DataTable
-- [ ] Navegación por hojas
-- [ ] Paginación de datos
-- [ ] Estadísticas visuales
-
-### **📋 FASE 5: Futuro**
-
-- [ ] Edición de celdas
-- [ ] Recálculo de fórmulas
-- [ ] Historial de cambios
-- [ ] Exportación Excel/PDF
+- [ ] Edición de celdas individuales
+- [ ] Exportación a Excel/PDF
+- [ ] Gráficas y análisis (Chart.js)
+- [ ] Colaboración y comentarios
+- [ ] Sistema de roles y permisos
+- [ ] Búsqueda y filtros avanzados
+- [ ] Dark mode y personalización
 
 ## 👥 Equipo
 
@@ -347,6 +362,7 @@ Construido con:
 
 ---
 
-**Estado actual:** ✅ FASE 3 completada - Sistema de importación funcional  
-**Siguiente paso:** 🎯 FASE 4 - Visualización de datos  
-**Última actualización:** 6 de octubre, 2025
+**Estado actual:** ✅ Fases 1-9 completadas - Sistema completamente funcional  
+**Siguiente paso:** 🎯 Fase 10+ según necesidad del proyecto  
+**Última actualización:** Octubre 2025  
+**Versión:** 1.9.0
