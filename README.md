@@ -2,16 +2,19 @@
 
 Sistema fullstack completo para importar, procesar, consolidar y visualizar reportes contables desde archivos Excel. Construido con NestJS, React, TypeScript y PostgreSQL.
 
+> **🎉 Versión 1.1.0 - Nueva UX Implementada** ([Ver Release Notes](./docs/implementations/RELEASE-NOTES-V1.1.0.md))
+
 ## ✨ Características Principales
 
-### ✅ **Implementado (Fases 1-9)**
+### ✅ **Implementado (Fases 1-10)**
 
 - 🔐 **Autenticación JWT** - Login/registro seguro con bcrypt
 - 📁 **Gestión de Trabajos** - CRUD completo (crear, editar, eliminar)
-- � **Gestión de Meses** - Agregar, eliminar, reabrir, procesar meses (1-12)
-- 📄 **Reportes Mensuales** - 3 tipos automáticos por mes
+- 📅 **Gestión de Meses** - Automática: 12 meses pre-creados al crear trabajo
+- 📄 **Reportes Mensuales** - 3 tipos automáticos por mes (Ingresos, Auxiliar, MI Admin)
 - 📤 **Importación Excel** - Soporte multi-hoja con validaciones
-- 🎨 **UI/UX Profesional** - Tailwind CSS + React + TypeScript
+- 🎨 **Nueva UX (Fase 10)** - Selector horizontal de meses con pills visuales
+- 🎯 **Vista Enfocada** - Un mes a la vez, sin scroll innecesario
 - 💾 **Almacenamiento JSONB** - Flexible y escalable en PostgreSQL
 - 🔄 **Consolidación Automática** - Cálculos reales + estimación IVA
 - 📊 **Reporte Base Anual** - 3 hojas consolidadas (Resumen, Ingresos, Comparativas)
@@ -19,14 +22,18 @@ Sistema fullstack completo para importar, procesar, consolidar y visualizar repo
 - ✏️ **Edición de Trabajos** - Modificar cliente, RFC, estado
 - 🔄 **Reabrir Meses** - Correcciones en meses completados
 - 🗑️ **Eliminación Segura** - Confirmación doble para meses y proyectos
+- 📈 **Progreso Visual** - Estados claros: ○ Pendiente, ⏳ En proceso, ✓ Completado
 
-### 🚧 **Próximamente (Fase 10+)**
+### 🚧 **Próximamente (Fase 11+)**
 
+- 📥 Importación de reportes mensuales desde la nueva UI
 - ✏️ Edición de celdas individuales
 - 📥 Exportación a Excel/PDF
 - 📈 Gráficas y análisis avanzado
-- � Colaboración entre usuarios
+- 👥 Colaboración entre usuarios
 - 🔍 Búsqueda y filtros avanzados
+- ⌨️ Navegación con teclado (← → entre meses)
+- 🎬 Animaciones y transiciones suaves
 
 ## 🏗️ Stack Tecnológico
 
