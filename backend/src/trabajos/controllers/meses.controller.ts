@@ -6,6 +6,7 @@ import {
     Param,
     Delete,
     UseGuards,
+    Patch,
 } from '@nestjs/common';
 import { MesesService } from '../services/meses.service';
 import { CreateMesDto } from '../dto';
@@ -29,6 +30,11 @@ export class MesesController {
     @Get(':id')
     findOne(@Param('id') id: string) {
         return this.mesesService.findOne(id);
+    }
+
+    @Patch(':id/reabrir')
+    reabrirMes(@Param('id') id: string) {
+        return this.mesesService.reabrirMes(id);
     }
 
     @Delete(':id')

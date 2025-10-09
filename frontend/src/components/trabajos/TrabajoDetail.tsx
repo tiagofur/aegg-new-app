@@ -4,6 +4,8 @@ import { Trabajo, MESES_NOMBRES_CORTOS } from "../../types/trabajo";
 import { MesCard } from "./MesCard";
 import { ReporteViewer } from "./ReporteViewer";
 import { ImportReporteBaseDialog } from "./ImportReporteBaseDialog";
+import { EditTrabajoDialog } from "./EditTrabajoDialog";
+import { trabajosService } from "../../services";
 
 interface TrabajoDetailProps {
   trabajo: Trabajo;
@@ -21,6 +23,8 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
   const navigate = useNavigate();
   const [verReporteBase, setVerReporteBase] = useState(false);
   const [mostrarImportDialog, setMostrarImportDialog] = useState(false);
+  const [mostrarEditDialog, setMostrarEditDialog] = useState(false);
+  const [eliminando, setEliminando] = useState(false);
 
   const progreso =
     ((trabajo.reporteBaseAnual?.mesesCompletados.length || 0) / 12) * 100;
@@ -29,6 +33,40 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
     trabajo.reporteBaseAnual?.hojas &&
     trabajo.reporteBaseAnual.hojas.length > 0 &&
     trabajo.reporteBaseAnual.hojas.some((h) => h.datos && h.datos.length > 0);
+
+  const handleEliminarProyecto = async () => {
+    const confirmar = window.confirm(
+      `⚠️ ADVERTENCIA: ¿Está seguro que desea eliminar el proyecto "${trabajo.clienteNombre} - ${trabajo.anio}"?\n\n` +
+        `Esta acción eliminará:\n` +
+        `- El proyecto completo\n` +
+        `- Todos los ${trabajo.meses.length} meses asociados\n` +
+        `- Todos los reportes mensuales\n` +
+        `- El reporte base anual\n\n` +
+        `Esta acción NO se puede deshacer.`
+    );
+
+    if (!confirmar) return;
+
+    // Segunda confirmación para seguridad
+    const confirmarFinal = window.confirm(
+      `¿REALMENTE desea eliminar el proyecto "${trabajo.clienteNombre} - ${trabajo.anio}"? ` +
+        `Escribirá su nombre para confirmar.`
+    );
+
+    if (!confirmarFinal) return;
+
+    setEliminando(true);
+    try {
+      await trabajosService.delete(trabajo.id);
+      alert("Proyecto eliminado correctamente");
+      navigate("/trabajos"); // Redirigir a la lista
+    } catch (error: any) {
+      console.error("Error al eliminar proyecto:", error);
+      alert(error.response?.data?.message || "Error al eliminar el proyecto");
+    } finally {
+      setEliminando(false);
+    }
+  };
 
   return (
     <div className="px-2 py-4">
@@ -52,12 +90,82 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
           </svg>
           Volver a la lista
         </button>
-        <h1 className="text-3xl font-bold text-gray-800">
-          {trabajo.clienteNombre} - {trabajo.anio}
-        </h1>
-        {trabajo.clienteRfc && (
-          <p className="text-gray-600 mt-2">RFC: {trabajo.clienteRfc}</p>
-        )}
+
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">
+              {trabajo.clienteNombre} - {trabajo.anio}
+            </h1>
+            {trabajo.clienteRfc && (
+              <p className="text-gray-600 mt-2">RFC: {trabajo.clienteRfc}</p>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => setMostrarEditDialog(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+              </svg>
+              Editar
+            </button>
+
+            <button
+              onClick={handleEliminarProyecto}
+              disabled={eliminando}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              {eliminando ? (
+                <>
+                  <svg
+                    className="animate-spin h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Eliminando...
+                </>
+              ) : (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Eliminar Proyecto
+                </>
+              )}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Reporte Base Anual */}
@@ -248,11 +356,20 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
                   mes={mes}
                   trabajoId={trabajo.id}
                   trabajoYear={trabajo.anio}
+                  onMesUpdated={onReload}
                 />
               ))}
           </div>
         )}
       </div>
+
+      {/* Dialog para editar trabajo */}
+      <EditTrabajoDialog
+        trabajo={trabajo}
+        isOpen={mostrarEditDialog}
+        onClose={() => setMostrarEditDialog(false)}
+        onSuccess={onReload}
+      />
     </div>
   );
 };

@@ -62,14 +62,27 @@
 
 #### Actualizar Trabajo
 
-- ✅ Modificar nombre, descripción
+- ✅ Editar información del trabajo desde el detalle
+- ✅ Modificar nombre del cliente
+- ✅ Modificar RFC del cliente
 - ✅ Cambiar estado (ACTIVO, INACTIVO, COMPLETADO)
+- ✅ Año fiscal no modificable (integridad de datos)
+- ✅ Modal intuitivo con validaciones
 - ✅ Actualización automática de timestamp
+- ✅ Recarga automática de datos tras edición
 
 #### Eliminar Trabajo
 
-- ✅ Eliminación en cascada (trabajo + meses + reportes)
-- ✅ Verificación de propiedad
+- ✅ Eliminar proyecto completo con confirmación doble
+- ✅ Eliminación en cascada automática:
+  - Trabajo principal
+  - Todos los meses asociados
+  - Todos los reportes mensuales (3 por mes)
+  - Reporte base anual
+  - Reportes anuales consolidados
+- ✅ Verificación de propiedad (solo el usuario asignado)
+- ✅ Confirmación robusta en frontend con advertencia detallada
+- ✅ Redirección automática a lista tras eliminación exitosa
 
 ---
 
@@ -95,8 +108,21 @@
 
 #### Eliminar Mes
 
-- ✅ Eliminación en cascada (mes + 3 reportes)
+- ✅ Eliminar mes en estado EN_PROCESO o COMPLETADO
+- ✅ Eliminación en cascada (mes + 3 reportes mensuales)
+- ✅ Actualización automática del array mesesCompletados en reporteBaseAnual
+- ✅ Confirmación requerida en frontend
 - ✅ Verificación de propiedad del trabajo padre
+
+#### Reabrir Mes Completado
+
+- ✅ Cambiar estado de COMPLETADO a EN_PROCESO
+- ✅ Permite seguir trabajando en un mes previamente cerrado
+- ✅ Actualiza automáticamente el reporteBaseAnual:
+  - Remueve el mes del array mesesCompletados
+  - Mantiene los datos consolidados en las hojas
+- ✅ Solo disponible para meses en estado COMPLETADO
+- ✅ Confirmación requerida en frontend
 
 ---
 
@@ -521,29 +547,175 @@
 - ✅ Procesamiento y consolidación con cálculos reales
 - ✅ Reporte base anual con actualización automática
 - ✅ Importación de reporte base desde Excel
-- ✅ **Visualización de reportes en tabla (NUEVO)**
-- ✅ **Cálculos reales de totales (NUEVO)**
-- ✅ **Comparación mes vs mes (NUEVO)**
+- ✅ **Visualización de reportes en tabla**
+- ✅ **Cálculos reales de totales**
+- ✅ **Comparación mes vs mes**
+- ✅ **Editar información del trabajo**
+- ✅ **Reabrir mes completado**
+- ✅ **Eliminar mes completado o en proceso**
+- ✅ **Eliminar proyecto completo**
 
-**Total de Endpoints API:** 15+
-**Componentes Frontend:** 12+
+**Total de Endpoints API:** 16+
+**Componentes Frontend:** 14+
 **Tablas en DB:** 4 (users, trabajos, meses, reportes_mensuales, reportes_base_anual)
 
 **El sistema ahora permite:**
 
 1. Crear trabajos para clientes
-2. Agregar meses (1-12)
-3. Importar 3 reportes Excel por mes
-4. Procesar mes (consolida datos REALES)
-5. Ver reporte base actualizado automáticamente
-6. Visualizar cualquier reporte en tabla
-7. Navegar entre hojas de reportes
-8. Ver comparativas entre meses
+2. **Editar información del trabajo (nombre, RFC, estado)**
+3. Agregar meses (1-12)
+4. Importar 3 reportes Excel por mes
+5. Procesar mes (consolida datos REALES)
+6. Ver reporte base actualizado automáticamente
+7. Visualizar cualquier reporte en tabla
+8. Navegar entre hojas de reportes
+9. Ver comparativas entre meses
+10. **Reabrir meses completados para correcciones**
+11. **Eliminar meses específicos (EN_PROCESO o COMPLETADO)**
+12. **Eliminar proyectos completos con confirmación segura**
 
 **Sistema listo para:** Producción básica, uso real de contadores
 
 ---
 
-**Última actualización:** 7 de octubre de 2025  
-**Versión:** 1.4.0  
-**Estado:** ✅ Operacional con visualización y consolidación real
+## 🔄 Casos de Uso - Gestión Avanzada
+
+### Editar Trabajo
+
+**Escenario:** Un usuario necesita corregir el nombre del cliente o actualizar el RFC.
+
+**Flujo:**
+
+1. Navegar al detalle del trabajo
+2. Clic en botón "Editar" (azul, al lado del botón eliminar)
+3. Se abre modal con formulario pre-llenado
+4. Modificar nombre del cliente, RFC o estado
+5. Guardar cambios
+6. El trabajo se actualiza y recarga automáticamente
+
+**Consideraciones:**
+
+- El año fiscal no se puede modificar (integridad de datos)
+- Todos los campos son opcionales excepto el nombre del cliente
+- El RFC tiene validación de longitud máxima (13 caracteres)
+- Se puede cambiar el estado del trabajo (ACTIVO, INACTIVO, COMPLETADO)
+- Actualización en tiempo real sin recargar la página
+
+### Reabrir Mes Completado
+
+**Escenario:** Un contador necesita corregir datos en un mes ya procesado.
+
+**Flujo:**
+
+1. Navegar al detalle del trabajo
+2. Expandir el mes COMPLETADO
+3. Clic en botón "Reabrir Mes"
+4. Confirmar acción
+5. El mes cambia a estado EN_PROCESO
+6. Se puede importar nuevos reportes o editar existentes
+7. El mes se remueve del array `mesesCompletados` del reporte base
+
+**Consideraciones:**
+
+- Solo meses COMPLETADOS pueden reabrirse
+- Los datos consolidados en el reporte base permanecen hasta que se vuelva a procesar
+- Es seguro reabrir un mes sin perder los datos importados
+
+### Eliminar Mes (EN_PROCESO o COMPLETADO)
+
+**Escenario:** Se agregó un mes por error o se necesita eliminar datos incorrectos.
+
+**Flujo:**
+
+1. Navegar al detalle del trabajo
+2. Expandir el mes a eliminar
+3. Clic en botón "Eliminar Mes"
+4. Confirmar la eliminación (acción irreversible)
+5. El mes se elimina junto con todos sus reportes mensuales
+6. Si el mes estaba COMPLETADO, se remueve del array `mesesCompletados`
+7. La UI se actualiza automáticamente
+
+**Consideraciones:**
+
+- Solo se pueden eliminar meses EN_PROCESO o COMPLETADO
+- Meses PENDIENTES (sin reportes) pueden eliminarse libremente
+- La eliminación es permanente e incluye todos los reportes del mes
+- El reporte base anual se actualiza automáticamente
+
+### Eliminar Proyecto Completo
+
+**Escenario:** Un proyecto fue creado por error o ya no es necesario.
+
+**Flujo:**
+
+1. Navegar al detalle del trabajo
+2. Clic en botón "Eliminar Proyecto" (botón rojo en header)
+3. Primera confirmación: Se muestra advertencia detallada con:
+   - Nombre del proyecto
+   - Cantidad de meses a eliminar
+   - Tipos de datos que se perderán
+4. Segunda confirmación: Confirmación final de seguridad
+5. El proyecto se elimina completamente
+6. Redirección automática a la lista de trabajos
+
+**Consideraciones:**
+
+- **ACCIÓN IRREVERSIBLE** - No se puede deshacer
+- Eliminación en cascada automática:
+  - Proyecto principal
+  - Todos los meses (pueden ser hasta 12)
+  - Todos los reportes mensuales (3 por mes = hasta 36)
+  - Reporte base anual
+  - Reportes anuales consolidados
+- Requiere doble confirmación para evitar eliminaciones accidentales
+- Solo el usuario asignado al proyecto puede eliminarlo
+
+---
+
+## ⚠️ Consideraciones de Seguridad
+
+### Permisos y Validaciones
+
+1. **Autenticación Requerida:**
+
+   - Todas las operaciones requieren token JWT válido
+   - Token debe contener userId del usuario autenticado
+
+2. **Verificación de Propiedad:**
+
+   - Solo el usuario asignado puede modificar/eliminar un trabajo
+   - Backend valida propiedad antes de cualquier operación destructiva
+
+3. **Confirmaciones en Frontend:**
+   - Reabrir mes: 1 confirmación
+   - Eliminar mes: 1 confirmación con advertencia
+   - Eliminar proyecto: 2 confirmaciones con información detallada
+
+### Integridad de Datos
+
+1. **Eliminación en Cascada:**
+
+   - Configurada a nivel de base de datos (TypeORM cascade: true)
+   - Asegura que no queden registros huérfanos
+   - Elimina automáticamente:
+     - Trabajo → Meses → Reportes Mensuales
+     - Trabajo → Reporte Base Anual
+     - Trabajo → Reportes Anuales
+
+2. **Actualización de Referencias:**
+
+   - Al eliminar/reabrir mes, se actualiza `mesesCompletados` en reporte base
+   - Mantiene consistencia entre estados de mes y reporte consolidado
+   - Actualización atómica en transacción de base de datos
+
+3. **Validaciones:**
+   - No se puede reabrir un mes que no está COMPLETADO
+   - No se puede crear mes duplicado para un trabajo
+   - Cliente + Año debe ser único por usuario
+   - El año fiscal no se puede modificar después de crear el trabajo
+
+---
+
+**Última actualización:** 8 de octubre de 2025  
+**Versión:** 1.6.0  
+**Estado:** ✅ Operacional con edición de trabajos y gestión avanzada

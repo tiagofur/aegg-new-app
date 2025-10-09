@@ -20,4 +20,9 @@ export const mesesService = {
     async delete(id: string): Promise<void> {
         await api.delete(`/meses/${id}`);
     },
+
+    async reabrir(id: string): Promise<Mes> {
+        const { data } = await api.patch(`/meses/${id}/reabrir`);
+        return data;
+    },
 };
