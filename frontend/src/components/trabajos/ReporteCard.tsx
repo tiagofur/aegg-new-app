@@ -267,6 +267,15 @@ export const ReporteCard: React.FC<ReporteCardProps> = ({
       {/* Visualización de datos */}
       {verDatos && tieneDatos && (
         <div className="border-t border-gray-200 p-4">
+          {(() => {
+            console.log("🔍 ReporteCard - Tipo de reporte:", reporte.tipo);
+            console.log("🔍 ReporteCard - Comparación:", {
+              tipo: reporte.tipo,
+              esAuxiliar: reporte.tipo === "INGRESOS_AUXILIAR",
+              esMiAdmin: reporte.tipo === "INGRESOS_MI_ADMIN",
+            });
+            return null;
+          })()}
           {reporte.tipo === "INGRESOS_AUXILIAR" ? (
             <div className="h-[600px]">
               <AuxiliarIngresosTable
@@ -289,15 +298,28 @@ export const ReporteCard: React.FC<ReporteCardProps> = ({
               />
             </div>
           ) : (
-            <ReporteViewer
-              hojas={[
-                {
-                  nombre: TIPOS_REPORTE_NOMBRES[reporte.tipo],
-                  datos: localReporte.datos as any[][],
-                },
-              ]}
-              titulo={`Datos de ${TIPOS_REPORTE_NOMBRES[reporte.tipo]}`}
-            />
+            <>
+              <div className="bg-yellow-50 border border-yellow-200 rounded p-2 mb-2 text-sm">
+                <strong>⚠️ DEBUG:</strong> Tipo de reporte "{reporte.tipo}" -
+                Usando ReporteViewer genérico
+              </div>
+              <ReporteViewer
+                hojas={[
+                  {
+                    nombre:
+                      TIPOS_REPORTE_NOMBRES[
+                        reporte.tipo as keyof typeof TIPOS_REPORTE_NOMBRES
+                      ] || reporte.tipo,
+                    datos: localReporte.datos as any[][],
+                  },
+                ]}
+                titulo={`Datos de ${
+                  TIPOS_REPORTE_NOMBRES[
+                    reporte.tipo as keyof typeof TIPOS_REPORTE_NOMBRES
+                  ] || reporte.tipo
+                }`}
+              />
+            </>
           )}
         </div>
       )}

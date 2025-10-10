@@ -151,9 +151,16 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
         header: "Estado SAT",
         cell: (info) => {
           const row = info.row.original;
+          const value = info.getValue();
+
+          // 🔍 Debug: Ver qué valor tiene estadoSat
+          if (!value) {
+            console.warn("⚠️ Estado SAT undefined para fila:", row.id, row);
+          }
+
           return (
             <EditableEstadoSatCell
-              value={info.getValue()}
+              value={value || "Vigente"} // Fallback a Vigente si es undefined
               onChange={(newValue) => updateEstadoSat(row.id, newValue)}
             />
           );

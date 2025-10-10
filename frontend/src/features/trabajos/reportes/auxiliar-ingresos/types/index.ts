@@ -129,8 +129,14 @@ export interface MiAdminIngresosRow {
     /** UUID de la factura */
     uuid: string;
 
+    /** Folio de la factura (para comparación) */
+    folio: string;
+
+    /** Estado SAT de la factura */
+    estadoSat: 'Vigente' | 'Cancelada';
+
     /** Subtotal en MXN */
-    subtotalMXN: number;
+    subtotal: number;
 
     /** Otras propiedades opcionales */
     [key: string]: any;

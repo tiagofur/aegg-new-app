@@ -122,6 +122,9 @@ export class ReportesMensualesService {
         // Limpiar filas vacías al final
         datos = this.limpiarFilasVacias(datos);
 
+        // Llenar Estado SAT con "Vigente" cuando esté vacío
+        datos = this.llenarEstadoSat(datos);
+
         console.log(`✅ Total de filas después de limpieza: ${datos.length}`);
 
         return datos;
@@ -238,6 +241,84 @@ export class ReportesMensualesService {
         console.log(`✓ Header detectado en fila original ${indexHeaderReal + 1} con ${datosLimpios[0]?.length || 0} columnas`);
 
         return datosLimpios;
+    }
+
+    /**
+     * Llena la columna de Estado SAT / Estatus SAT con "Vigente" cuando esté vacía.
+     * Detecta la columna automáticamente por nombre (case-insensitive).
+     * Mantiene el valor si ya existe ("Vigente", "Cancelada", "Cancelado", etc.)
+     */
+    private llenarEstadoSat(datos: any[]): any[] {
+        if (!Array.isArray(datos) || datos.length < 2) {
+            return datos;
+        }
+
+        // Obtener la fila de headers (primera fila)
+        const headers = datos[0];
+        if (!Array.isArray(headers)) {
+            return datos;
+        }
+
+        // Buscar la columna de Estado SAT o Estatus SAT (case-insensitive)
+        const estadoSatIndex = headers.findIndex((header) => {
+            if (!header || typeof header !== 'string') return false;
+            const headerLower = header.toLowerCase().trim();
+            return (
+                headerLower.includes('estado') && headerLower.includes('sat') ||
+                headerLower.includes('estatus') && headerLower.includes('sat') ||
+                headerLower === 'estado sat' ||
+                headerLower === 'estatus sat' ||
+                headerLower === 'estadosat' ||
+                headerLower === 'estatussat'
+            );
+        });
+
+        // Si no se encuentra la columna, no hacer nada
+        if (estadoSatIndex === -1) {
+            console.log('ℹ️  No se encontró columna de Estado SAT en el reporte');
+            return datos;
+        }
+
+        console.log(`✓ Columna "Estado SAT" encontrada en posición ${estadoSatIndex + 1} (${headers[estadoSatIndex]})`);
+
+        // Contador de celdas modificadas
+        let celdasLlenadas = 0;
+
+        // Recorrer todas las filas de datos (desde índice 1, saltando header)
+        for (let i = 1; i < datos.length; i++) {
+            const fila = datos[i];
+
+            // Verificar que sea un array válido
+            if (!Array.isArray(fila)) continue;
+
+            // Asegurar que la fila tenga el tamaño suficiente
+            while (fila.length <= estadoSatIndex) {
+                fila.push(null);
+            }
+
+            // Obtener el valor actual de la celda
+            const valorActual = fila[estadoSatIndex];
+
+            // Si está vacío (null, undefined, '', o solo espacios), llenar con "Vigente"
+            if (
+                valorActual === null ||
+                valorActual === undefined ||
+                valorActual === '' ||
+                (typeof valorActual === 'string' && valorActual.trim() === '')
+            ) {
+                fila[estadoSatIndex] = 'Vigente';
+                celdasLlenadas++;
+            }
+            // Si ya tiene valor, mantenerlo (puede ser "Cancelada", "Vigente", etc.)
+        }
+
+        if (celdasLlenadas > 0) {
+            console.log(`✓ Se llenaron ${celdasLlenadas} celda(s) de "Estado SAT" con valor "Vigente"`);
+        } else {
+            console.log('ℹ️  Todas las celdas de "Estado SAT" ya tenían valores');
+        }
+
+        return datos;
     }
 
     /**
@@ -673,6 +754,84 @@ export class ReportesMensualesService {
         return {
             success: true,
             message: `Datos del reporte ${reporte.tipo} eliminados correctamente`
+        };
+    }
+
+    /**
+     * Reprocesar un reporte existente para llenar Estado SAT con "Vigente" donde esté vacío
+     * Útil para aplicar correcciones a reportes ya importados
+     */
+    async reprocesarEstadoSat(mesId: string, reporteId: string): Promise<{ success: boolean; message: string; celdasModificadas: number }> {
+        // Buscar el mes con sus reportes
+        const mes = await this.mesRepository.findOne({
+            where: { id: mesId },
+            relations: ['reportes'],
+        });
+
+        if (!mes) {
+            throw new NotFoundException(`Mes con id ${mesId} no encontrado`);
+        }
+
+        // Buscar el reporte específico
+        const reporte = mes.reportes.find((r) => r.id === reporteId);
+
+        if (!reporte) {
+            throw new NotFoundException(`Reporte con id ${reporteId} no encontrado en el mes ${mesId}`);
+        }
+
+        if (!reporte.datos || reporte.datos.length === 0) {
+            return {
+                success: false,
+                message: 'El reporte no tiene datos para procesar',
+                celdasModificadas: 0,
+            };
+        }
+
+        console.log(`🔄 Reprocesando Estado SAT para reporte ${reporteId} (tipo: ${reporte.tipo})`);
+
+        // Aplicar la función de llenado de Estado SAT
+        const datosOriginales = JSON.parse(JSON.stringify(reporte.datos)); // Copia profunda
+        const datosActualizados = this.llenarEstadoSat(reporte.datos);
+
+        // Contar cuántas celdas fueron modificadas
+        let celdasModificadas = 0;
+        if (datosOriginales.length > 1) {
+            const headers = datosOriginales[0];
+            const estadoSatIndex = headers.findIndex((header: any) => {
+                if (!header || typeof header !== 'string') return false;
+                const headerLower = header.toLowerCase().trim();
+                return (
+                    headerLower.includes('estado') && headerLower.includes('sat') ||
+                    headerLower.includes('estatus') && headerLower.includes('sat')
+                );
+            });
+
+            if (estadoSatIndex !== -1) {
+                for (let i = 1; i < datosOriginales.length; i++) {
+                    const valorOriginal = datosOriginales[i]?.[estadoSatIndex];
+                    const valorNuevo = datosActualizados[i]?.[estadoSatIndex];
+
+                    const estabaVacio = !valorOriginal ||
+                        (typeof valorOriginal === 'string' && valorOriginal.trim() === '');
+                    const ahoraVigente = valorNuevo === 'Vigente';
+
+                    if (estabaVacio && ahoraVigente) {
+                        celdasModificadas++;
+                    }
+                }
+            }
+        }
+
+        // Guardar los datos actualizados
+        reporte.datos = datosActualizados;
+        await this.reporteMensualRepository.save(reporte);
+
+        console.log(`✓ Reporte ${reporteId} reprocesado: ${celdasModificadas} celda(s) actualizadas`);
+
+        return {
+            success: true,
+            message: `Se llenaron ${celdasModificadas} celda(s) de "Estado SAT" con "Vigente"`,
+            celdasModificadas,
         };
     }
 }

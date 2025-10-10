@@ -62,4 +62,12 @@ export class ReportesMensualesController {
     ) {
         return this.reportesService.limpiarDatosReporte(mesId, reporteId);
     }
+
+    @Post(':mesId/:reporteId/reprocesar-estado-sat')
+    reprocesarEstadoSat(
+        @Param('mesId') mesId: string,
+        @Param('reporteId') reporteId: string,
+    ) {
+        return this.reportesService.reprocesarEstadoSat(mesId, reporteId);
+    }
 }

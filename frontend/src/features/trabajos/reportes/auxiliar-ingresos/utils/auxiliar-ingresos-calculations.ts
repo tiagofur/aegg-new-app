@@ -130,6 +130,8 @@ export const parseExcelToAuxiliarIngresos = (
         const estadoRaw = estadoIndex !== -1 ? row[estadoIndex]?.toString().toLowerCase() || '' : '';
         const estadoSat: EstadoSat = estadoRaw.includes('cancelad') ? 'Cancelada' : 'Vigente';
 
+        console.log(`🔍 Row ${i}: Estado SAT = "${estadoSat}" (raw: "${estadoRaw}", index: ${estadoIndex})`);
+
         rows.push({
             id: uuid,
             folio,

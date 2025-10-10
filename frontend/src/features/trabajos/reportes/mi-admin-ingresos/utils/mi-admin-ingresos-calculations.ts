@@ -192,6 +192,8 @@ export const parseExcelToMiAdminIngresos = (
         const estadoRaw = estadoIndex !== -1 ? row[estadoIndex]?.toString().toLowerCase() || '' : '';
         const estadoSat: 'Vigente' | 'Cancelada' = estadoRaw.includes('cancelad') ? 'Cancelada' : 'Vigente';
 
+        console.log(`🔍 Mi Admin Row ${i}: Estado SAT = "${estadoSat}" (raw: "${estadoRaw}", index: ${estadoIndex})`);
+
         // Buscar subtotalAUX desde Auxiliar (ya viene en MXN)
         const auxiliarRow = auxiliarLookup.get(uuid);
         const subtotalAUX = auxiliarRow?.subtotal || null;

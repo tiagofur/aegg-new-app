@@ -1,6 +1,6 @@
 /**
  * Hook para comparación entre Auxiliar de Ingresos y Mi Admin
- * Compara por UUID y detecta coincidencias, discrepancias y diferencias
+ * Compara por FOLIO (no por UUID) y detecta coincidencias, discrepancias y diferencias
  */
 
 import { useState, useMemo, useCallback } from 'react';
@@ -11,7 +11,6 @@ import {
     TotalesComparison,
     AUXILIAR_INGRESOS_CONFIG,
 } from '../types';
-import { getComparisonTooltipMessage } from '../utils';
 
 interface UseAuxiliarIngresosComparisonProps {
     /** Datos del Auxiliar de Ingresos */
@@ -25,7 +24,7 @@ interface UseAuxiliarIngresosComparisonReturn {
     isActive: boolean;
     /** Toggle para activar/desactivar comparación */
     toggle: () => void;
-    /** Mapa de resultados de comparación por UUID */
+    /** Mapa de resultados de comparación por ID (para renderizado) */
     comparisonMap: Map<string, ComparisonResult>;
     /** Comparación de totales */
     totalesComparison: TotalesComparison | null;
@@ -42,6 +41,7 @@ interface UseAuxiliarIngresosComparisonReturn {
 
 /**
  * Hook para gestionar el sistema de comparación con Mi Admin
+ * IMPORTANTE: La comparación se hace por FOLIO, no por UUID
  */
 export const useAuxiliarIngresosComparison = ({
     auxiliarData,
@@ -65,7 +65,8 @@ export const useAuxiliarIngresosComparison = ({
     }, [miadminData]);
 
     /**
-     * Genera el mapa de comparación por UUID
+     * Genera el mapa de comparación por FOLIO
+     * Retorna Map por ID (para renderizado) pero la comparación es por FOLIO
      * Solo se calcula cuando la comparación está activa
      */
     const comparisonMap = useMemo(() => {
@@ -76,9 +77,11 @@ export const useAuxiliarIngresosComparison = ({
             return map;
         }
 
-        // Crear lookup de Mi Admin por UUID para búsqueda rápida
+        // Crear lookup de Mi Admin por FOLIO para búsqueda rápida
         const miadminLookup = new Map(
-            miadminData!.map((row) => [row.uuid, row.subtotal])
+            miadminData!
+                .filter((row) => row.estadoSat === 'Vigente')
+                .map((row) => [row.folio, { subtotal: row.subtotal, uuid: row.uuid }])
         );
 
         // Comparar cada fila del Auxiliar
@@ -88,22 +91,34 @@ export const useAuxiliarIngresosComparison = ({
                 return;
             }
 
-            const miadminSubtotal = miadminLookup.get(auxRow.id);
-
-            // Caso 1: UUID solo existe en Auxiliar
-            if (miadminSubtotal === undefined) {
+            // Si no tiene folio, no se puede comparar
+            if (!auxRow.folio) {
                 const result: ComparisonResult = {
                     uuid: auxRow.id,
                     status: 'only-auxiliar',
                     auxiliarSubtotal: auxRow.subtotal,
-                    tooltip: `🔵 Solo en Auxiliar - Subtotal: $${auxRow.subtotal.toFixed(2)}`,
+                    tooltip: `🔵 Solo en Auxiliar (sin folio) - Subtotal: $${auxRow.subtotal.toFixed(2)}`,
                 };
                 map.set(auxRow.id, result);
                 return;
             }
 
-            // Caso 2 y 3: UUID existe en ambos, comparar valores
-            const difference = Math.abs(auxRow.subtotal - miadminSubtotal);
+            const miadminRow = miadminLookup.get(auxRow.folio);
+
+            // Caso 1: FOLIO solo existe en Auxiliar
+            if (!miadminRow) {
+                const result: ComparisonResult = {
+                    uuid: auxRow.id,
+                    status: 'only-auxiliar',
+                    auxiliarSubtotal: auxRow.subtotal,
+                    tooltip: `🔵 Solo en Auxiliar - Folio: ${auxRow.folio} - Subtotal: $${auxRow.subtotal.toFixed(2)}`,
+                };
+                map.set(auxRow.id, result);
+                return;
+            }
+
+            // Caso 2 y 3: FOLIO existe en ambos, comparar valores
+            const difference = Math.abs(auxRow.subtotal - miadminRow.subtotal);
             const isMatch = difference <= AUXILIAR_INGRESOS_CONFIG.COMPARISON_TOLERANCE;
 
             if (isMatch) {
@@ -112,9 +127,9 @@ export const useAuxiliarIngresosComparison = ({
                     uuid: auxRow.id,
                     status: 'match',
                     auxiliarSubtotal: auxRow.subtotal,
-                    miadminSubtotal,
+                    miadminSubtotal: miadminRow.subtotal,
                     difference,
-                    tooltip: `✅ Coincide - Diferencia: $${difference.toFixed(2)}`,
+                    tooltip: `✅ Coincide - Folio: ${auxRow.folio} - Diferencia: $${difference.toFixed(2)}`,
                 };
                 map.set(auxRow.id, result);
             } else {
@@ -123,26 +138,27 @@ export const useAuxiliarIngresosComparison = ({
                     uuid: auxRow.id,
                     status: 'mismatch',
                     auxiliarSubtotal: auxRow.subtotal,
-                    miadminSubtotal,
+                    miadminSubtotal: miadminRow.subtotal,
                     difference,
-                    tooltip: `❌ Discrepancia - Auxiliar: $${auxRow.subtotal.toFixed(2)} vs Mi Admin: $${miadminSubtotal.toFixed(2)} (Dif: $${difference.toFixed(2)})`,
+                    tooltip: `❌ Discrepancia - Folio: ${auxRow.folio} - Auxiliar: $${auxRow.subtotal.toFixed(2)} vs Mi Admin: $${miadminRow.subtotal.toFixed(2)} (Dif: $${difference.toFixed(2)})`,
                 };
                 map.set(auxRow.id, result);
             }
 
             // Marcar como procesado
-            miadminLookup.delete(auxRow.id);
+            miadminLookup.delete(auxRow.folio);
         });
 
-        // Caso 4: UUIDs que solo existen en Mi Admin
-        miadminLookup.forEach((subtotal, uuid) => {
+        // Caso 4: FOLIOs que solo existen en Mi Admin
+        miadminLookup.forEach((rowData, folio) => {
             const result: ComparisonResult = {
-                uuid,
+                uuid: rowData.uuid,
                 status: 'only-miadmin',
-                miadminSubtotal: subtotal,
-                tooltip: `🟣 Solo en Mi Admin - Subtotal: $${subtotal.toFixed(2)}`,
+                miadminSubtotal: rowData.subtotal,
+                tooltip: `🟣 Solo en Mi Admin - Folio: ${folio} - Subtotal: $${rowData.subtotal.toFixed(2)}`,
             };
-            map.set(uuid, result);
+            // Usamos el UUID de Mi Admin como key ya que no existe en Auxiliar
+            map.set(rowData.uuid, result);
         });
 
         return map;
