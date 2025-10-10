@@ -10,6 +10,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import { TrabajosPage } from "./pages/TrabajosPage";
 import { ReporteAnualPage } from "./pages/ReporteAnualPage";
+import { ReporteMensualPage } from "./pages/ReporteMensualPage";
 import PrivateRoute from "./components/PrivateRoute";
 
 function App() {
@@ -45,6 +46,14 @@ function App() {
             element={
               <PrivateRoute>
                 <ReporteAnualPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/trabajos/:trabajoId/reporte-mensual/:mesId/:reporteId/:tipo"
+            element={
+              <PrivateRoute>
+                <ReporteMensualPage />
               </PrivateRoute>
             }
           />

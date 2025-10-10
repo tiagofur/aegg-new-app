@@ -6,5 +6,6 @@ export * from './CreateTrabajoDialog';
 export * from './CreateMesDialog';
 export * from './MesesSelector';
 export * from './ReporteAnualHeader';
-export * from './ReporteMensualCard';
-export * from './ReportesMensualesList';
+export * from './ReportesTabSelector';
+export * from './ReporteMensualViewer';
+export * from './ImportReporteMensualDialog';

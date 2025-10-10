@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Trabajo } from "../../types/trabajo";
+import { Trabajo, MESES_NOMBRES } from "../../types/trabajo";
 import { MesesSelector } from "./MesesSelector";
 import { ReporteAnualHeader } from "./ReporteAnualHeader";
-import { ReportesMensualesList } from "./ReportesMensualesList";
+import { ReportesTabSelector } from "./ReportesTabSelector";
+import { ReporteMensualViewer } from "./ReporteMensualViewer";
 import { ImportReporteBaseDialog } from "./ImportReporteBaseDialog";
+import { ImportReporteMensualDialog } from "./ImportReporteMensualDialog";
 import { EditTrabajoDialog } from "./EditTrabajoDialog";
 import { trabajosService } from "../../services";
 
@@ -25,7 +27,11 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
   const [mesSeleccionado, setMesSeleccionado] = useState<string | undefined>(
     trabajo.meses[0]?.id
   );
+  const [reporteSeleccionado, setReporteSeleccionado] = useState<
+    string | undefined
+  >();
   const [mostrarImportDialog, setMostrarImportDialog] = useState(false);
+  const [mostrarImportReporteMensualDialog, setMostrarImportReporteMensualDialog] = useState(false);
   const [mostrarEditDialog, setMostrarEditDialog] = useState(false);
   const [eliminando, setEliminando] = useState(false);
 
@@ -41,6 +47,20 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
 
   // Encontrar el mes seleccionado
   const mesActual = trabajo.meses.find((m) => m.id === mesSeleccionado);
+
+  // Cuando cambia el mes, seleccionar el primer reporte automáticamente
+  React.useEffect(() => {
+    if (mesActual && mesActual.reportes && mesActual.reportes.length > 0) {
+      setReporteSeleccionado(mesActual.reportes[0].id);
+    } else {
+      setReporteSeleccionado(undefined);
+    }
+  }, [mesSeleccionado, mesActual]);
+
+  // Encontrar el reporte seleccionado
+  const reporteActual = mesActual?.reportes?.find(
+    (r) => r.id === reporteSeleccionado
+  );
 
   const handleEliminarProyecto = async () => {
     const confirmar = window.confirm(
@@ -67,7 +87,8 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
     try {
       await trabajosService.delete(trabajo.id);
       alert("Proyecto eliminado correctamente");
-      navigate("/trabajos");
+      // Volver a la lista de trabajos después de eliminar
+      onBack();
     } catch (error: any) {
       console.error("Error al eliminar proyecto:", error);
       alert(error.response?.data?.message || "Error al eliminar el proyecto");
@@ -76,16 +97,23 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
     }
   };
 
-  const handleVerReporte = (reporteId: string, tipo: string) => {
-    alert(`Ver reporte: ${reporteId} - ${tipo} (en desarrollo)`);
+  const handleVerReporte = () => {
+    if (!reporteActual || !mesActual) return;
+    navigate(
+      `/trabajos/${trabajo.id}/reporte-mensual/${mesActual.id}/${reporteActual.id}/${reporteActual.tipo}`
+    );
   };
 
   const handleEditarReporte = (reporteId: string, tipo: string) => {
     alert(`Editar reporte: ${reporteId} - ${tipo} (en desarrollo)`);
   };
 
-  const handleImportarReporte = (mesId: string, tipo: string) => {
-    alert(`Importar reporte: ${mesId} - ${tipo} (en desarrollo)`);
+  const handleImportarReporte = () => {
+    setMostrarImportReporteMensualDialog(true);
+  };
+
+  const handleReimportarReporte = () => {
+    setMostrarImportReporteMensualDialog(true);
   };
 
   return (
@@ -195,10 +223,9 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
         onVerReporte={() =>
           navigate(`/trabajos/${trabajo.id}/reporte-anual/${trabajo.anio}`)
         }
+        onImportarExcel={() => setMostrarImportDialog(true)}
         onDescargarExcel={() =>
-          tieneHojas
-            ? alert("Funcionalidad de descarga en desarrollo")
-            : setMostrarImportDialog(true)
+          alert("Funcionalidad de descarga en desarrollo")
         }
         tieneHojas={tieneHojas}
       />
@@ -214,12 +241,39 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
       {/* Reportes Mensuales del mes seleccionado */}
       {mesActual ? (
         <div className="mt-4">
-          <ReportesMensualesList
-            mes={mesActual}
-            onVerReporte={handleVerReporte}
-            onEditarReporte={handleEditarReporte}
-            onImportarReporte={handleImportarReporte}
-          />
+          {/* Selector de pestañas de reportes */}
+          {mesActual.reportes && mesActual.reportes.length > 0 ? (
+            <>
+              <ReportesTabSelector
+                reportes={mesActual.reportes}
+                reporteSeleccionado={reporteSeleccionado}
+                onReporteClick={(reporte) => setReporteSeleccionado(reporte.id)}
+              />
+
+              {/* Visor del reporte seleccionado */}
+              {reporteActual && (
+                <ReporteMensualViewer
+                  reporte={reporteActual}
+                  mesNombre={MESES_NOMBRES[mesActual.mes - 1]}
+                  onVerReporte={handleVerReporte}
+                  onEditarReporte={() =>
+                    handleEditarReporte(reporteActual.id, reporteActual.tipo)
+                  }
+                  onImportarReporte={handleImportarReporte}
+                  onReimportarReporte={handleReimportarReporte}
+                />
+              )}
+            </>
+          ) : (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+              <p className="text-yellow-800 font-semibold">
+                ⚠️ No hay reportes disponibles
+              </p>
+              <p className="text-yellow-700 mt-2 text-sm">
+                Los reportes se crean automáticamente al seleccionar el mes
+              </p>
+            </div>
+          )}
         </div>
       ) : (
         <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
@@ -254,6 +308,18 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
         onClose={() => setMostrarEditDialog(false)}
         onSuccess={onReload}
       />
+
+      {/* Diálogo de importación de reportes mensuales */}
+      {mesActual && reporteActual && (
+        <ImportReporteMensualDialog
+          isOpen={mostrarImportReporteMensualDialog}
+          onClose={() => setMostrarImportReporteMensualDialog(false)}
+          onSuccess={onReload}
+          mesId={mesActual.id}
+          tipo={reporteActual.tipo}
+          mesNombre={MESES_NOMBRES[mesActual.mes - 1]}
+        />
+      )}
     </div>
   );
 };
