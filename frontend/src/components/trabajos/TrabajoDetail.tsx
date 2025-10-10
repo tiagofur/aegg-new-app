@@ -31,7 +31,10 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
     string | undefined
   >();
   const [mostrarImportDialog, setMostrarImportDialog] = useState(false);
-  const [mostrarImportReporteMensualDialog, setMostrarImportReporteMensualDialog] = useState(false);
+  const [
+    mostrarImportReporteMensualDialog,
+    setMostrarImportReporteMensualDialog,
+  ] = useState(false);
   const [mostrarEditDialog, setMostrarEditDialog] = useState(false);
   const [eliminando, setEliminando] = useState(false);
 

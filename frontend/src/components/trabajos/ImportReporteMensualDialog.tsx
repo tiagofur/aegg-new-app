@@ -170,7 +170,12 @@ export const ImportReporteMensualDialog: React.FC<
             </h3>
             <ul className="text-sm text-blue-800 space-y-1 ml-7">
               <li>• Selecciona el archivo Excel del reporte mensual</li>
-              <li>• Archivo esperado: <code className="bg-blue-100 px-1 rounded">{archivoEsperado}</code></li>
+              <li>
+                • Archivo esperado:{" "}
+                <code className="bg-blue-100 px-1 rounded">
+                  {archivoEsperado}
+                </code>
+              </li>
               <li>• Formatos soportados: .xlsx, .xls</li>
               <li>• El sistema procesará automáticamente los datos</li>
             </ul>

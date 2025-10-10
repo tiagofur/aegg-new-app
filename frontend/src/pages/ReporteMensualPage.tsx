@@ -36,8 +36,7 @@ export const ReporteMensualPage: React.FC = () => {
       } catch (err: any) {
         console.error("Error al cargar datos:", err);
         setError(
-          err.response?.data?.message ||
-            "Error al cargar los datos del reporte"
+          err.response?.data?.message || "Error al cargar los datos del reporte"
         );
       } finally {
         setLoading(false);
@@ -179,4 +178,3 @@ export const ReporteMensualPage: React.FC = () => {
     </div>
   );
 };
-
