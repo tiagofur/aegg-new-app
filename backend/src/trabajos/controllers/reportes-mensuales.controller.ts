@@ -3,6 +3,7 @@ import {
     Post,
     Get,
     Put,
+    Delete,
     Body,
     Param,
     UseGuards,
@@ -52,5 +53,13 @@ export class ReportesMensualesController {
         @Body('datos') datos: any[][],
     ) {
         return this.reportesService.actualizarDatos(mesId, reporteId, datos);
+    }
+
+    @Delete(':mesId/:reporteId/datos')
+    limpiarDatos(
+        @Param('mesId') mesId: string,
+        @Param('reporteId') reporteId: string,
+    ) {
+        return this.reportesService.limpiarDatosReporte(mesId, reporteId);
     }
 }

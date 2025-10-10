@@ -50,4 +50,14 @@ export const reportesMensualesService = {
         );
         return data;
     },
+
+    async limpiarDatos(
+        mesId: string,
+        reporteId: string
+    ): Promise<{ success: boolean; message: string }> {
+        const { data } = await api.delete(
+            `/reportes-mensuales/${mesId}/${reporteId}/datos`
+        );
+        return data;
+    },
 };

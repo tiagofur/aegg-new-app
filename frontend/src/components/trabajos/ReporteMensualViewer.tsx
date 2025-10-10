@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { ReporteMensual, TIPOS_REPORTE_NOMBRES } from "../../types/trabajo";
 
 interface ReporteMensualViewerProps {
@@ -8,6 +8,7 @@ interface ReporteMensualViewerProps {
   onEditarReporte: () => void;
   onImportarReporte: () => void;
   onReimportarReporte: () => void;
+  onLimpiarDatos?: () => void;
 }
 
 const getIconoReporte = (tipo: ReporteMensual["tipo"]): string => {
@@ -98,11 +99,18 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
   onEditarReporte,
   onImportarReporte,
   onReimportarReporte,
+  onLimpiarDatos,
 }) => {
+  const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
   const estado = getEstadoInfo(reporte);
   const icono = getIconoReporte(reporte.tipo);
   const nombre = TIPOS_REPORTE_NOMBRES[reporte.tipo];
   const tieneDatos = reporte.datos && reporte.datos.length > 0;
+
+  const handleLimpiarDatos = () => {
+    setMostrarConfirmacion(false);
+    onLimpiarDatos?.();
+  };
 
   return (
     <div
@@ -223,7 +231,7 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
             </div>
 
             {/* Acciones secundarias */}
-            <div className="mt-3 pt-4 border-t border-gray-200">
+            <div className="mt-3 pt-4 border-t border-gray-200 flex items-center justify-between">
               <button
                 onClick={onEditarReporte}
                 className="text-gray-600 hover:text-gray-800 text-sm font-medium flex items-center gap-2 transition-colors"
@@ -238,7 +246,82 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
                 </svg>
                 Editar datos manualmente
               </button>
+
+              {onLimpiarDatos && (
+                <button
+                  onClick={() => setMostrarConfirmacion(true)}
+                  className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-2 transition-colors"
+                  title="Eliminar todos los datos del reporte"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Limpiar Datos
+                </button>
+              )}
             </div>
+
+            {/* Diálogo de confirmación */}
+            {mostrarConfirmacion && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg shadow-xl max-w-md mx-4 p-6">
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-6 w-6 text-red-600"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        ¿Eliminar datos del reporte?
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Esta acción eliminará todos los datos importados del
+                        reporte <strong>{nombre}</strong>. El reporte volverá al
+                        estado "Sin importar" y deberás volver a importar el
+                        archivo Excel.
+                      </p>
+                      <p className="text-sm text-red-600 font-medium">
+                        Esta acción no se puede deshacer.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 justify-end">
+                    <button
+                      onClick={() => setMostrarConfirmacion(false)}
+                      className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleLimpiarDatos}
+                      className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-lg font-medium transition-colors"
+                    >
+                      Sí, eliminar datos
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <>

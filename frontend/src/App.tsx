@@ -42,6 +42,14 @@ function App() {
             }
           />
           <Route
+            path="/trabajos/:trabajoId"
+            element={
+              <PrivateRoute>
+                <TrabajosPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
             path="/trabajos/:trabajoId/reporte-anual/:anio"
             element={
               <PrivateRoute>

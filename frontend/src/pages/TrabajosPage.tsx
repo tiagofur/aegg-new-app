@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   TrabajosList,
   TrabajoDetail,
@@ -10,6 +11,8 @@ import { Trabajo } from "../types/trabajo";
 import { useAuth } from "../context/AuthContext";
 
 export const TrabajosPage: React.FC = () => {
+  const { trabajoId } = useParams<{ trabajoId: string }>();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [trabajos, setTrabajos] = useState<Trabajo[]>([]);
   const [selectedTrabajo, setSelectedTrabajo] = useState<Trabajo | null>(null);
@@ -20,6 +23,16 @@ export const TrabajosPage: React.FC = () => {
   useEffect(() => {
     loadTrabajos();
   }, []);
+
+  // Cargar el trabajo específico si viene trabajoId en la URL
+  useEffect(() => {
+    if (trabajoId && trabajos.length > 0) {
+      const trabajo = trabajos.find((t) => t.id === trabajoId);
+      if (trabajo) {
+        handleSelectTrabajo(trabajo);
+      }
+    }
+  }, [trabajoId, trabajos]);
 
   const loadTrabajos = async () => {
     try {
@@ -38,6 +51,7 @@ export const TrabajosPage: React.FC = () => {
     try {
       const detailed = await trabajosService.getOne(trabajo.id);
       setSelectedTrabajo(detailed);
+      navigate(`/trabajos/${trabajo.id}`);
     } catch (error) {
       console.error("Error al cargar detalle:", error);
       alert("Error al cargar el detalle del trabajo");
@@ -46,6 +60,7 @@ export const TrabajosPage: React.FC = () => {
 
   const handleBackToList = () => {
     setSelectedTrabajo(null);
+    navigate("/trabajos");
     loadTrabajos();
   };
 

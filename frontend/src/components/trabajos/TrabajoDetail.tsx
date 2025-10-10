@@ -8,7 +8,7 @@ import { ReporteMensualViewer } from "./ReporteMensualViewer";
 import { ImportReporteBaseDialog } from "./ImportReporteBaseDialog";
 import { ImportReporteMensualDialog } from "./ImportReporteMensualDialog";
 import { EditTrabajoDialog } from "./EditTrabajoDialog";
-import { trabajosService } from "../../services";
+import { trabajosService, reportesMensualesService } from "../../services";
 
 interface TrabajoDetailProps {
   trabajo: Trabajo;
@@ -117,6 +117,26 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
 
   const handleReimportarReporte = () => {
     setMostrarImportReporteMensualDialog(true);
+  };
+
+  const handleLimpiarDatos = async () => {
+    if (!reporteActual || !mesActual) return;
+
+    try {
+      await reportesMensualesService.limpiarDatos(
+        mesActual.id,
+        reporteActual.id
+      );
+      alert("Datos del reporte eliminados correctamente");
+      // Recargar el trabajo para actualizar el estado
+      onReload();
+    } catch (error: any) {
+      console.error("Error al limpiar datos del reporte:", error);
+      alert(
+        error.response?.data?.message ||
+          "Error al limpiar los datos del reporte"
+      );
+    }
   };
 
   return (
@@ -264,6 +284,7 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
                   }
                   onImportarReporte={handleImportarReporte}
                   onReimportarReporte={handleReimportarReporte}
+                  onLimpiarDatos={handleLimpiarDatos}
                 />
               )}
             </>

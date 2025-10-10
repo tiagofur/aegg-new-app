@@ -27,7 +27,7 @@ export const ReporteAnualPage: React.FC = () => {
             No se especificó el trabajo o el año del reporte.
           </p>
           <button
-            onClick={() => navigate("/trabajos")}
+            onClick={() => navigate(`/trabajos/${trabajoId || ""}`)}
             className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
           >
             Volver a Trabajos
@@ -50,7 +50,7 @@ export const ReporteAnualPage: React.FC = () => {
             El año especificado no es válido: "{anio}"
           </p>
           <button
-            onClick={() => navigate("/trabajos")}
+            onClick={() => navigate(`/trabajos/${trabajoId}`)}
             className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
           >
             Volver a Trabajos
@@ -67,7 +67,7 @@ export const ReporteAnualPage: React.FC = () => {
         <div className="px-2 py-3">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate("/trabajos")}
+              onClick={() => navigate(`/trabajos/${trabajoId}`)}
               className="text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-2"
             >
               <span className="text-xl">←</span>
