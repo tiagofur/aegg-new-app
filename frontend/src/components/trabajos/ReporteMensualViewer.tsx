@@ -1,13 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { ReporteMensual, TIPOS_REPORTE_NOMBRES } from "../../types/trabajo";
 
 interface ReporteMensualViewerProps {
   reporte: ReporteMensual;
+  reportes: ReporteMensual[]; // Todos los reportes del mes para comparación
   mesNombre: string;
   onVerReporte: () => void;
   onImportarReporte: () => void;
   onReimportarReporte: () => void;
   onLimpiarDatos?: () => void;
+}
+
+interface ComparacionResultado {
+  foliosUnicos: Set<string>;
+  foliosCoinciden: Map<string, boolean>; // true = igual, false = diferente
 }
 
 const getIconoReporte = (tipo: ReporteMensual["tipo"]): string => {
@@ -93,6 +99,7 @@ const formatFecha = (fecha?: string): string => {
 
 export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
   reporte,
+  reportes,
   mesNombre,
   onVerReporte,
   onImportarReporte,
@@ -100,15 +107,208 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
   onLimpiarDatos,
 }) => {
   const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
+  const [comparacionActiva, setComparacionActiva] = useState(false);
   const estado = getEstadoInfo(reporte);
   const icono = getIconoReporte(reporte.tipo);
   const nombre = TIPOS_REPORTE_NOMBRES[reporte.tipo];
   const tieneDatos = reporte.datos && reporte.datos.length > 0;
 
+  // Determinar si este reporte puede compararse
+  const esReporteComparable =
+    reporte.tipo === "INGRESOS_AUXILIAR" ||
+    reporte.tipo === "INGRESOS_MI_ADMIN";
+
+  // Encontrar el reporte complementario para comparación
+  const reporteComplementario = useMemo(() => {
+    if (!esReporteComparable) return null;
+    const tipoComplementario =
+      reporte.tipo === "INGRESOS_AUXILIAR"
+        ? "INGRESOS_MI_ADMIN"
+        : "INGRESOS_AUXILIAR";
+    return reportes.find((r) => r.tipo === tipoComplementario);
+  }, [reportes, reporte.tipo, esReporteComparable]);
+
+  // Realizar la comparación de reportes
+  const resultadoComparacion = useMemo<ComparacionResultado>(() => {
+    if (!comparacionActiva || !reporteComplementario || !tieneDatos) {
+      return {
+        foliosUnicos: new Set(),
+        foliosCoinciden: new Map(),
+      };
+    }
+
+    const datosComplementarios = reporteComplementario.datos || [];
+    // Primera fila es header, necesitamos al menos 2 filas (header + 1 dato)
+    if (datosComplementarios.length < 2) {
+      return {
+        foliosUnicos: new Set(),
+        foliosCoinciden: new Map(),
+      };
+    }
+
+    // Obtener el header del reporte complementario (primera fila)
+    const headerComplementario = datosComplementarios[0];
+    // Identificar índice de columnas necesarias
+    const colFolioComp = Object.values(headerComplementario).indexOf("Folio");
+    const colSubtotalComp =
+      Object.values(headerComplementario).indexOf("Subtotal");
+    const colMonedaComp = Object.values(headerComplementario).indexOf("Moneda");
+    const colTipoCambioComp =
+      Object.values(headerComplementario).indexOf("Tipo Cambio");
+
+    // Crear mapa de folios del reporte complementario (sin incluir header)
+    const foliosComplementarios = new Map<string, any>();
+    for (let i = 1; i < datosComplementarios.length; i++) {
+      const fila = datosComplementarios[i];
+      const valores = Object.values(fila);
+      const folio =
+        colFolioComp >= 0 ? String(valores[colFolioComp] || "").trim() : "";
+      if (folio) {
+        foliosComplementarios.set(folio, {
+          valores,
+          colSubtotal: colSubtotalComp,
+          colMoneda: colMonedaComp,
+          colTipoCambio: colTipoCambioComp,
+        });
+      }
+    }
+
+    // Obtener el header del reporte actual (primera fila)
+    const headerActual = reporte.datos[0];
+    const colFolioActual = Object.values(headerActual).indexOf("Folio");
+    const colSubtotalActual = Object.values(headerActual).indexOf("Subtotal");
+    const colMonedaActual = Object.values(headerActual).indexOf("Moneda");
+    const colTipoCambioActual =
+      Object.values(headerActual).indexOf("Tipo Cambio");
+
+    // Analizar folios del reporte actual (sin incluir header)
+    const foliosUnicos = new Set<string>();
+    const foliosCoinciden = new Map<string, boolean>();
+
+    for (let i = 1; i < reporte.datos.length; i++) {
+      const fila = reporte.datos[i];
+      const valores = Object.values(fila);
+      const folio =
+        colFolioActual >= 0 ? String(valores[colFolioActual] || "").trim() : "";
+      if (!folio) continue;
+
+      if (!foliosComplementarios.has(folio)) {
+        // Folio único (no existe en el otro reporte)
+        foliosUnicos.add(folio);
+      } else {
+        // Folio existe en ambos, comparar subtotales
+        const filaCompData = foliosComplementarios.get(folio);
+        const valoresComp = filaCompData.valores;
+
+        let subtotalActual: number;
+        let subtotalComplementario: number;
+
+        if (reporte.tipo === "INGRESOS_AUXILIAR") {
+          // Auxiliar: tomar Subtotal directo
+          subtotalActual =
+            colSubtotalActual >= 0
+              ? parseFloat(String(valores[colSubtotalActual])) || 0
+              : 0;
+
+          // Mi Admin: calcular Subtotal MXN
+          const subtotalComp =
+            filaCompData.colSubtotal >= 0
+              ? parseFloat(String(valoresComp[filaCompData.colSubtotal])) || 0
+              : 0;
+          const monedaComp =
+            filaCompData.colMoneda >= 0
+              ? String(valoresComp[filaCompData.colMoneda])
+              : "MXN";
+          const tipoCambioComp =
+            filaCompData.colTipoCambio >= 0
+              ? parseFloat(String(valoresComp[filaCompData.colTipoCambio])) || 1
+              : 1;
+          subtotalComplementario =
+            monedaComp === "MXN" ? subtotalComp : subtotalComp * tipoCambioComp;
+        } else {
+          // Mi Admin: calcular Subtotal MXN
+          const subtotalActualVal =
+            colSubtotalActual >= 0
+              ? parseFloat(String(valores[colSubtotalActual])) || 0
+              : 0;
+          const monedaActual =
+            colMonedaActual >= 0 ? String(valores[colMonedaActual]) : "MXN";
+          const tipoCambioActual =
+            colTipoCambioActual >= 0
+              ? parseFloat(String(valores[colTipoCambioActual])) || 1
+              : 1;
+          subtotalActual =
+            monedaActual === "MXN"
+              ? subtotalActualVal
+              : subtotalActualVal * tipoCambioActual;
+
+          // Auxiliar: tomar Subtotal directo
+          subtotalComplementario =
+            filaCompData.colSubtotal >= 0
+              ? parseFloat(String(valoresComp[filaCompData.colSubtotal])) || 0
+              : 0;
+        }
+
+        // Comparar con tolerancia de 0.01 (1 centavo)
+        const diferencia = Math.abs(subtotalActual - subtotalComplementario);
+        foliosCoinciden.set(folio, diferencia < 0.01);
+      }
+    }
+
+    return {
+      foliosUnicos,
+      foliosCoinciden,
+    };
+  }, [comparacionActiva, reporteComplementario, reporte, tieneDatos]);
+
+  // Función para obtener el color de fila según comparación
+  const getRowClassName = (fila: any): string => {
+    if (!comparacionActiva) return "hover:bg-gray-50";
+
+    // Obtener índice de columna Folio desde el header
+    const headerActual = reporte.datos[0];
+    const colFolioActual = Object.values(headerActual).indexOf("Folio");
+
+    if (colFolioActual < 0) return "hover:bg-gray-50";
+
+    const valores = Object.values(fila);
+    const folio = String(valores[colFolioActual] || "").trim();
+    if (!folio) return "hover:bg-gray-50";
+
+    if (resultadoComparacion.foliosUnicos.has(folio)) {
+      return "bg-yellow-100 hover:bg-yellow-200"; // Folio único
+    }
+
+    const coincide = resultadoComparacion.foliosCoinciden.get(folio);
+    if (coincide === true) {
+      return "bg-green-100 hover:bg-green-200"; // Subtotales iguales
+    } else if (coincide === false) {
+      return "bg-red-100 hover:bg-red-200"; // Subtotales diferentes
+    }
+
+    return "hover:bg-gray-50";
+  };
+
   const handleLimpiarDatos = () => {
     setMostrarConfirmacion(false);
     onLimpiarDatos?.();
   };
+
+  const toggleComparacion = () => {
+    setComparacionActiva(!comparacionActiva);
+  };
+
+  // IMPORTANTE: La primera fila de reporte.datos es el encabezado
+  // Las filas restantes son los datos reales
+  const headers =
+    tieneDatos && reporte.datos.length > 0
+      ? Object.values(reporte.datos[0]).map(String) // Primera fila = headers
+      : [];
+
+  const datosParaMostrar =
+    tieneDatos && reporte.datos.length > 1
+      ? reporte.datos.slice(1) // Desde la segunda fila en adelante
+      : [];
 
   return (
     <div
@@ -135,6 +335,38 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
               <span className="text-lg">{estado.icon}</span>
               {estado.label}
             </span>
+
+            {tieneDatos && esReporteComparable && reporteComplementario && (
+              <button
+                onClick={toggleComparacion}
+                className={`${
+                  comparacionActiva
+                    ? "bg-purple-600 hover:bg-purple-700"
+                    : "bg-blue-600 hover:bg-blue-700"
+                } text-white px-3 py-1.5 rounded-lg font-semibold text-sm flex items-center gap-1.5 transition-colors shadow-sm hover:shadow-md`}
+                title={
+                  comparacionActiva
+                    ? "Desactivar comparación"
+                    : "Comparar con " +
+                      TIPOS_REPORTE_NOMBRES[reporteComplementario.tipo]
+                }
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                  <path
+                    fillRule="evenodd"
+                    d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                {comparacionActiva ? "Comparando" : "Comparar"}
+              </button>
+            )}
 
             {tieneDatos && (
               <button
@@ -171,7 +403,7 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-600">Registros:</span>
                   <span className="text-lg font-bold text-gray-800">
-                    {reporte.datos.length.toLocaleString("es-MX")}
+                    {datosParaMostrar.length.toLocaleString("es-MX")}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -210,26 +442,51 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
               </div>
             </div>
 
+            {/* Leyenda de comparación */}
+            {comparacionActiva && (
+              <div className="mb-3 bg-blue-50 border border-blue-200 rounded-lg p-2">
+                <div className="flex items-center gap-4 text-xs">
+                  <span className="font-semibold text-blue-900">
+                    Comparando con{" "}
+                    {reporteComplementario &&
+                      TIPOS_REPORTE_NOMBRES[reporteComplementario.tipo]}
+                    :
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 bg-yellow-300 border border-yellow-400 rounded"></div>
+                    <span className="text-gray-700">Folio único</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 bg-green-300 border border-green-400 rounded"></div>
+                    <span className="text-gray-700">Subtotal igual</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 bg-red-300 border border-red-400 rounded"></div>
+                    <span className="text-gray-700">Subtotal diferente</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Tabla completa de datos - Siempre visible */}
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="overflow-auto" style={{ maxHeight: "600px" }}>
                 <table className="min-w-full divide-y divide-gray-200 text-xs">
                   <thead className="bg-gray-100 sticky top-0 z-10">
                     <tr>
-                      {reporte.datos[0] &&
-                        Object.keys(reporte.datos[0]).map((key, idx) => (
-                          <th
-                            key={idx}
-                            className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r last:border-r-0 bg-gray-100"
-                          >
-                            {key}
-                          </th>
-                        ))}
+                      {headers.map((key, idx) => (
+                        <th
+                          key={idx}
+                          className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r last:border-r-0 bg-gray-100"
+                        >
+                          {key}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-100">
-                    {reporte.datos.map((fila: any, rowIdx: number) => (
-                      <tr key={rowIdx} className="hover:bg-gray-50">
+                    {datosParaMostrar.map((fila: any, rowIdx: number) => (
+                      <tr key={rowIdx} className={getRowClassName(fila)}>
                         {Object.values(fila).map(
                           (valor: any, colIdx: number) => (
                             <td
@@ -249,8 +506,35 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
               </div>
               <div className="px-3 py-2 bg-gray-50 border-t text-xs text-gray-600 flex items-center justify-between">
                 <span>
-                  Total: {reporte.datos.length.toLocaleString("es-MX")} registro
-                  {reporte.datos.length !== 1 ? "s" : ""}
+                  Total: {datosParaMostrar.length.toLocaleString("es-MX")}{" "}
+                  registro
+                  {datosParaMostrar.length !== 1 ? "s" : ""}
+                  {comparacionActiva && (
+                    <>
+                      {" • "}
+                      <span className="text-yellow-700 font-medium">
+                        {resultadoComparacion.foliosUnicos.size} únicos
+                      </span>
+                      {" • "}
+                      <span className="text-green-700 font-medium">
+                        {
+                          Array.from(
+                            resultadoComparacion.foliosCoinciden.values()
+                          ).filter((v) => v === true).length
+                        }{" "}
+                        iguales
+                      </span>
+                      {" • "}
+                      <span className="text-red-700 font-medium">
+                        {
+                          Array.from(
+                            resultadoComparacion.foliosCoinciden.values()
+                          ).filter((v) => v === false).length
+                        }{" "}
+                        diferentes
+                      </span>
+                    </>
+                  )}
                 </span>
                 <button
                   onClick={onVerReporte}

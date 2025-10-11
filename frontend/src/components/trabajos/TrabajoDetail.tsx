@@ -275,6 +275,7 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
               {reporteActual && (
                 <ReporteMensualViewer
                   reporte={reporteActual}
+                  reportes={mesActual.reportes}
                   mesNombre={MESES_NOMBRES[mesActual.mes - 1]}
                   onVerReporte={handleVerReporte}
                   onImportarReporte={handleImportarReporte}
