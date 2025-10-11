@@ -20,22 +20,43 @@ export const ReporteAnualHeader: React.FC<ReporteAnualHeaderProps> = ({
   const porcentaje = (progreso / 12) * 100;
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 mb-4 border border-gray-200">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-2xl font-semibold text-gray-800 flex items-center gap-2">
-          📊 Reporte Base Anual {anio}
-        </h2>
+    <div className="bg-white rounded-lg shadow-md px-4 py-3 mb-3 border border-gray-200">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-4">
+          <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+            📊 Reporte Base Anual {anio}
+          </h2>
+
+          {/* Barra de progreso inline */}
+          <div className="flex items-center gap-2">
+            <div className="w-32 bg-gray-200 rounded-full h-2 overflow-hidden">
+              <div
+                className={`h-full transition-all duration-500 rounded-full ${
+                  porcentaje === 100
+                    ? "bg-green-600"
+                    : porcentaje > 0
+                    ? "bg-blue-600"
+                    : "bg-gray-400"
+                }`}
+                style={{ width: `${porcentaje}%` }}
+              />
+            </div>
+            <span className="text-xs font-semibold text-gray-700">
+              {progreso}/12
+            </span>
+          </div>
+        </div>
 
         {/* Botones a la derecha del título */}
         <div className="flex gap-2">
           <button
             onClick={onVerReporte}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors text-sm font-medium"
             title="Ver reporte anual completo"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
+              className="h-4 w-4"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -51,12 +72,12 @@ export const ReporteAnualHeader: React.FC<ReporteAnualHeaderProps> = ({
 
           <button
             onClick={onImportarExcel}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors text-sm font-medium"
             title="Importar archivo Excel del reporte base anual"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
+              className="h-4 w-4"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -66,14 +87,14 @@ export const ReporteAnualHeader: React.FC<ReporteAnualHeaderProps> = ({
                 clipRule="evenodd"
               />
             </svg>
-            {tieneHojas ? "Reimportar Excel" : "Importar Excel"}
+            {tieneHojas ? "Reimportar" : "Importar"}
           </button>
 
           <button
             onClick={onDescargarExcel}
             disabled={!tieneHojas}
             className={`
-              px-4 py-2 rounded-lg flex items-center gap-2 transition-colors
+              px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors text-sm font-medium
               ${
                 tieneHojas
                   ? "bg-blue-600 hover:bg-blue-700 text-white"
@@ -88,7 +109,7 @@ export const ReporteAnualHeader: React.FC<ReporteAnualHeaderProps> = ({
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
+              className="h-4 w-4"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -98,39 +119,18 @@ export const ReporteAnualHeader: React.FC<ReporteAnualHeaderProps> = ({
                 clipRule="evenodd"
               />
             </svg>
-            Descargar Excel
+            Descargar
           </button>
         </div>
       </div>
 
-      {/* Barra de progreso */}
-      <div className="mb-2">
-        <div className="flex items-center gap-4">
-          <div className="flex-1 bg-gray-200 rounded-full h-3 overflow-hidden">
-            <div
-              className={`h-full transition-all duration-500 rounded-full ${
-                porcentaje === 100
-                  ? "bg-green-600"
-                  : porcentaje > 0
-                  ? "bg-blue-600"
-                  : "bg-gray-400"
-              }`}
-              style={{ width: `${porcentaje}%` }}
-            />
-          </div>
-          <span className="text-sm font-semibold text-gray-700 min-w-[60px]">
-            {progreso}/12 meses
-          </span>
-        </div>
-      </div>
-
-      {/* Mensaje de ayuda */}
+      {/* Mensaje de ayuda - Solo si no hay hojas */}
       {!tieneHojas && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 mt-3">
-          <div className="flex">
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-2 mt-2">
+          <div className="flex items-center">
             <div className="flex-shrink-0">
               <svg
-                className="h-5 w-5 text-yellow-400"
+                className="h-4 w-4 text-yellow-400"
                 viewBox="0 0 20 20"
                 fill="currentColor"
               >
@@ -141,22 +141,14 @@ export const ReporteAnualHeader: React.FC<ReporteAnualHeaderProps> = ({
                 />
               </svg>
             </div>
-            <div className="ml-3">
-              <p className="text-sm text-yellow-700">
+            <div className="ml-2">
+              <p className="text-xs text-yellow-700">
                 📋 <strong>Reporte Base Anual no importado.</strong> Haz clic en
-                "Importar Excel" para cargar el archivo base del reporte anual.
-                Este archivo servirá como plantilla para todos los meses.
+                "Importar" para cargar el archivo base del reporte anual.
               </p>
             </div>
           </div>
         </div>
-      )}
-
-      {progreso === 0 && tieneHojas && (
-        <p className="text-sm text-gray-600 mt-2">
-          💡 Selecciona un mes abajo para comenzar a trabajar en el reporte
-          anual
-        </p>
       )}
     </div>
   );

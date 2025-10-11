@@ -86,77 +86,63 @@ export const ReportesTabSelector: React.FC<ReportesTabSelectorProps> = ({
   const totalReportes = reportes.length;
 
   return (
-    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-700">
-          📊 Reportes Mensuales
-        </h3>
-        <span
-          className={`text-sm font-semibold ${
-            reportesConDatos === totalReportes
-              ? "text-green-600"
-              : reportesConDatos > 0
-              ? "text-yellow-600"
-              : "text-gray-600"
-          }`}
-        >
-          {reportesConDatos}/{totalReportes} reportes
-        </span>
-      </div>
+    <div className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-200">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-gray-700">
+            📊 Reportes Mensuales:
+          </h3>
+          <span
+            className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+              reportesConDatos === totalReportes
+                ? "bg-green-100 text-green-700"
+                : reportesConDatos > 0
+                ? "bg-yellow-100 text-yellow-700"
+                : "bg-gray-100 text-gray-600"
+            }`}
+          >
+            {reportesConDatos}/{totalReportes}
+          </span>
+        </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        {reportesOrdenados.map((reporte) => {
-          const estado = getEstadoVisual(reporte);
-          const isSelected = reporte.id === reporteSeleccionado;
-          const icono = getIconoReporte(reporte.tipo);
-          const nombre = TIPOS_REPORTE_NOMBRES[reporte.tipo];
+        {/* Botones de reportes en línea horizontal */}
+        <div className="flex items-center gap-2">
+          {reportesOrdenados.map((reporte) => {
+            const estado = getEstadoVisual(reporte);
+            const isSelected = reporte.id === reporteSeleccionado;
+            const icono = getIconoReporte(reporte.tipo);
+            const nombre = TIPOS_REPORTE_NOMBRES[reporte.tipo];
 
-          return (
-            <button
-              key={reporte.id}
-              onClick={() => onReporteClick(reporte)}
-              className={`
-                relative px-4 py-3 rounded-lg text-sm font-semibold
-                transition-all duration-200 border-2
-                ${estado.bgColor} ${estado.textColor}
-                ${
-                  isSelected
-                    ? `${estado.borderColor} ring-2 ring-offset-1 ring-blue-500 scale-105`
-                    : "border-transparent hover:scale-105 hover:shadow-md"
-                }
-              `}
-              title={`${nombre} - ${reporte.estado.replace("_", " ")}`}
-            >
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-2xl">{icono}</span>
-                <span className="text-xs font-medium text-center leading-tight">
+            return (
+              <button
+                key={reporte.id}
+                onClick={() => onReporteClick(reporte)}
+                className={`
+                  relative px-3 py-2 rounded-lg text-sm font-semibold
+                  transition-all duration-200 border-2
+                  ${estado.bgColor} ${estado.textColor}
+                  ${
+                    isSelected
+                      ? `${estado.borderColor} ring-2 ring-offset-1 ring-blue-500`
+                      : "border-transparent hover:shadow-md"
+                  }
+                  flex items-center gap-2 min-w-[160px]
+                `}
+                title={`${nombre} - ${reporte.estado.replace("_", " ")}`}
+              >
+                <span className="text-xl">{icono}</span>
+                <span className="text-xs font-medium flex-1 text-left leading-tight">
                   {nombre}
                 </span>
-                <span className="text-lg">{estado.icon}</span>
-              </div>
+                <span className="text-base">{estado.icon}</span>
 
-              {/* Indicador de selección */}
-              {isSelected && (
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-600 rounded-full border-2 border-white" />
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Leyenda */}
-      <div className="flex items-center gap-4 mt-3 text-xs text-gray-600">
-        <div className="flex items-center gap-1">
-          <span className="text-green-600 font-bold">✓</span>
-          <span>Completado</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="text-yellow-600 font-bold">⏳</span>
-          <span>En proceso</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="text-gray-400 font-bold">○</span>
-          <span>Sin importar</span>
+                {/* Indicador de selección */}
+                {isSelected && (
+                  <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-600 rounded-full border-2 border-white" />
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

@@ -52,67 +52,52 @@ export const MesesSelector: React.FC<MesesSelectorProps> = ({
   const mesesOrdenados = [...meses].sort((a, b) => a.mes - b.mes);
 
   return (
-    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-700">
-          📅 Seleccionar Mes
-        </h3>
-        {progreso && (
-          <span className="text-sm font-semibold text-gray-600">
-            {progreso}
-          </span>
-        )}
-      </div>
-
-      <div className="grid grid-cols-6 sm:grid-cols-12 gap-2">
-        {mesesOrdenados.map((mes) => {
-          const estado = getEstadoVisual(mes);
-          const isSelected = mes.id === mesSeleccionado;
-          const mesNombre = MESES_NOMBRES_CORTOS[mes.mes - 1];
-
-          return (
-            <button
-              key={mes.id}
-              onClick={() => onMesClick(mes)}
-              className={`
-                relative px-3 py-2 rounded-lg text-sm font-semibold
-                transition-all duration-200 border-2
-                ${estado.bgColor} ${estado.textColor}
-                ${
-                  isSelected
-                    ? `${estado.borderColor} ring-2 ring-offset-1 ring-blue-500 scale-105`
-                    : "border-transparent hover:scale-105 hover:shadow-md"
-                }
-              `}
-              title={`${mesNombre} - ${mes.estado.replace("_", " ")}`}
-            >
-              <div className="flex flex-col items-center">
-                <span className="text-xs">{mesNombre}</span>
-                <span className="text-lg">{estado.icon}</span>
-              </div>
-
-              {/* Indicador de selección */}
-              {isSelected && (
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-600 rounded-full border-2 border-white" />
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Leyenda */}
-      <div className="flex items-center gap-4 mt-3 text-xs text-gray-600">
-        <div className="flex items-center gap-1">
-          <span className="text-green-600 font-bold">✓</span>
-          <span>Completado</span>
+    <div className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-200">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-gray-700">
+            📅 Seleccionar Mes:
+          </h3>
+          {progreso && (
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+              {progreso}
+            </span>
+          )}
         </div>
-        <div className="flex items-center gap-1">
-          <span className="text-yellow-600 font-bold">⏳</span>
-          <span>En proceso</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="text-gray-400 font-bold">○</span>
-          <span>Pendiente</span>
+
+        <div className="flex items-center gap-1.5 flex-1 justify-end">
+          {mesesOrdenados.map((mes) => {
+            const estado = getEstadoVisual(mes);
+            const isSelected = mes.id === mesSeleccionado;
+            const mesNombre = MESES_NOMBRES_CORTOS[mes.mes - 1];
+
+            return (
+              <button
+                key={mes.id}
+                onClick={() => onMesClick(mes)}
+                className={`
+                  relative px-2 py-1.5 rounded-lg text-xs font-semibold
+                  transition-all duration-200 border-2
+                  ${estado.bgColor} ${estado.textColor}
+                  ${
+                    isSelected
+                      ? `${estado.borderColor} ring-2 ring-offset-1 ring-blue-500`
+                      : "border-transparent hover:shadow-md"
+                  }
+                  flex flex-col items-center min-w-[40px]
+                `}
+                title={`${mesNombre} - ${mes.estado.replace("_", " ")}`}
+              >
+                <span className="text-xs leading-none">{mesNombre}</span>
+                <span className="text-sm">{estado.icon}</span>
+
+                {/* Indicador de selección */}
+                {isSelected && (
+                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-600 rounded-full border-2 border-white" />
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

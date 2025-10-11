@@ -107,10 +107,6 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
     );
   };
 
-  const handleEditarReporte = (reporteId: string, tipo: string) => {
-    alert(`Editar reporte: ${reporteId} - ${tipo} (en desarrollo)`);
-  };
-
   const handleImportarReporte = () => {
     setMostrarImportReporteMensualDialog(true);
   };
@@ -140,16 +136,16 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
   };
 
   return (
-    <div className="px-2 py-4">
+    <div className="px-2 py-3">
       {/* Header */}
-      <div className="mb-4">
+      <div className="mb-3">
         <button
           onClick={onBack}
-          className="text-blue-600 hover:text-blue-800 mb-4 flex items-center gap-2"
+          className="text-blue-600 hover:text-blue-800 mb-3 flex items-center gap-2 text-sm"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
+            className="h-4 w-4"
             viewBox="0 0 20 20"
             fill="currentColor"
           >
@@ -164,22 +160,24 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
 
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">
+            <h1 className="text-2xl font-bold text-gray-800">
               {trabajo.clienteNombre} - {trabajo.anio}
             </h1>
             {trabajo.clienteRfc && (
-              <p className="text-gray-600 mt-2">RFC: {trabajo.clienteRfc}</p>
+              <p className="text-gray-600 text-sm mt-1">
+                RFC: {trabajo.clienteRfc}
+              </p>
             )}
           </div>
 
           <div className="flex gap-2">
             <button
               onClick={() => setMostrarEditDialog(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors text-sm"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
+                className="h-4 w-4"
                 viewBox="0 0 20 20"
                 fill="currentColor"
               >
@@ -191,12 +189,12 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
             <button
               onClick={handleEliminarProyecto}
               disabled={eliminando}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
             >
               {eliminando ? (
                 <>
                   <svg
-                    className="animate-spin h-5 w-5 text-white"
+                    className="animate-spin h-4 w-4 text-white"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -221,7 +219,7 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
                 <>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
+                    className="h-4 w-4"
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
@@ -231,7 +229,7 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
                       clipRule="evenodd"
                     />
                   </svg>
-                  Eliminar Proyecto
+                  Eliminar
                 </>
               )}
             </button>
@@ -263,7 +261,7 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
 
       {/* Reportes Mensuales del mes seleccionado */}
       {mesActual ? (
-        <div className="mt-4">
+        <div className="mt-3">
           {/* Selector de pestañas de reportes */}
           {mesActual.reportes && mesActual.reportes.length > 0 ? (
             <>
@@ -279,9 +277,6 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
                   reporte={reporteActual}
                   mesNombre={MESES_NOMBRES[mesActual.mes - 1]}
                   onVerReporte={handleVerReporte}
-                  onEditarReporte={() =>
-                    handleEditarReporte(reporteActual.id, reporteActual.tipo)
-                  }
                   onImportarReporte={handleImportarReporte}
                   onReimportarReporte={handleReimportarReporte}
                   onLimpiarDatos={handleLimpiarDatos}
@@ -289,28 +284,28 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
               )}
             </>
           ) : (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-              <p className="text-yellow-800 font-semibold">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+              <p className="text-yellow-800 font-semibold text-sm">
                 ⚠️ No hay reportes disponibles
               </p>
-              <p className="text-yellow-700 mt-2 text-sm">
+              <p className="text-yellow-700 mt-1 text-xs">
                 Los reportes se crean automáticamente al seleccionar el mes
               </p>
             </div>
           )}
         </div>
       ) : (
-        <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-          <p className="text-yellow-800 font-semibold">
+        <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+          <p className="text-yellow-800 font-semibold text-sm">
             ⚠️ No hay meses disponibles
           </p>
-          <p className="text-yellow-700 mt-2 text-sm">
+          <p className="text-yellow-700 mt-1 text-xs">
             Selecciona un mes arriba para ver sus reportes
           </p>
           {trabajo.meses.length === 0 && (
             <button
               onClick={onAddMes}
-              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+              className="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm"
             >
               Crear primer mes
             </button>
