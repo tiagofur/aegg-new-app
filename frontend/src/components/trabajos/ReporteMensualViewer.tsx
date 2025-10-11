@@ -249,8 +249,8 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
               </div>
               <div className="px-3 py-2 bg-gray-50 border-t text-xs text-gray-600 flex items-center justify-between">
                 <span>
-                  Total: {reporte.datos.length.toLocaleString("es-MX")}{" "}
-                  registro{reporte.datos.length !== 1 ? "s" : ""}
+                  Total: {reporte.datos.length.toLocaleString("es-MX")} registro
+                  {reporte.datos.length !== 1 ? "s" : ""}
                 </span>
                 <button
                   onClick={onVerReporte}
