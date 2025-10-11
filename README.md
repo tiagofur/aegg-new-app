@@ -2,7 +2,7 @@
 
 Sistema fullstack completo para importar, procesar, consolidar y visualizar reportes contables desde archivos Excel. Construido con NestJS, React, TypeScript y PostgreSQL.
 
-> **🎉 Versión 1.1.0 - Nueva UX Implementada** ([Ver Release Notes](./docs/implementations/RELEASE-NOTES-V1.1.0.md))
+> **🎉 Versión 1.1.0 - Nueva UX Implementada** ([Ver Historial](./docs/desarrollo/HISTORIAL-FASES.md))
 
 ## ✨ Características Principales
 
@@ -137,16 +137,13 @@ new-app/
 │   │   │   └── api.ts                   # APIs
 │   │   └── App.tsx
 │   └── package.json
-├── docs/                       # Documentación detallada
-│   ├── FASE-1-IMPORTACION-COMPLETADA.md
-│   ├── FASE-2-VISUALIZACION-COMPLETADA.md
-│   ├── FASE-3-FRONTEND-IMPORTACION-COMPLETADA.md
-│   ├── GUIA-PRUEBAS-FASE-3.md
-│   └── RESUMEN-FASE-3.md
+├── docs/                       # 📚 Documentación completa
+│   ├── README.md              # Índice principal
+│   ├── guias/                 # Guías de uso
+│   ├── tecnica/               # Documentación técnica
+│   ├── desarrollo/            # Para desarrolladores
+│   └── soluciones/            # Fixes y mejoras
 ├── docker-compose.yml
-├── ESTADO-ACTUAL-DEL-PROYECTO.md    # Estado detallado
-├── INICIO-RAPIDO.md                 # Guía rápida
-├── PROXIMA-TAREA.md                 # Siguiente fase
 └── README.md                        # Este archivo
 ```
 
@@ -274,21 +271,22 @@ SELECT * FROM reportes;      # Ver reportes
 
 ### **🎯 Empezar Aquí:**
 
-- 📋 [`docs/INDICE.md`](./docs/INDICE.md) - **Índice completo de documentación**
-- 📖 [`docs/FUNCIONALIDADES.md`](./docs/FUNCIONALIDADES.md) - Lista de todas las features
-- ⚡ [`docs/INICIO-RAPIDO.md`](./docs/INICIO-RAPIDO.md) - Setup en 5 minutos
-- 🔌 [`docs/BACKEND-API.md`](./docs/BACKEND-API.md) - Referencia de API
+- � [`docs/README.md`](./docs/README.md) - **Índice completo de documentación**
+- ⚡ [`docs/guias/INICIO-RAPIDO.md`](./docs/guias/INICIO-RAPIDO.md) - Setup en 5 minutos
+- 📖 [`docs/desarrollo/FUNCIONALIDADES.md`](./docs/desarrollo/FUNCIONALIDADES.md) - Lista de todas las features
+- 🔌 [`docs/tecnica/BACKEND-API.md`](./docs/tecnica/BACKEND-API.md) - Referencia de API
 
 ### **Para Desarrolladores:**
 
-- 🏗️ [`docs/PLAN-SISTEMA-TRABAJOS-V2.md`](./docs/PLAN-SISTEMA-TRABAJOS-V2.md) - Arquitectura completa
-- � [`docs/GIT-WORKFLOW.md`](./docs/GIT-WORKFLOW.md) - Guía de commits
-- 🐛 [`docs/TROUBLESHOOTING.md`](./docs/TROUBLESHOOTING.md) - Solución de problemas
-- 🔧 [`docs/soluctions/COMANDOS-RAPIDOS.md`](./docs/soluctions/COMANDOS-RAPIDOS.md) - Comandos útiles
+- 🏗️ [`docs/tecnica/PLAN-SISTEMA-TRABAJOS-V2.md`](./docs/tecnica/PLAN-SISTEMA-TRABAJOS-V2.md) - Arquitectura completa
+- 📜 [`docs/desarrollo/HISTORIAL-FASES.md`](./docs/desarrollo/HISTORIAL-FASES.md) - Historia del desarrollo (Fase 1-10)
+- 🔄 [`docs/guias/GIT-WORKFLOW.md`](./docs/guias/GIT-WORKFLOW.md) - Guía de commits
+- 🐛 [`docs/desarrollo/TROUBLESHOOTING.md`](./docs/desarrollo/TROUBLESHOOTING.md) - Solución de problemas
+- 🔧 [`docs/guias/COMANDOS-RAPIDOS.md`](./docs/guias/COMANDOS-RAPIDOS.md) - Comandos útiles
 
-### **Historial de Implementaciones:**
+### **Fixes y Mejoras:**
 
-- [`docs/implementations/`](./docs/implementations/) - Documentación de Fases 1-9
+- 🛠️ [`docs/soluciones/FIXES-Y-MEJORAS.md`](./docs/soluciones/FIXES-Y-MEJORAS.md) - Todas las soluciones implementadas
 
 ## 🐛 Troubleshooting
 
@@ -325,11 +323,11 @@ docker-compose up -d --build
 
 ## 🎯 Roadmap
 
-### **✅ Fases 1-9: COMPLETADO**
+### **✅ Fase 1-10: COMPLETADO**
 
 - [x] Backend de importación y procesamiento
 - [x] Parser Excel multi-hoja
-- [x] Endpoints API completos (16+)
+- [x] Endpoints API completos (20+)
 - [x] Frontend completo de importación
 - [x] Gestión de trabajos (CRUD + editar + eliminar)
 - [x] Gestión de meses (crear, eliminar, reabrir, procesar)
@@ -337,15 +335,18 @@ docker-compose up -d --build
 - [x] Reporte base anual con 3 hojas
 - [x] Visualización completa de reportes
 - [x] UI/UX profesional y responsive
+- [x] **Nueva UX (Fase 10)** - Selector horizontal, creación automática de 12 meses
 
-### **📋 Fase 10+: Futuro**
+### **📋 Fase 11+: Futuro**
 
+- [ ] Importación de reportes desde nueva UI
 - [ ] Edición de celdas individuales
 - [ ] Exportación a Excel/PDF
 - [ ] Gráficas y análisis (Chart.js)
 - [ ] Colaboración y comentarios
 - [ ] Sistema de roles y permisos
 - [ ] Búsqueda y filtros avanzados
+- [ ] Navegación con teclado (← → entre meses)
 - [ ] Dark mode y personalización
 
 ## 👥 Equipo
@@ -369,7 +370,9 @@ Construido con:
 
 ---
 
-**Estado actual:** ✅ Fases 1-9 completadas - Sistema completamente funcional  
-**Siguiente paso:** 🎯 Fase 10+ según necesidad del proyecto  
+**Estado actual:** ✅ Fase 1-10 completadas - Sistema completamente funcional  
+**Siguiente paso:** 🎯 Fase 11+ según necesidad del proyecto  
 **Última actualización:** Octubre 2025  
-**Versión:** 1.9.0
+**Versión:** 1.1.0
+
+**📚 Documentación completa:** [`docs/README.md`](./docs/README.md)
