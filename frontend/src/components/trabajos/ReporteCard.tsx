@@ -286,7 +286,7 @@ export const ReporteCard: React.FC<ReporteCardProps> = ({
                 fileName={localReporte.archivoOriginal}
               />
             </div>
-          ) : reporte.tipo === "INGRESOS_MI_ADMIN" ? (
+          ) : reporte.tipo === "INGRESOS_MI_ADMIN" || reporte.tipo === "INGRESOS" ? (
             <div className="h-[600px]">
               <MiAdminIngresosTable
                 mesId={mesId}

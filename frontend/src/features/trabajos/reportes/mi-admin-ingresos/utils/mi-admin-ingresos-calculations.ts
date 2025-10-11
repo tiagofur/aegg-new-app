@@ -192,8 +192,6 @@ export const parseExcelToMiAdminIngresos = (
         const estadoRaw = estadoIndex !== -1 ? row[estadoIndex]?.toString().toLowerCase() || '' : '';
         const estadoSat: 'Vigente' | 'Cancelada' = estadoRaw.includes('cancelad') ? 'Cancelada' : 'Vigente';
 
-        console.log(`🔍 Mi Admin Row ${i}: Estado SAT = "${estadoSat}" (raw: "${estadoRaw}", index: ${estadoIndex})`);
-
         // Buscar subtotalAUX desde Auxiliar (ya viene en MXN)
         const auxiliarRow = auxiliarLookup.get(uuid);
         const subtotalAUX = auxiliarRow?.subtotal || null;
@@ -203,6 +201,24 @@ export const parseExcelToMiAdminIngresos = (
 
         // Calcular TC Sugerido
         const tcSugerido = calculateTCSugerido(subtotalAUX, subtotal);
+
+        // --- INICIO DE LOGS DE DEPURACIÓN ---
+        if (i < dataStartRow + 5) { // Loguear solo las primeras 5 filas de datos para no saturar la consola
+            console.log(`[DEBUG] Fila ${i + 1}`, {
+                'Raw Row': row,
+                'Parsed UUID': uuid,
+                'Parsed Folio': folio,
+                'Parsed Subtotal': subtotal,
+                'Parsed Moneda': moneda,
+                'Parsed Tipo Cambio': tipoCambio,
+                'Parsed Estado SAT': estadoSat,
+                'Auxiliar Row Found': auxiliarRow ? 'Sí' : 'No',
+                'Calculated Subtotal AUX': subtotalAUX,
+                'Calculated Subtotal MXN': subtotalMXN,
+                'Calculated TC Sugerido': tcSugerido,
+            });
+        }
+        // --- FIN DE LOGS DE DEPURACIÓN ---
 
         rows.push({
             id: uuid,
