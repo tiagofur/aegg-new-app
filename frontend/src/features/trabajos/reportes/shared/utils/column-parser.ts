@@ -86,8 +86,8 @@ export const normalizeHeader = (header: any): string => {
  * findColumnIndex(headers, ["tipocambio", "tipo cambio", "tc"]) // 2
  */
 export const findColumnIndex = (
-    headers: string[],
-    keywords: string[]
+    headers: readonly string[],
+    keywords: readonly string[]
 ): number => {
     return headers.findIndex((h: string) =>
         keywords.some((keyword) => {
@@ -266,7 +266,7 @@ export interface ColumnValidationResult {
  */
 export const validateRequiredColumns = (
     headers: any[],
-    requiredColumns: Record<string, string[]>
+    requiredColumns: Record<string, readonly string[]>
 ): ColumnValidationResult => {
     const normalizedHeaders = headers.map(normalizeHeader);
     const missing: string[] = [];

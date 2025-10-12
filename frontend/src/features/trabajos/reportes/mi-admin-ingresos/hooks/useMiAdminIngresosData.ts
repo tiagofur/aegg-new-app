@@ -82,7 +82,9 @@ export const useMiAdminIngresosData = ({
                 queryKey: ['mes', mesId],
             });
         },
-    }); const handleSave = async (data: MiAdminIngresosRow[]) => {
+    });
+
+    const handleSave = async (data: MiAdminIngresosRow[]) => {
         await saveMutation.mutateAsync(data);
     };
 

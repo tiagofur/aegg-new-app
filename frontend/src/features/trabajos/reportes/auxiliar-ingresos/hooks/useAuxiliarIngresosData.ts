@@ -95,7 +95,9 @@ export const useAuxiliarIngresosData = ({
         data: rawData || [],
         isLoading,
         error: error as Error | null,
-        saveChanges: saveChangesMutation.mutateAsync,
+        saveChanges: async (updatedData: AuxiliarIngresosRow[]) => {
+            await saveChangesMutation.mutateAsync(updatedData);
+        },
         isSaving: saveChangesMutation.isPending,
         saveError: saveChangesMutation.error as Error | null,
         refetch,
@@ -111,7 +113,6 @@ const convertToExcelFormat = (data: AuxiliarIngresosRow[]): any[][] => {
     if (data.length === 0) return [];
 
     // Construir headers a partir de las keys del primer objeto
-    const firstRow = data[0];
     const headers = [
         'UUID',
         'Folio',

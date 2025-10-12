@@ -8,9 +8,6 @@ import {
     AuxiliarIngresosRow,
     EstadoSat
 } from '../types';
-import {
-    updateRowEstadoSat
-} from '../utils';
 
 interface UseAuxiliarIngresosEditProps {
     /** Datos originales del reporte */
@@ -45,6 +42,23 @@ export const useAuxiliarIngresosEdit = ({
     const [editedRows, setEditedRows] = useState<
         Map<string, Partial<AuxiliarIngresosRow>>
     >(new Map());
+
+    /**
+     * Actualiza el tipo de cambio de una fila
+     */
+    const updateTipoCambio = useCallback((uuid: string, tipoCambio: number) => {
+        setEditedRows((prev) => {
+            const newMap = new Map(prev);
+            const edits = newMap.get(uuid) || {};
+
+            newMap.set(uuid, {
+                ...edits,
+                tipoCambio,
+            });
+
+            return newMap;
+        });
+    }, []);
 
     /**
      * Actualiza el estado SAT de una fila
@@ -117,6 +131,7 @@ export const useAuxiliarIngresosEdit = ({
         data: mergedData,
         editedRows,
         isDirty,
+        updateTipoCambio,
         updateEstadoSat,
         resetEdits,
         getRowEdits,

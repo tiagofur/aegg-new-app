@@ -48,6 +48,9 @@ export interface MiAdminIngresosRow {
     /** TC Sugerido - CALCULADO: subtotalAUX / subtotal */
     tcSugerido: number | null;
 
+    /** Indica si la fila es un resumen (Totales) */
+    isSummary?: boolean;
+
     /** Columnas adicionales del Excel */
     [key: string]: any;
 }
@@ -125,6 +128,9 @@ export interface TotalesComparison {
     /** Si los totales coinciden (diferencia <= tolerancia) */
     match: boolean;
 
+    /** Alias para match para compatibilidad con componentes existentes */
+    isMatch: boolean;
+
     /** Total de Mi Admin (solo vigentes) */
     miAdminTotal: number;
 
@@ -133,6 +139,9 @@ export interface TotalesComparison {
 
     /** Diferencia absoluta */
     difference: number;
+
+    /** Mensaje descriptivo para tooltips */
+    tooltip: string;
 }
 
 /**

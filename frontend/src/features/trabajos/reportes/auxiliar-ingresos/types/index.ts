@@ -38,6 +38,9 @@ export interface AuxiliarIngresosRow {
     /** Estado SAT de la factura (editable) */
     estadoSat: EstadoSat;
 
+    /** Indica si la fila es de resumen (Totales) */
+    isSummary?: boolean;
+
     /** Otras columnas dinámicas del Excel */
     [key: string]: any;
 }
@@ -54,6 +57,18 @@ export interface AuxiliarIngresosTotales {
 
     /** Cantidad de facturas canceladas */
     cantidadCanceladas: number;
+
+    /** Cantidad total de facturas */
+    cantidadTotal: number;
+
+    /** Porcentaje de facturas vigentes */
+    porcentajeVigentes: number;
+
+    /** Porcentaje de facturas canceladas */
+    porcentajeCanceladas: number;
+
+    /** Promedio del subtotal de facturas vigentes */
+    promedioSubtotalVigentes: number;
 
     /** Indica si el total es viable (sin canceladas) */
     totalViable: boolean;

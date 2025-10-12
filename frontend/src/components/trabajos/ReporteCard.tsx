@@ -281,12 +281,10 @@ export const ReporteCard: React.FC<ReporteCardProps> = ({
               <AuxiliarIngresosTable
                 mesId={mesId}
                 reporteId={localReporte.id}
-                year={trabajoYear}
-                month={mesNumber}
-                fileName={localReporte.archivoOriginal}
               />
             </div>
-          ) : reporte.tipo === "INGRESOS_MI_ADMIN" || reporte.tipo === "INGRESOS" ? (
+          ) : reporte.tipo === "INGRESOS_MI_ADMIN" ||
+            reporte.tipo === "INGRESOS" ? (
             <div className="h-[600px]">
               <MiAdminIngresosTable
                 mesId={mesId}

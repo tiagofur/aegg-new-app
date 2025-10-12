@@ -15,12 +15,8 @@ interface UseAuxiliarIngresosCalculationsProps {
 interface UseAuxiliarIngresosCalculationsReturn {
     /** Totales calculados */
     totales: AuxiliarIngresosTotales;
-    /** Porcentaje de facturas vigentes */
-    porcentajeVigentes: number;
-    /** Porcentaje de facturas canceladas */
-    porcentajeCanceladas: number;
-    /** Promedio de subtotal por factura vigente */
-    promedioSubtotalVigentes: number;
+    /** Datos con fila de totales incluida */
+    dataWithTotals: AuxiliarIngresosRow[];
 }
 
 /**
@@ -38,34 +34,37 @@ export const useAuxiliarIngresosCalculations = ({
         return calculateTotales(data);
     }, [data]);
 
-    /**
-     * Calcula porcentaje de facturas vigentes
-     */
-    const porcentajeVigentes = useMemo(() => {
-        if (data.length === 0) return 0;
-        return (totales.cantidadVigentes / data.length) * 100;
-    }, [totales.cantidadVigentes, data.length]);
+    const dataWithTotals = useMemo(() => {
+        if (!data || data.length === 0) {
+            return data;
+        }
 
-    /**
-     * Calcula porcentaje de facturas canceladas
-     */
-    const porcentajeCanceladas = useMemo(() => {
-        if (data.length === 0) return 0;
-        return (totales.cantidadCanceladas / data.length) * 100;
-    }, [totales.cantidadCanceladas, data.length]);
+        const alreadyHasSummary = data.some(
+            (row) => row.id === '__auxiliar_totals__' || row.folio?.toLowerCase() === 'totales'
+        );
 
-    /**
-     * Calcula promedio de subtotal por factura vigente
-     */
-    const promedioSubtotalVigentes = useMemo(() => {
-        if (totales.cantidadVigentes === 0) return 0;
-        return totales.totalSubtotal / totales.cantidadVigentes;
-    }, [totales.totalSubtotal, totales.cantidadVigentes]);
+        if (alreadyHasSummary) {
+            return data;
+        }
+
+        const totalsRow: AuxiliarIngresosRow = {
+            id: '__auxiliar_totals__',
+            folio: 'Totales',
+            fecha: null,
+            rfc: null,
+            razonSocial: null,
+            subtotal: totales.totalSubtotal,
+            moneda: 'MXN',
+            tipoCambio: null,
+            estadoSat: 'Vigente',
+            isSummary: true,
+        };
+
+        return [...data, totalsRow];
+    }, [data, totales]);
 
     return {
         totales,
-        porcentajeVigentes,
-        porcentajeCanceladas,
-        promedioSubtotalVigentes,
+        dataWithTotals,
     };
 };

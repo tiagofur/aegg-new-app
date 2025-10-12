@@ -54,6 +54,10 @@ export const getRowBackgroundColor = (
     comparison: ComparisonResult | undefined,
     isComparisonActive: boolean
 ): string => {
+    if (row.isSummary) {
+        return 'bg-blue-50 font-semibold';
+    }
+
     // Prioridad 1: Facturas canceladas siempre tienen su estilo
     if (row.estadoSat === 'Cancelada') {
         return rowStyles.cancelada;

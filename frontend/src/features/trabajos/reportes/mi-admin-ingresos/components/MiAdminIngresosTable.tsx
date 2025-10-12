@@ -3,7 +3,7 @@
  * Integra todos los hooks y componentes del feature con columnas específicas
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -28,12 +28,7 @@ import {
   EditableEstadoSatCell,
 } from "./cells";
 
-import {
-  formatCurrency,
-  formatDate,
-  formatTipoCambio,
-  getRowBackgroundColor,
-} from "../utils";
+import { formatCurrency, formatDate, getRowBackgroundColor } from "../utils";
 import type { MiAdminIngresosRow } from "../types";
 import type { AuxiliarIngresosRow } from "../../auxiliar-ingresos";
 
@@ -87,7 +82,7 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
     auxiliarData,
   });
 
-  const { totales } = useMiAdminIngresosCalculations({
+  const { totales, dataWithTotals } = useMiAdminIngresosCalculations({
     data: editedData,
   });
 
@@ -101,6 +96,36 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
     auxiliarData,
   });
 
+  useEffect(() => {
+    if (!hasUnsavedChanges || isSaving || !mesId || !reporteId) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        await handleSave(editedData);
+        resetChanges();
+      } catch (autoSaveError) {
+        console.error(
+          "❌ Error auto-guardando Mi Admin Ingresos:",
+          autoSaveError
+        );
+      }
+    }, 2000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [
+    editedData,
+    handleSave,
+    hasUnsavedChanges,
+    isSaving,
+    mesId,
+    reporteId,
+    resetChanges,
+  ]);
+
   // State local para sorting y filtering
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -110,52 +135,112 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
     () => [
       columnHelper.accessor("folio", {
         header: "Folio",
-        cell: (info) => (
-          <span className="font-mono text-sm font-semibold">
-            {info.getValue()}
-          </span>
-        ),
+        cell: (info) => {
+          const row = info.row.original;
+          if (row.isSummary) {
+            return (
+              <span className="font-mono text-sm font-bold uppercase text-blue-700">
+                Totales
+              </span>
+            );
+          }
+
+          return (
+            <span className="font-mono text-sm font-semibold">
+              {info.getValue()}
+            </span>
+          );
+        },
         size: 120,
       }),
       columnHelper.accessor("fecha", {
         header: "Fecha",
-        cell: (info) => formatDate(info.getValue()),
+        cell: (info) => {
+          const row = info.row.original;
+          if (row.isSummary) {
+            return <span className="text-xs text-gray-500">-</span>;
+          }
+          return formatDate(info.getValue());
+        },
         size: 100,
       }),
       columnHelper.accessor("rfc", {
         header: "RFC",
-        cell: (info) => (
-          <span className="font-mono text-sm">{info.getValue()}</span>
-        ),
+        cell: (info) => {
+          const row = info.row.original;
+          if (row.isSummary) {
+            return <span className="text-xs text-gray-500">-</span>;
+          }
+          return <span className="font-mono text-sm">{info.getValue()}</span>;
+        },
         size: 140,
       }),
       columnHelper.accessor("razonSocial", {
         header: "Razón Social",
-        cell: (info) => (
-          <span className="text-sm truncate max-w-xs" title={info.getValue()}>
-            {info.getValue()}
-          </span>
-        ),
+        cell: (info) => {
+          const row = info.row.original;
+          if (row.isSummary) {
+            return <span className="text-xs text-gray-500">-</span>;
+          }
+          const value = info.getValue();
+          return (
+            <span
+              className="text-sm truncate max-w-xs"
+              title={value ?? undefined}
+            >
+              {value ?? "-"}
+            </span>
+          );
+        },
         size: 200,
       }),
       columnHelper.accessor("subtotal", {
         header: "Subtotal",
-        cell: (info) => formatCurrency(info.getValue()),
+        cell: (info) => {
+          const row = info.row.original;
+          const value = info.getValue();
+          return (
+            <span
+              className={
+                row.isSummary ? "font-semibold text-blue-700" : undefined
+              }
+            >
+              {formatCurrency(value)}
+            </span>
+          );
+        },
         size: 120,
       }),
       columnHelper.accessor("moneda", {
         header: "Moneda",
-        cell: (info) => (
-          <span className="text-center block font-semibold">
-            {info.getValue()}
-          </span>
-        ),
+        cell: (info) => {
+          const row = info.row.original;
+          if (row.isSummary) {
+            return (
+              <span className="text-center block font-semibold text-blue-700">
+                MXN
+              </span>
+            );
+          }
+          return (
+            <span className="text-center block font-semibold">
+              {info.getValue()}
+            </span>
+          );
+        },
         size: 80,
       }),
       columnHelper.accessor("tipoCambio", {
         header: "Tipo Cambio",
         cell: (info) => {
           const row = info.row.original;
+          if (row.isSummary) {
+            return (
+              <span className="text-center block text-sm font-semibold text-blue-700">
+                -
+              </span>
+            );
+          }
           return (
             <EditableTipoCambioCell
               value={info.getValue()}
@@ -171,6 +256,16 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
         header: "Subtotal AUX",
         cell: (info) => {
           const value = info.getValue();
+          const row = info.row.original;
+
+          if (row.isSummary) {
+            return (
+              <span className="font-semibold text-blue-700">
+                {formatCurrency(value ?? 0)}
+              </span>
+            );
+          }
+
           return value !== null ? (
             formatCurrency(value)
           ) : (
@@ -181,13 +276,32 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
       }),
       columnHelper.accessor("subtotalMXN", {
         header: "Subtotal MXN",
-        cell: (info) => formatCurrency(info.getValue()),
+        cell: (info) => {
+          const row = info.row.original;
+          const value = info.getValue();
+          return (
+            <span
+              className={
+                row.isSummary ? "font-semibold text-blue-700" : undefined
+              }
+            >
+              {formatCurrency(value)}
+            </span>
+          );
+        },
         size: 120,
       }),
       columnHelper.accessor("tcSugerido", {
         header: "TC Sugerido",
         cell: (info) => {
           const row = info.row.original;
+          if (row.isSummary) {
+            return (
+              <span className="text-center block text-sm font-semibold text-blue-700">
+                -
+              </span>
+            );
+          }
           return (
             <TCSugeridoCell
               tcSugerido={info.getValue()}
@@ -204,6 +318,13 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
         cell: (info) => {
           const row = info.row.original;
           const value = info.getValue();
+          if (row.isSummary) {
+            return (
+              <span className="text-center block text-sm font-semibold text-blue-700">
+                --
+              </span>
+            );
+          }
           return (
             <EditableEstadoSatCell
               value={value || "Vigente"}
@@ -221,6 +342,9 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
               header: "Comparación",
               cell: (info) => {
                 const row = info.row.original;
+                if (row.isSummary) {
+                  return null;
+                }
                 const comparison = comparisonMap.get(row.folio);
 
                 if (!comparison) return null;
@@ -259,7 +383,7 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
 
   // Configuración de TanStack Table
   const table = useReactTable({
-    data: editedData,
+    data: dataWithTotals || [],
     columns,
     state: {
       sorting,

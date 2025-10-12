@@ -3,7 +3,7 @@
  * Integra todos los hooks y componentes del feature
  */
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -14,7 +14,6 @@ import {
   type SortingState,
   type ColumnFiltersState,
 } from "@tanstack/react-table";
-import { useState } from "react";
 
 import { useAuxiliarIngresosData } from "../hooks/useAuxiliarIngresosData";
 import { useAuxiliarIngresosEdit } from "../hooks/useAuxiliarIngresosEdit";
@@ -34,12 +33,6 @@ interface AuxiliarIngresosTableProps {
   mesId: string;
   /** ID del reporte */
   reporteId: string;
-  /** Año del reporte */
-  year: number;
-  /** Mes del reporte (1-12) */
-  month: number;
-  /** Nombre del archivo Excel (opcional) */
-  fileName?: string;
 }
 
 const columnHelper = createColumnHelper<AuxiliarIngresosRow>();
@@ -50,9 +43,6 @@ const columnHelper = createColumnHelper<AuxiliarIngresosRow>();
 export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
   mesId,
   reporteId,
-  year,
-  month,
-  fileName,
 }) => {
   // Hooks de datos y lógica
   const { data, isLoading, error, saveChanges, isSaving } =
@@ -64,26 +54,15 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
 
   const {
     data: editedData,
-    editedRows,
+    updateTipoCambio,
     updateEstadoSat,
     isDirty,
     resetEdits,
   } = useAuxiliarIngresosEdit({ initialData: data });
 
-  const {
-    totales: baseTotales,
-    porcentajeVigentes,
-    porcentajeCanceladas,
-    promedioSubtotalVigentes,
-  } = useAuxiliarIngresosCalculations({ data: editedData });
-
-  // Merge calculated values into totales object
-  const totales = {
-    ...baseTotales,
-    porcentajeVigentes,
-    porcentajeCanceladas,
-    promedioSubtotalVigentes,
-  };
+  const { totales, dataWithTotals } = useAuxiliarIngresosCalculations({
+    data: editedData,
+  });
 
   const {
     isActive: isComparisonActive,
@@ -95,6 +74,36 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
     miadminData: undefined, // TODO: Load Mi Admin data when needed
   });
 
+  useEffect(() => {
+    if (!isDirty || isSaving || !mesId || !reporteId) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        await saveChanges(editedData);
+        resetEdits();
+      } catch (autoSaveError) {
+        console.error(
+          "❌ Error auto-guardando Auxiliar Ingresos:",
+          autoSaveError
+        );
+      }
+    }, 2000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [
+    editedData,
+    isDirty,
+    isSaving,
+    mesId,
+    reporteId,
+    resetEdits,
+    saveChanges,
+  ]);
+
   // State local para sorting y filtering
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -104,57 +113,116 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
     () => [
       columnHelper.accessor("folio", {
         header: "Folio",
-        cell: (info) => (
-          <span className="font-mono text-xs">{info.getValue() || "-"}</span>
-        ),
+        cell: (info) => {
+          const row = info.row.original;
+          if (row.isSummary) {
+            return (
+              <span className="font-mono text-xs font-bold uppercase text-blue-700">
+                Totales
+              </span>
+            );
+          }
+          return (
+            <span className="font-mono text-xs">{info.getValue() || "-"}</span>
+          );
+        },
         size: 100,
       }),
       columnHelper.accessor("fecha", {
         header: "Fecha",
-        cell: (info) => formatDate(info.getValue()),
+        cell: (info) => {
+          const row = info.row.original;
+          if (row.isSummary) {
+            return <span className="text-xs text-gray-500">-</span>;
+          }
+          return formatDate(info.getValue());
+        },
         size: 100,
       }),
       columnHelper.accessor("rfc", {
         header: "RFC",
-        cell: (info) => (
-          <span className="font-mono text-sm">{info.getValue()}</span>
-        ),
+        cell: (info) => {
+          const row = info.row.original;
+          if (row.isSummary) {
+            return <span className="text-xs text-gray-500">-</span>;
+          }
+          return <span className="font-mono text-sm">{info.getValue()}</span>;
+        },
         size: 140,
       }),
       columnHelper.accessor("subtotal", {
         header: "Subtotal MXN",
-        cell: (info) => formatCurrency(info.getValue()),
+        cell: (info) => {
+          const row = info.row.original;
+          const value = info.getValue();
+          return (
+            <span
+              className={
+                row.isSummary ? "font-semibold text-blue-700" : undefined
+              }
+            >
+              {formatCurrency(value)}
+            </span>
+          );
+        },
         size: 130,
       }),
       columnHelper.accessor("moneda", {
         header: "Moneda",
-        cell: (info) => (
-          <span className="text-center block font-semibold text-xs">
-            {info.getValue()}
-          </span>
-        ),
-        size: 70,
-      }),
-      columnHelper.accessor("tipoCambio", {
-        header: "TC Aplicado",
         cell: (info) => {
-          const tc = info.getValue();
+          const row = info.row.original;
+          if (row.isSummary) {
+            return (
+              <span className="text-center block font-semibold text-xs text-blue-700">
+                MXN
+              </span>
+            );
+          }
           return (
-            <span className="text-center block text-sm text-gray-600">
-              {tc ? tc.toFixed(4) : "-"}
+            <span className="text-center block font-semibold text-xs">
+              {info.getValue()}
             </span>
           );
         },
-        size: 90,
+        size: 70,
+      }),
+      columnHelper.accessor("tipoCambio", {
+        header: "Tipo Cambio",
+        cell: (info) => {
+          const row = info.row.original;
+          if (row.isSummary) {
+            return (
+              <span className="text-center block text-sm font-semibold text-blue-700">
+                -
+              </span>
+            );
+          }
+          return (
+            <EditableTipoCambioCell
+              value={info.getValue()}
+              onChange={(newValue) => updateTipoCambio(row.id, newValue)}
+              disabled={row.moneda === "MXN"}
+              moneda={row.moneda}
+            />
+          );
+        },
+        size: 110,
       }),
       columnHelper.accessor("estadoSat", {
         header: "Estado SAT",
         cell: (info) => {
           const row = info.row.original;
           const value = info.getValue();
+          if (row.isSummary) {
+            return (
+              <span className="text-center block text-sm font-semibold text-blue-700">
+                --
+              </span>
+            );
+          }
           return (
             <EditableEstadoSatCell
-              value={value || "Vigente"} 
+              value={value || "Vigente"}
               onChange={(newValue) => updateEstadoSat(row.id, newValue)}
             />
           );
@@ -169,6 +237,9 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
               header: "Comparación",
               cell: (info) => {
                 const row = info.row.original;
+                if (row.isSummary) {
+                  return null;
+                }
                 const comparison = comparisonMap.get(row.id);
 
                 if (!comparison) return null;
@@ -209,12 +280,12 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
           ]
         : []),
     ],
-    [isComparisonActive, comparisonMap, updateEstadoSat]
+    [isComparisonActive, comparisonMap, updateEstadoSat, updateTipoCambio]
   );
 
   // Configuración de TanStack Table
   const table = useReactTable({
-    data: editedData,
+    data: dataWithTotals || [],
     columns,
     state: {
       sorting,

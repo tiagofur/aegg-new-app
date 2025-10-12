@@ -12,7 +12,6 @@ import { MI_ADMIN_INGRESOS_CONFIG } from '../types';
 // Importar utilities de FASE 8
 import {
     COLUMN_KEYWORDS,
-    normalizeHeader,
     findColumnIndex,
     findHeaderRow,
     validateRequiredColumns,
@@ -66,7 +65,9 @@ export const parseExcelToMiAdminIngresos = (
         );
     }
 
-    const headers = excelData[headerRowIndex];
+    const headers = Array.isArray(excelData[headerRowIndex])
+        ? [...excelData[headerRowIndex]]
+        : [...(excelData[headerRowIndex] ?? [])];
     const dataStartRow = headerRowIndex + 1;
 
     console.log(`📋 Headers encontrados en fila ${headerRowIndex + 1}:`, headers);
@@ -109,7 +110,14 @@ export const parseExcelToMiAdminIngresos = (
     const razonSocialIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.RAZON_SOCIAL);
     const ivaIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.IVA);
     const totalIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.TOTAL);
-    const estadoIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.ESTADO_SAT);
+    let estadoIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.ESTADO_SAT);
+
+    if (estadoIndex === -1) {
+        console.warn('⚠️ Columna "Estado SAT" no encontrada en Mi Admin. Se agregará automáticamente con valor "Vigente".');
+        headers.push('Estado SAT');
+        estadoIndex = headers.length - 1;
+        excelData[headerRowIndex] = headers;
+    }
 
     console.log('✅ Columnas detectadas:', {
         UUID: uuidIndex,
@@ -141,8 +149,14 @@ export const parseExcelToMiAdminIngresos = (
     let tcCorregidosCount = 0;
 
     for (let i = dataStartRow; i < excelData.length; i++) {
-        const row = excelData[i];
+        const rawRow = excelData[i];
+        const row = Array.isArray(rawRow) ? [...rawRow] : [];
         if (!row || row.length === 0) continue;
+
+        const firstCell = row[0]?.toString().toLowerCase() || '';
+        if (firstCell === 'total' || firstCell === 'totales') {
+            continue;
+        }
 
         const uuid = row[uuidIndex]?.toString().trim() || `row-${i}`;
         if (!uuid || uuid === `row-${i}`) {
@@ -189,8 +203,17 @@ export const parseExcelToMiAdminIngresos = (
         const razonSocial = razonSocialIndex !== -1 ? row[razonSocialIndex]?.toString().trim() || null : null;
 
         // Estado SAT
+        if (estadoIndex >= 0 && row.length <= estadoIndex) {
+            row.length = estadoIndex + 1;
+        }
+
         const estadoRaw = estadoIndex !== -1 ? row[estadoIndex]?.toString().toLowerCase() || '' : '';
         const estadoSat: 'Vigente' | 'Cancelada' = estadoRaw.includes('cancelad') ? 'Cancelada' : 'Vigente';
+
+        if (!estadoRaw && estadoIndex !== -1) {
+            row[estadoIndex] = 'Vigente';
+            excelData[i] = row;
+        }
 
         // Buscar subtotalAUX desde Auxiliar (ya viene en MXN)
         const auxiliarRow = auxiliarLookup.get(uuid);
@@ -319,7 +342,7 @@ export const calculateTotales = (
  */
 export const recalculateRowAfterTipoCambioChange = (
     row: MiAdminIngresosRow,
-    nuevoTipoCambio: number
+    nuevoTipoCambio: number | null
 ): Partial<MiAdminIngresosRow> => {
     const subtotalMXN = calculateSubtotalMXN(row.subtotal, row.moneda, nuevoTipoCambio);
 
@@ -339,6 +362,9 @@ export const updateRowEstadoSat = (
     row: MiAdminIngresosRow,
     nuevoEstado: 'Vigente' | 'Cancelada'
 ): Partial<MiAdminIngresosRow> => {
+    if (row.estadoSat === nuevoEstado) {
+        return { estadoSat: nuevoEstado };
+    }
     return {
         estadoSat: nuevoEstado,
     };

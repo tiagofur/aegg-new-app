@@ -159,6 +159,7 @@ export const useMiAdminIngresosComparison = ({
         const isMatch = difference <= COMPARISON_TOLERANCE;
 
         return {
+            match: isMatch,
             miAdminTotal,
             auxiliarTotal,
             difference,

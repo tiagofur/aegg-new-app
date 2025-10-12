@@ -10,7 +10,6 @@ import {
     EstadoSat,
 } from '../types';
 import {
-    normalizeHeader,
     findColumnIndex,
     findHeaderRow,
     COLUMN_KEYWORDS,
@@ -48,7 +47,9 @@ export const parseExcelToAuxiliarIngresos = (
         );
     }
 
-    const headers = excelData[headerRowIndex];
+    const headers = Array.isArray(excelData[headerRowIndex])
+        ? [...excelData[headerRowIndex]]
+        : [...(excelData[headerRowIndex] ?? [])];
     const dataStartRow = headerRowIndex + 1;
 
     console.log(`📋 Headers encontrados en fila ${headerRowIndex + 1}:`, headers);
@@ -77,7 +78,9 @@ export const parseExcelToAuxiliarIngresos = (
             `${headers.map((h, i) => `  ${i + 1}. ${h}`).join('\n')}\n\n` +
             `Por favor, verifica que tu archivo Excel contenga todas las columnas necesarias.`
         );
-    }    // ✅ Obtener índices de columnas obligatorias
+    }
+
+    // ✅ Obtener índices de columnas obligatorias
     const uuidIndex = found['UUID/Folio Fiscal'];
     const subtotalIndex = found['Subtotal'];
     const monedaIndex = found['Moneda'];
@@ -88,7 +91,14 @@ export const parseExcelToAuxiliarIngresos = (
     const fechaIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.FECHA);
     const rfcIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.RFC);
     const razonSocialIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.RAZON_SOCIAL);
-    const estadoIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.ESTADO_SAT);
+    let estadoIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.ESTADO_SAT);
+
+    if (estadoIndex === -1) {
+        console.warn('⚠️ Columna "Estado SAT" no encontrada en Auxiliar. Se agregará automáticamente.');
+        headers.push('Estado SAT');
+        estadoIndex = headers.length - 1;
+        excelData[headerRowIndex] = headers;
+    }
 
     console.log('✅ Columnas detectadas:', {
         UUID: uuidIndex,
@@ -106,8 +116,14 @@ export const parseExcelToAuxiliarIngresos = (
     const rows: AuxiliarIngresosRow[] = [];
 
     for (let i = dataStartRow; i < excelData.length; i++) {
-        const row = excelData[i];
+        const rawRow = excelData[i];
+        const row = Array.isArray(rawRow) ? [...rawRow] : [];
         if (!row || row.length === 0) continue;
+
+        const firstCell = row[0]?.toString().toLowerCase() || '';
+        if (firstCell === 'total' || firstCell === 'totales') {
+            continue;
+        }
 
         const uuid = row[uuidIndex]?.toString().trim() || `row-${i}`;
         if (!uuid || uuid === `row-${i}`) {
@@ -127,8 +143,17 @@ export const parseExcelToAuxiliarIngresos = (
         const razonSocial = razonSocialIndex !== -1 ? row[razonSocialIndex]?.toString().trim() || null : null;
 
         // Estado SAT
+        if (estadoIndex >= 0 && row.length <= estadoIndex) {
+            row.length = estadoIndex + 1;
+        }
+
         const estadoRaw = estadoIndex !== -1 ? row[estadoIndex]?.toString().toLowerCase() || '' : '';
         const estadoSat: EstadoSat = estadoRaw.includes('cancelad') ? 'Cancelada' : 'Vigente';
+
+        if (!estadoRaw && estadoIndex !== -1) {
+            row[estadoIndex] = 'Vigente';
+            excelData[i] = row;
+        }
 
         console.log(`🔍 Row ${i}: Estado SAT = "${estadoSat}" (raw: "${estadoRaw}", index: ${estadoIndex})`);
 
@@ -168,10 +193,25 @@ export const calculateTotales = (
         0
     );
 
+    const cantidadTotal = data.length;
+    const porcentajeVigentes = cantidadTotal > 0
+        ? (vigentes.length / cantidadTotal) * 100
+        : 0;
+    const porcentajeCanceladas = cantidadTotal > 0
+        ? (canceladas.length / cantidadTotal) * 100
+        : 0;
+    const promedioSubtotalVigentes = vigentes.length > 0
+        ? totalSubtotal / vigentes.length
+        : 0;
+
     return {
         totalSubtotal,
         cantidadVigentes: vigentes.length,
         cantidadCanceladas: canceladas.length,
+        cantidadTotal,
+        porcentajeVigentes,
+        porcentajeCanceladas,
+        promedioSubtotalVigentes,
         totalViable: canceladas.length === 0,
     };
 };
