@@ -11,11 +11,11 @@ export type EstadoSat = 'Vigente' | 'Cancelada';
  * Fila de datos del reporte Auxiliar de Ingresos
  */
 export interface AuxiliarIngresosRow {
-    /** UUID de la factura (identificador único) */
+    /** UUID de la factura (identificador único, opcional) */
     id: string;
 
-    /** Folio de la factura (para comparación con Mi Admin) */
-    folio: string | null;
+    /** Folio de la factura - CAMPO CLAVE para comparación con Mi Admin */
+    folio: string;
 
     /** Fecha de emisión de la factura */
     fecha: string | null;

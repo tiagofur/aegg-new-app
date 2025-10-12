@@ -22,10 +22,10 @@ import {
 
 /**
  * Parsea datos de Excel (array bidimensional) a formato tipado
- * FASE 8: Implementación con parsing flexible y validación robusta
+ * VERSIÓN DINÁMICA: Importa TODAS las columnas del Excel
  * 
  * @param excelData - Datos del Excel (busca header dinámicamente)
- * @returns Array de filas tipadas
+ * @returns Array de filas tipadas con TODAS las columnas del Excel
  */
 export const parseExcelToAuxiliarIngresos = (
     excelData: any[][]
@@ -34,7 +34,7 @@ export const parseExcelToAuxiliarIngresos = (
         return [];
     }
 
-    console.log('📊 Parseando Auxiliar de Ingresos...');
+    console.log('📊 Parseando Auxiliar de Ingresos (VERSIÓN DINÁMICA)...');
 
     // 🔍 Buscar fila del header dinámicamente (primera fila con 8+ columnas)
     const headerRowIndex = findHeaderRow(excelData, 8);
@@ -54,9 +54,9 @@ export const parseExcelToAuxiliarIngresos = (
 
     console.log(`📋 Headers encontrados en fila ${headerRowIndex + 1}:`, headers);
 
-    // ✅ Definir columnas obligatorias
+    // ✅ Definir columnas obligatorias (solo las esenciales)
     const requiredColumns = {
-        'UUID/Folio Fiscal': COLUMN_KEYWORDS.UUID,
+        'Folio': COLUMN_KEYWORDS.FOLIO, // FOLIO es el campo clave
         'Subtotal': COLUMN_KEYWORDS.SUBTOTAL,
         'Moneda': COLUMN_KEYWORDS.MONEDA,
         'Tipo Cambio': COLUMN_KEYWORDS.TIPO_CAMBIO,
@@ -81,13 +81,13 @@ export const parseExcelToAuxiliarIngresos = (
     }
 
     // ✅ Obtener índices de columnas obligatorias
-    const uuidIndex = found['UUID/Folio Fiscal'];
+    const folioIndex = found['Folio']; // FOLIO es obligatorio ahora
     const subtotalIndex = found['Subtotal'];
     const monedaIndex = found['Moneda'];
     const tipoCambioIndex = found['Tipo Cambio'];
 
-    // ✅ Obtener índices de columnas opcionales
-    const folioIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.FOLIO);
+    // ✅ Obtener índices de columnas opcionales conocidas
+    const uuidIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.UUID); // UUID ahora es opcional
     const fechaIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.FECHA);
     const rfcIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.RFC);
     const razonSocialIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.RAZON_SOCIAL);
@@ -101,8 +101,8 @@ export const parseExcelToAuxiliarIngresos = (
     }
 
     console.log('✅ Columnas detectadas:', {
-        UUID: uuidIndex,
-        Folio: folioIndex,
+        Folio: folioIndex, // Campo clave
+        UUID: uuidIndex, // Opcional
         Fecha: fechaIndex,
         RFC: rfcIndex,
         'Razón Social': razonSocialIndex,
@@ -125,11 +125,15 @@ export const parseExcelToAuxiliarIngresos = (
             continue;
         }
 
-        const uuid = row[uuidIndex]?.toString().trim() || `row-${i}`;
-        if (!uuid || uuid === `row-${i}`) {
-            console.warn(`⚠️ Fila ${i + 1} sin UUID, se omitirá`);
+        // FOLIO es el campo obligatorio ahora
+        const folio = row[folioIndex]?.toString().trim() || `row-${i}`;
+        if (!folio || folio === `row-${i}`) {
+            console.warn(`⚠️ Fila ${i + 1} sin FOLIO, se omitirá`);
             continue;
         }
+
+        // UUID es opcional
+        const uuid = uuidIndex !== -1 ? row[uuidIndex]?.toString().trim() || folio : folio;
 
         // Parsear valores usando funciones especializadas
         const moneda = parseMoneda(row[monedaIndex]);
@@ -137,7 +141,6 @@ export const parseExcelToAuxiliarIngresos = (
         const subtotal = parseAmount(row[subtotalIndex]); // Ya viene en MXN
 
         // Valores opcionales
-        const folio = folioIndex !== -1 ? row[folioIndex]?.toString().trim() || null : null;
         const fecha = fechaIndex !== -1 ? parseFecha(row[fechaIndex]) : null;
         const rfc = rfcIndex !== -1 ? row[rfcIndex]?.toString().trim() || null : null;
         const razonSocial = razonSocialIndex !== -1 ? row[razonSocialIndex]?.toString().trim() || null : null;
@@ -155,11 +158,29 @@ export const parseExcelToAuxiliarIngresos = (
             excelData[i] = row;
         }
 
-        console.log(`🔍 Row ${i}: Estado SAT = "${estadoSat}" (raw: "${estadoRaw}", index: ${estadoIndex})`);
+        console.log(`🔍 Row ${i}: FOLIO = "${folio}", Estado SAT = "${estadoSat}" (raw: "${estadoRaw}")`);
+
+        // --- IMPORTAR TODAS LAS COLUMNAS DINÁMICAMENTE ---
+        const dynamicFields: Record<string, any> = {};
+        headers.forEach((header, index) => {
+            if (index !== folioIndex && 
+                index !== uuidIndex &&
+                index !== subtotalIndex && 
+                index !== monedaIndex && 
+                index !== tipoCambioIndex &&
+                index !== fechaIndex &&
+                index !== rfcIndex &&
+                index !== razonSocialIndex &&
+                index !== estadoIndex) {
+                // Esta es una columna extra que no procesamos explícitamente
+                const headerName = String(header || `col_${index}`);
+                dynamicFields[headerName] = row[index];
+            }
+        });
 
         rows.push({
-            id: uuid,
-            folio,
+            id: uuid, // Mantener UUID como id para compatibilidad
+            folio: folio, // FOLIO es el campo clave
             fecha,
             rfc,
             razonSocial,
@@ -167,6 +188,7 @@ export const parseExcelToAuxiliarIngresos = (
             moneda, // Solo informativo
             tipoCambio, // Solo informativo
             estadoSat,
+            ...dynamicFields, // Agregar todos los campos dinámicos del Excel
         });
     }
 

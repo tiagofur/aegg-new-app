@@ -1,10 +1,16 @@
 import React, { useState, useMemo } from "react";
 import { ReporteMensual, TIPOS_REPORTE_NOMBRES } from "../../types/trabajo";
+import { AuxiliarIngresosTable } from "../../features/trabajos/reportes/auxiliar-ingresos";
+import { MiAdminIngresosTable } from "../../features/trabajos/reportes/mi-admin-ingresos";
 
 interface ReporteMensualViewerProps {
   reporte: ReporteMensual;
   reportes: ReporteMensual[]; // Todos los reportes del mes para comparación
   mesNombre: string;
+  mesId: string; // ✅ NUEVO: ID del mes
+  trabajoId: string; // ✅ NUEVO: ID del trabajo
+  trabajoYear: number; // ✅ NUEVO: Año del trabajo
+  mesNumber: number; // ✅ NUEVO: Número del mes (1-12)
   onVerReporte: () => void;
   onImportarReporte: () => void;
   onReimportarReporte: () => void;
@@ -101,6 +107,10 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
   reporte,
   reportes,
   mesNombre,
+  mesId,
+  trabajoId,
+  trabajoYear,
+  mesNumber,
   onVerReporte,
   onImportarReporte,
   onReimportarReporte,
@@ -468,82 +478,103 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
               </div>
             )}
 
-            {/* Tabla completa de datos - Siempre visible */}
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="overflow-auto" style={{ maxHeight: "600px" }}>
-                <table className="min-w-full divide-y divide-gray-200 text-xs">
-                  <thead className="bg-gray-100 sticky top-0 z-10">
-                    <tr>
-                      {headers.map((key, idx) => (
-                        <th
-                          key={idx}
-                          className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r last:border-r-0 bg-gray-100"
-                        >
-                          {key}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-100">
-                    {datosParaMostrar.map((fila: any, rowIdx: number) => (
-                      <tr key={rowIdx} className={getRowClassName(fila)}>
-                        {Object.values(fila).map(
-                          (valor: any, colIdx: number) => (
-                            <td
-                              key={colIdx}
-                              className="px-3 py-2 whitespace-nowrap text-gray-900 border-r last:border-r-0"
-                            >
-                              {valor !== null && valor !== undefined
-                                ? String(valor)
-                                : "-"}
-                            </td>
-                          )
-                        )}
+            {/* 🔥 Usar componentes especializados según el tipo de reporte */}
+            {reporte.tipo === "INGRESOS_AUXILIAR" ? (
+              <div className="h-[600px]">
+                <AuxiliarIngresosTable
+                  mesId={mesId}
+                  reporteId={reporte.id}
+                />
+              </div>
+            ) : reporte.tipo === "INGRESOS_MI_ADMIN" || reporte.tipo === "INGRESOS" ? (
+              <div className="h-[600px]">
+                <MiAdminIngresosTable
+                  mesId={mesId}
+                  reporteId={reporte.id}
+                  auxiliarData={undefined} // El hook interno cargará los datos
+                  trabajoId={trabajoId}
+                  anio={trabajoYear}
+                  mes={mesNumber}
+                />
+              </div>
+            ) : (
+              // Fallback: Tabla HTML simple para otros tipos de reporte
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="overflow-auto" style={{ maxHeight: "600px" }}>
+                  <table className="min-w-full divide-y divide-gray-200 text-xs">
+                    <thead className="bg-gray-100 sticky top-0 z-10">
+                      <tr>
+                        {headers.map((key, idx) => (
+                          <th
+                            key={idx}
+                            className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r last:border-r-0 bg-gray-100"
+                          >
+                            {key}
+                          </th>
+                        ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-100">
+                      {datosParaMostrar.map((fila: any, rowIdx: number) => (
+                        <tr key={rowIdx} className={getRowClassName(fila)}>
+                          {Object.values(fila).map(
+                            (valor: any, colIdx: number) => (
+                              <td
+                                key={colIdx}
+                                className="px-3 py-2 whitespace-nowrap text-gray-900 border-r last:border-r-0"
+                              >
+                                {valor !== null && valor !== undefined
+                                  ? String(valor)
+                                  : "-"}
+                              </td>
+                            )
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="px-3 py-2 bg-gray-50 border-t text-xs text-gray-600 flex items-center justify-between">
+                  <span>
+                    Total: {datosParaMostrar.length.toLocaleString("es-MX")}{" "}
+                    registro
+                    {datosParaMostrar.length !== 1 ? "s" : ""}
+                    {comparacionActiva && (
+                      <>
+                        {" • "}
+                        <span className="text-yellow-700 font-medium">
+                          {resultadoComparacion.foliosUnicos.size} únicos
+                        </span>
+                        {" • "}
+                        <span className="text-green-700 font-medium">
+                          {
+                            Array.from(
+                              resultadoComparacion.foliosCoinciden.values()
+                            ).filter((v) => v === true).length
+                          }{" "}
+                          iguales
+                        </span>
+                        {" • "}
+                        <span className="text-red-700 font-medium">
+                          {
+                            Array.from(
+                              resultadoComparacion.foliosCoinciden.values()
+                            ).filter((v) => v === false).length
+                          }{" "}
+                          diferentes
+                        </span>
+                      </>
+                    )}
+                  </span>
+                  <button
+                    onClick={onVerReporte}
+                    className="text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    Ver en página completa →
+                  </button>
+                </div>
               </div>
-              <div className="px-3 py-2 bg-gray-50 border-t text-xs text-gray-600 flex items-center justify-between">
-                <span>
-                  Total: {datosParaMostrar.length.toLocaleString("es-MX")}{" "}
-                  registro
-                  {datosParaMostrar.length !== 1 ? "s" : ""}
-                  {comparacionActiva && (
-                    <>
-                      {" • "}
-                      <span className="text-yellow-700 font-medium">
-                        {resultadoComparacion.foliosUnicos.size} únicos
-                      </span>
-                      {" • "}
-                      <span className="text-green-700 font-medium">
-                        {
-                          Array.from(
-                            resultadoComparacion.foliosCoinciden.values()
-                          ).filter((v) => v === true).length
-                        }{" "}
-                        iguales
-                      </span>
-                      {" • "}
-                      <span className="text-red-700 font-medium">
-                        {
-                          Array.from(
-                            resultadoComparacion.foliosCoinciden.values()
-                          ).filter((v) => v === false).length
-                        }{" "}
-                        diferentes
-                      </span>
-                    </>
-                  )}
-                </span>
-                <button
-                  onClick={onVerReporte}
-                  className="text-blue-600 hover:text-blue-800 font-medium"
-                >
-                  Ver en página completa →
-                </button>
-              </div>
-            </div>
+            )}
 
             {/* Diálogo de confirmación */}
             {mostrarConfirmacion && (

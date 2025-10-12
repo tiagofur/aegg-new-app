@@ -16,6 +16,7 @@ import {
 } from "@tanstack/react-table";
 
 import { useMiAdminIngresosData } from "../hooks/useMiAdminIngresosData";
+import { useAuxiliarIngresosData } from "../../auxiliar-ingresos/hooks/useAuxiliarIngresosData";
 import { useMiAdminIngresosEdit } from "../hooks/useMiAdminIngresosEdit";
 import { useMiAdminIngresosCalculations } from "../hooks/useMiAdminIngresosCalculations";
 import { useMiAdminIngresosComparison } from "../hooks/useMiAdminIngresosComparison";
@@ -28,7 +29,8 @@ import {
   EditableEstadoSatCell,
 } from "./cells";
 
-import { formatCurrency, formatDate, getRowBackgroundColor } from "../utils";
+import { formatCurrency, getRowBackgroundColor } from "../utils";
+import { formatCellValue, inferColumnType } from "../../shared/utils/dynamic-columns";
 import type { MiAdminIngresosRow } from "../types";
 import type { AuxiliarIngresosRow } from "../../auxiliar-ingresos";
 
@@ -55,11 +57,21 @@ const columnHelper = createColumnHelper<MiAdminIngresosRow>();
 export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
   mesId,
   reporteId,
-  auxiliarData,
+  auxiliarData: providedAuxiliarData,
   trabajoId,
   anio,
   mes,
 }) => {
+  // 🔥 Si no se proporciona auxiliarData, buscar el reporte Auxiliar del mismo mes
+  const { data: loadedAuxiliarData } = useAuxiliarIngresosData({
+    mesId: mesId || "", // Proporcionar string vacío si mesId es undefined
+    reporteId: "", // Buscaremos el ID del reporte Auxiliar automáticamente
+    enabled: !providedAuxiliarData && !!mesId,
+  });
+
+  // Usar los datos proporcionados o los cargados
+  const auxiliarData = providedAuxiliarData || loadedAuxiliarData;
+
   // Hooks de datos y lógica
   const { data, isLoading, error, handleSave, isSaving } =
     useMiAdminIngresosData({
@@ -130,106 +142,81 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
-  // Definición de columnas
-  const columns = useMemo(
-    () => [
-      columnHelper.accessor("folio", {
-        header: "Folio",
-        cell: (info) => {
-          const row = info.row.original;
-          if (row.isSummary) {
-            return (
-              <span className="font-mono text-sm font-bold uppercase text-blue-700">
-                Totales
-              </span>
-            );
-          }
+  // 🔥 DEFINICIÓN DE COLUMNAS DINÁMICAS
+  const columns = useMemo(() => {
+    if (!dataWithTotals || dataWithTotals.length === 0) return [];
 
-          return (
-            <span className="font-mono text-sm font-semibold">
-              {info.getValue()}
-            </span>
-          );
-        },
-        size: 120,
-      }),
-      columnHelper.accessor("fecha", {
-        header: "Fecha",
-        cell: (info) => {
-          const row = info.row.original;
-          if (row.isSummary) {
-            return <span className="text-xs text-gray-500">-</span>;
-          }
-          return formatDate(info.getValue());
-        },
-        size: 100,
-      }),
-      columnHelper.accessor("rfc", {
-        header: "RFC",
-        cell: (info) => {
-          const row = info.row.original;
-          if (row.isSummary) {
-            return <span className="text-xs text-gray-500">-</span>;
-          }
-          return <span className="font-mono text-sm">{info.getValue()}</span>;
-        },
-        size: 140,
-      }),
-      columnHelper.accessor("razonSocial", {
-        header: "Razón Social",
-        cell: (info) => {
-          const row = info.row.original;
-          if (row.isSummary) {
-            return <span className="text-xs text-gray-500">-</span>;
-          }
-          const value = info.getValue();
-          return (
-            <span
-              className="text-sm truncate max-w-xs"
-              title={value ?? undefined}
-            >
-              {value ?? "-"}
-            </span>
-          );
-        },
-        size: 200,
-      }),
-      columnHelper.accessor("subtotal", {
-        header: "Subtotal",
-        cell: (info) => {
-          const row = info.row.original;
-          const value = info.getValue();
-          return (
-            <span
-              className={
-                row.isSummary ? "font-semibold text-blue-700" : undefined
+    // Campos que NO deben mostrarse como columnas normales
+    const excludedFields = new Set([
+      'id',
+      'isSummary',
+      'subtotalAUX',    // Tiene columna especial al final
+      'subtotalMXN',    // Tiene columna especial al final
+      'tcSugerido',     // Tiene columna especial al final
+      'estadoSat',      // Tiene columna especial editable
+      'tipoCambio',     // Tiene columna especial editable
+    ]);
+
+    // 1️⃣ Detectar TODAS las columnas del Excel que están en los datos
+    const allKeys = new Set<string>();
+    dataWithTotals.forEach(row => {
+      Object.keys(row).forEach(key => {
+        if (!excludedFields.has(key)) {
+          allKeys.add(key);
+        }
+      });
+    });
+
+    const dynamicColumns: any[] = [];
+
+    // 2️⃣ Crear columnas dinámicas para TODAS las columnas del Excel
+    Array.from(allKeys).forEach(columnName => {
+      // Obtener valores de muestra para inferir tipo
+      const sampleValues = dataWithTotals
+        .slice(0, 20)
+        .map(row => row[columnName])
+        .filter(v => v != null);
+
+      const columnType = inferColumnType(columnName, sampleValues);
+
+      dynamicColumns.push(
+        columnHelper.accessor(columnName as any, {
+          header: columnName,
+          cell: (info) => {
+            const row = info.row.original;
+            if (row.isSummary) {
+              // Para totales, solo mostrar en columnas de moneda
+              if (columnType === 'currency') {
+                return (
+                  <span className="font-semibold text-blue-700">
+                    {formatCellValue(info.getValue(), columnType)}
+                  </span>
+                );
               }
-            >
-              {formatCurrency(value)}
-            </span>
-          );
-        },
-        size: 120,
-      }),
-      columnHelper.accessor("moneda", {
-        header: "Moneda",
-        cell: (info) => {
-          const row = info.row.original;
-          if (row.isSummary) {
-            return (
-              <span className="text-center block font-semibold text-blue-700">
-                MXN
-              </span>
-            );
-          }
-          return (
-            <span className="text-center block font-semibold">
-              {info.getValue()}
-            </span>
-          );
-        },
-        size: 80,
-      }),
+              return <span className="text-xs text-gray-500">-</span>;
+            }
+
+            const value = info.getValue();
+            const formattedValue = formatCellValue(value, columnType);
+
+            // Aplicar estilos según el tipo
+            let className = 'text-sm';
+            if (columnType === 'currency' || columnType === 'number') {
+              className += ' text-right font-mono';
+            }
+            if (columnName === 'folio') {
+              className += ' font-semibold';
+            }
+
+            return <span className={className}>{formattedValue}</span>;
+          },
+          size: columnType === 'date' ? 100 : columnType === 'currency' ? 120 : 150,
+        })
+      );
+    });
+
+    // 3️⃣ Agregar columnas EDITABLES (Tipo Cambio y Estado SAT)
+    dynamicColumns.push(
       columnHelper.accessor("tipoCambio", {
         header: "Tipo Cambio",
         cell: (info) => {
@@ -251,7 +238,34 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
           );
         },
         size: 120,
-      }),
+      })
+    );
+
+    dynamicColumns.push(
+      columnHelper.accessor("estadoSat", {
+        header: "Estado SAT",
+        cell: (info) => {
+          const row = info.row.original;
+          if (row.isSummary) {
+            return (
+              <span className="text-center block text-sm font-semibold text-blue-700">
+                -
+              </span>
+            );
+          }
+          return (
+            <EditableEstadoSatCell
+              value={info.getValue()}
+              onChange={(newValue) => updateEstadoSat(row.folio, newValue)}
+            />
+          );
+        },
+        size: 120,
+      })
+    );
+
+    // 4️⃣ Agregar columnas CALCULADAS al final
+    dynamicColumns.push(
       columnHelper.accessor("subtotalAUX", {
         header: "Subtotal AUX",
         cell: (info) => {
@@ -273,7 +287,10 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
           );
         },
         size: 120,
-      }),
+      })
+    );
+
+    dynamicColumns.push(
       columnHelper.accessor("subtotalMXN", {
         header: "Subtotal MXN",
         cell: (info) => {
@@ -290,7 +307,10 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
           );
         },
         size: 120,
-      }),
+      })
+    );
+
+    dynamicColumns.push(
       columnHelper.accessor("tcSugerido", {
         header: "TC Sugerido",
         cell: (info) => {
@@ -312,74 +332,11 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
           );
         },
         size: 150,
-      }),
-      columnHelper.accessor("estadoSat", {
-        header: "Estado SAT",
-        cell: (info) => {
-          const row = info.row.original;
-          const value = info.getValue();
-          if (row.isSummary) {
-            return (
-              <span className="text-center block text-sm font-semibold text-blue-700">
-                --
-              </span>
-            );
-          }
-          return (
-            <EditableEstadoSatCell
-              value={value || "Vigente"}
-              onChange={(newValue) => updateEstadoSat(row.folio, newValue)}
-            />
-          );
-        },
-        size: 120,
-      }),
-      // Columna de comparación (solo si está activa)
-      ...(isComparisonActive
-        ? [
-            columnHelper.display({
-              id: "comparison",
-              header: "Comparación",
-              cell: (info) => {
-                const row = info.row.original;
-                if (row.isSummary) {
-                  return null;
-                }
-                const comparison = comparisonMap.get(row.folio);
+      })
+    );
 
-                if (!comparison) return null;
-
-                const icon =
-                  comparison.status === "match"
-                    ? "✅"
-                    : comparison.status === "mismatch"
-                    ? "❌"
-                    : comparison.status === "only-miadmin"
-                    ? "🔵"
-                    : "🟣";
-
-                return (
-                  <div
-                    className="flex items-center justify-center"
-                    title={comparison.tooltip}
-                  >
-                    <span className="text-lg">{icon}</span>
-                  </div>
-                );
-              },
-              size: 100,
-            }),
-          ]
-        : []),
-    ],
-    [
-      isComparisonActive,
-      comparisonMap,
-      updateTipoCambio,
-      updateEstadoSat,
-      aplicarTCSugerido,
-    ]
-  );
+    return dynamicColumns;
+  }, [dataWithTotals, updateTipoCambio, updateEstadoSat, aplicarTCSugerido]);
 
   // Configuración de TanStack Table
   const table = useReactTable({

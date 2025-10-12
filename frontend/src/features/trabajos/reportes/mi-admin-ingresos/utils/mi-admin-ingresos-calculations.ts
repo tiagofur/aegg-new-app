@@ -1,6 +1,19 @@
 /**
- * Utilidades de cálculo para Mi Admin Ingresos
- * FASE 8: Implementación con parsing flexible y corrección de bug TC
+ * Utilidades de cálculo para Mi Admin Ingresos    console.log('🔥🔥🔥 ============================================');
+    console.log('🔥🔥🔥 INICIO parseExcelToMiAdminIngresos (VERSIÓN DINÁMICA)');
+    console.log('🔥🔥🔥 auxiliarData recibido:', {
+        esUndefined: auxiliarData === undefined,
+        esNull: auxiliarData === null,
+        esArray: Array.isArray(auxiliarData),
+        length: auxiliarData?.length,
+        primerosRegistros: auxiliarData?.slice(0, 3).map(row => ({
+            folio: row.folio,
+            subtotal: row.subtotal,
+            moneda: row.moneda,
+            tipoCambio: row.tipoCambio
+        }))
+    });
+    console.log('🔥🔥🔥 ============================================');lementación con parsing flexible y corrección de bug TC
  */
 
 import type {
@@ -23,26 +36,25 @@ import {
 
 // Tipo para datos de Auxiliar Ingresos (para TC lookup y comparación)
 interface AuxiliarIngresosRow {
-    id: string; // UUID/Folio Fiscal
+    folio: string; // FOLIO - Campo clave para comparación
     estadoSat: 'Vigente' | 'Cancelada';
-    subtotal: number; // Ya está en MXN
+    subtotal: number; // Ya está en MXN (Subtotal AUX)
     tipoCambio: number | null;
     moneda: string;
-    [key: string]: any;
+    [key: string]: any; // Todos los demás campos del Excel
 }
 
 /**
  * Parsear datos de Excel y agregar datos de Auxiliar Ingresos
- * FASE 8: Implementación con validación robusta y corrección de bug TC=1.0 para USD
+ * VERSIÓN DINÁMICA: Importa TODAS las columnas del Excel
  * 
- * BUG CRÍTICO RESUELTO:
- * Mi Admin muestra TC=1.0 para facturas en USD cuando debería ser ~20.0 MXN/USD
- * SOLUCIÓN: Si detectamos TC sospechoso (1.0 o 0) y moneda != MXN,
- *           intentamos obtener el TC correcto desde auxiliarData por UUID
+ * COMPARACIÓN POR FOLIO:
+ * - Usa FOLIO como campo de comparación (no UUID)
+ * - Compara Subtotal de Auxiliar con Subtotal MXN de Mi Admin
  * 
  * @param excelData - Array bidimensional del Excel
- * @param auxiliarData - Datos de Auxiliar Ingresos para corrección de TC
- * @returns Array de filas tipadas
+ * @param auxiliarData - Datos de Auxiliar Ingresos para comparación por FOLIO
+ * @returns Array de filas tipadas con TODAS las columnas del Excel
  */
 export const parseExcelToMiAdminIngresos = (
     excelData: any[][],
@@ -52,7 +64,23 @@ export const parseExcelToMiAdminIngresos = (
         return [];
     }
 
-    console.log('📊 Parseando Mi Admin Ingresos...');
+    console.log('�🔥🔥 ============================================');
+    console.log('🔥🔥🔥 INICIO parseExcelToMiAdminIngresos');
+    console.log('🔥🔥🔥 auxiliarData recibido:', {
+        esUndefined: auxiliarData === undefined,
+        esNull: auxiliarData === null,
+        esArray: Array.isArray(auxiliarData),
+        length: auxiliarData?.length,
+        primerosRegistros: auxiliarData?.slice(0, 3).map(row => ({
+            id: row.id,
+            subtotal: row.subtotal,
+            moneda: row.moneda,
+            tipoCambio: row.tipoCambio
+        }))
+    });
+    console.log('🔥🔥🔥 ============================================');
+
+    console.log('�📊 Parseando Mi Admin Ingresos...');
 
     // 🔍 Buscar fila del header dinámicamente (primera fila con 8+ columnas)
     const headerRowIndex = findHeaderRow(excelData, 8);
@@ -72,9 +100,9 @@ export const parseExcelToMiAdminIngresos = (
 
     console.log(`📋 Headers encontrados en fila ${headerRowIndex + 1}:`, headers);
 
-    // ✅ Definir columnas obligatorias
+    // ✅ Definir columnas obligatorias (solo las esenciales para cálculos)
     const requiredColumns = {
-        'UUID/Folio Fiscal': COLUMN_KEYWORDS.UUID,
+        'Folio': COLUMN_KEYWORDS.FOLIO, // FOLIO es el campo clave
         'Subtotal': COLUMN_KEYWORDS.SUBTOTAL,
         'Moneda': COLUMN_KEYWORDS.MONEDA,
     };
@@ -98,12 +126,12 @@ export const parseExcelToMiAdminIngresos = (
     }
 
     // ✅ Obtener índices de columnas obligatorias
-    const uuidIndex = found['UUID/Folio Fiscal'];
+    const folioIndex = found['Folio']; // FOLIO es obligatorio ahora
     const subtotalIndex = found['Subtotal'];
     const monedaIndex = found['Moneda'];
 
-    // ✅ Obtener índices de columnas opcionales
-    const folioIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.FOLIO);
+    // ✅ Obtener índices de columnas opcionales conocidas
+    const uuidIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.UUID); // UUID ahora es opcional
     const tipoCambioIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.TIPO_CAMBIO);
     const fechaIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.FECHA);
     const rfcIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.RFC);
@@ -120,8 +148,8 @@ export const parseExcelToMiAdminIngresos = (
     }
 
     console.log('✅ Columnas detectadas:', {
-        UUID: uuidIndex,
-        Folio: folioIndex,
+        Folio: folioIndex, // Campo clave
+        UUID: uuidIndex, // Opcional
         Fecha: fechaIndex,
         RFC: rfcIndex,
         'Razón Social': razonSocialIndex,
@@ -133,15 +161,16 @@ export const parseExcelToMiAdminIngresos = (
         'Estado SAT': estadoIndex,
     });
 
-    // ✅ Crear lookup de Auxiliar por UUID (solo vigentes)
+    // ✅ Crear lookup de Auxiliar por FOLIO (solo vigentes)
     const auxiliarLookup = new Map<string, AuxiliarIngresosRow>();
     if (auxiliarData) {
         auxiliarData
             .filter((row) => row.estadoSat === 'Vigente')
             .forEach((row) => {
-                auxiliarLookup.set(row.id, row);
+                auxiliarLookup.set(row.folio, row); // Lookup por FOLIO
             });
-        console.log(`📚 ${auxiliarLookup.size} registros de Auxiliar disponibles para lookup`);
+        console.log(`📚 ${auxiliarLookup.size} registros de Auxiliar disponibles para lookup por FOLIO`);
+        console.log(`📚 Primeros FOLIOs en Auxiliar:`, Array.from(auxiliarLookup.keys()).slice(0, 5));
     }
 
     // ✅ Parsear filas de datos (desde la fila siguiente al header)
@@ -158,16 +187,15 @@ export const parseExcelToMiAdminIngresos = (
             continue;
         }
 
-        const uuid = row[uuidIndex]?.toString().trim() || `row-${i}`;
-        if (!uuid || uuid === `row-${i}`) {
-            console.warn(`⚠️ Fila ${i + 1} sin UUID, se omitirá`);
+        // FOLIO es el campo obligatorio ahora
+        const folio = row[folioIndex]?.toString().trim() || `row-${i}`;
+        if (!folio || folio === `row-${i}`) {
+            console.warn(`⚠️ Fila ${i + 1} sin FOLIO, se omitirá`);
             continue;
         }
 
-        // Parsear folio separadamente (puede ser diferente al UUID)
-        const folio = folioIndex !== -1
-            ? row[folioIndex]?.toString().trim() || uuid
-            : uuid;
+        // UUID es opcional
+        const uuid = uuidIndex !== -1 ? row[uuidIndex]?.toString().trim() || folio : folio;
 
         // Parsear valores básicos
         const moneda = parseMoneda(row[monedaIndex]);
@@ -181,18 +209,18 @@ export const parseExcelToMiAdminIngresos = (
             tipoCambio = parseTipoCambio(row[tipoCambioIndex], moneda);
         }
 
-        // Si TC es sospechoso (1.0 o null) y moneda no es MXN, buscar en Auxiliar
+        // Si TC es sospechoso (1.0 o null) y moneda no es MXN, buscar en Auxiliar POR FOLIO
         if (moneda !== 'MXN' && (!tipoCambio || tipoCambio === 1.0)) {
-            const auxiliarRow = auxiliarLookup.get(uuid);
+            const auxiliarRow = auxiliarLookup.get(folio); // Buscar por FOLIO
             if (auxiliarRow && auxiliarRow.tipoCambio && auxiliarRow.tipoCambio > 1.0) {
                 console.warn(
-                    `🔧 Corrigiendo TC para ${uuid}: TC Mi Admin=${tipoCambio || 'null'} → TC Auxiliar=${auxiliarRow.tipoCambio}`
+                    `🔧 Corrigiendo TC para FOLIO ${folio}: TC Mi Admin=${tipoCambio || 'null'} → TC Auxiliar=${auxiliarRow.tipoCambio}`
                 );
                 tipoCambio = auxiliarRow.tipoCambio;
                 tcCorregidosCount++;
             } else {
                 console.warn(
-                    `⚠️ ${uuid}: TC sospechoso (${tipoCambio}) para ${moneda}, pero no se encontró en Auxiliar`
+                    `⚠️ FOLIO ${folio}: TC sospechoso (${tipoCambio}) para ${moneda}, pero no se encontró en Auxiliar`
                 );
             }
         }
@@ -215,8 +243,8 @@ export const parseExcelToMiAdminIngresos = (
             excelData[i] = row;
         }
 
-        // Buscar subtotalAUX desde Auxiliar (ya viene en MXN)
-        const auxiliarRow = auxiliarLookup.get(uuid);
+        // Buscar subtotalAUX desde Auxiliar POR FOLIO (ya viene en MXN)
+        const auxiliarRow = auxiliarLookup.get(folio); // Buscar por FOLIO
         const subtotalAUX = auxiliarRow?.subtotal || null;
 
         // Calcular subtotal MXN
@@ -225,12 +253,32 @@ export const parseExcelToMiAdminIngresos = (
         // Calcular TC Sugerido
         const tcSugerido = calculateTCSugerido(subtotalAUX, subtotal);
 
+        // --- IMPORTAR TODAS LAS COLUMNAS DINÁMICAMENTE ---
+        const dynamicFields: Record<string, any> = {};
+        headers.forEach((header, index) => {
+            if (index !== folioIndex && 
+                index !== uuidIndex &&
+                index !== subtotalIndex && 
+                index !== monedaIndex && 
+                index !== tipoCambioIndex &&
+                index !== fechaIndex &&
+                index !== rfcIndex &&
+                index !== razonSocialIndex &&
+                index !== ivaIndex &&
+                index !== totalIndex &&
+                index !== estadoIndex) {
+                // Esta es una columna extra que no procesamos explícitamente
+                const headerName = String(header || `col_${index}`);
+                dynamicFields[headerName] = row[index];
+            }
+        });
+
         // --- INICIO DE LOGS DE DEPURACIÓN ---
-        if (i < dataStartRow + 5) { // Loguear solo las primeras 5 filas de datos para no saturar la consola
+        if (i < dataStartRow + 5) { // Loguear solo las primeras 5 filas de datos
             console.log(`[DEBUG] Fila ${i + 1}`, {
                 'Raw Row': row,
-                'Parsed UUID': uuid,
                 'Parsed Folio': folio,
+                'Parsed UUID': uuid,
                 'Parsed Subtotal': subtotal,
                 'Parsed Moneda': moneda,
                 'Parsed Tipo Cambio': tipoCambio,
@@ -239,13 +287,14 @@ export const parseExcelToMiAdminIngresos = (
                 'Calculated Subtotal AUX': subtotalAUX,
                 'Calculated Subtotal MXN': subtotalMXN,
                 'Calculated TC Sugerido': tcSugerido,
+                'Dynamic Fields': Object.keys(dynamicFields).length + ' campos extras'
             });
         }
         // --- FIN DE LOGS DE DEPURACIÓN ---
 
         rows.push({
-            id: uuid,
-            folio: folio,
+            id: uuid, // Mantener UUID como id para compatibilidad
+            folio: folio, // FOLIO es el campo clave
             fecha,
             rfc,
             razonSocial,
@@ -258,6 +307,7 @@ export const parseExcelToMiAdminIngresos = (
             subtotalAUX,
             subtotalMXN,
             tcSugerido,
+            ...dynamicFields, // Agregar todos los campos dinámicos del Excel
         });
     }
 

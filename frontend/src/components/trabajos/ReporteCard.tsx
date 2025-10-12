@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { ReporteMensual, TIPOS_REPORTE_NOMBRES } from "../../types/trabajo";
 import { reportesMensualesService } from "../../services";
 import { ReporteViewer } from "./ReporteViewer";
@@ -12,6 +12,8 @@ interface ReporteCardProps {
   trabajoId: string;
   trabajoYear: number;
   mesNumber: number;
+  /** ID del reporte Auxiliar del mismo mes (para integración en Mi Admin) */
+  auxiliarReporteId?: string;
 }
 
 export const ReporteCard: React.FC<ReporteCardProps> = ({
@@ -20,18 +22,40 @@ export const ReporteCard: React.FC<ReporteCardProps> = ({
   trabajoId,
   trabajoYear,
   mesNumber,
+  auxiliarReporteId,
 }) => {
   const [loading, setLoading] = useState(false);
   const [localReporte, setLocalReporte] = useState(reporte);
   const [verDatos, setVerDatos] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Cargar datos de Auxiliar si estamos en Mi Admin (para comparación)
+  // **CRÍTICO**: Cuando mostramos Mi Admin, necesitamos cargar el Auxiliar del mismo mes
+  // para poder hacer las integraciones (subtotalAUX, TC sugerido, comparación)
+  // Cargar datos de Auxiliar si estamos en Mi Admin (para comparación e integración)
   const { data: auxiliarData } = useAuxiliarIngresosData({
     mesId: mesId,
-    reporteId: "", // No necesitamos el reporteId para Mi Admin
-    enabled: reporte.tipo === "INGRESOS_MI_ADMIN" && verDatos, // Solo cargar cuando es necesario
+    reporteId: auxiliarReporteId || "",
+    enabled:
+      (reporte.tipo === "INGRESOS_MI_ADMIN" || reporte.tipo === "INGRESOS") &&
+      verDatos &&
+      !!auxiliarReporteId,
   });
+
+  // 🔥 DEBUG: Ver qué está pasando con auxiliarData
+  useEffect(() => {
+    if (
+      verDatos &&
+      (reporte.tipo === "INGRESOS_MI_ADMIN" || reporte.tipo === "INGRESOS")
+    ) {
+      console.log("🔍 ReporteCard DEBUG:", {
+        reporteTipo: reporte.tipo,
+        reporteId: reporte.id,
+        auxiliarReporteId,
+        auxiliarDataLength: auxiliarData?.length || 0,
+        auxiliarDataSample: auxiliarData?.slice(0, 2),
+      });
+    }
+  }, [verDatos, reporte.tipo, reporte.id, auxiliarReporteId, auxiliarData]);
 
   const tieneDatos =
     localReporte.datos && Object.keys(localReporte.datos).length > 0;

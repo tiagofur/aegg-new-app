@@ -140,16 +140,25 @@ export const MesCard: React.FC<MesCardProps> = ({
           </p>
 
           <div className="space-y-2 mb-3">
-            {mes.reportes.map((reporte) => (
-              <ReporteCard
-                key={reporte.id}
-                reporte={reporte}
-                mesId={mes.id}
-                trabajoId={trabajoId}
-                trabajoYear={trabajoYear}
-                mesNumber={mes.mes}
-              />
-            ))}
+            {mes.reportes.map((reporte) => {
+              // 🔥 CRITICAL: Find the Auxiliar report ID for Mi Admin integration
+              const auxiliarReporte = mes.reportes.find(
+                (r) => r.tipo === "INGRESOS_AUXILIAR"
+              );
+              const auxiliarReporteId = auxiliarReporte?.id;
+
+              return (
+                <ReporteCard
+                  key={reporte.id}
+                  reporte={reporte}
+                  mesId={mes.id}
+                  trabajoId={trabajoId}
+                  trabajoYear={trabajoYear}
+                  mesNumber={mes.mes}
+                  auxiliarReporteId={auxiliarReporteId}
+                />
+              );
+            })}
           </div>
 
           {todosImportados && mes.estado !== "COMPLETADO" && (
