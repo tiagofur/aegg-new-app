@@ -256,10 +256,10 @@ export const parseExcelToMiAdminIngresos = (
         // --- IMPORTAR TODAS LAS COLUMNAS DINÁMICAMENTE ---
         const dynamicFields: Record<string, any> = {};
         headers.forEach((header, index) => {
-            if (index !== folioIndex && 
+            if (index !== folioIndex &&
                 index !== uuidIndex &&
-                index !== subtotalIndex && 
-                index !== monedaIndex && 
+                index !== subtotalIndex &&
+                index !== monedaIndex &&
                 index !== tipoCambioIndex &&
                 index !== fechaIndex &&
                 index !== rfcIndex &&

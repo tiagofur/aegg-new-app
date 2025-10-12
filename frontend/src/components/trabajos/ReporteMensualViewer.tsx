@@ -481,12 +481,10 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
             {/* 🔥 Usar componentes especializados según el tipo de reporte */}
             {reporte.tipo === "INGRESOS_AUXILIAR" ? (
               <div className="h-[600px]">
-                <AuxiliarIngresosTable
-                  mesId={mesId}
-                  reporteId={reporte.id}
-                />
+                <AuxiliarIngresosTable mesId={mesId} reporteId={reporte.id} />
               </div>
-            ) : reporte.tipo === "INGRESOS_MI_ADMIN" || reporte.tipo === "INGRESOS" ? (
+            ) : reporte.tipo === "INGRESOS_MI_ADMIN" ||
+              reporte.tipo === "INGRESOS" ? (
               <div className="h-[600px]">
                 <MiAdminIngresosTable
                   mesId={mesId}

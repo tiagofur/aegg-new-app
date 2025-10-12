@@ -30,7 +30,10 @@ import {
 } from "./cells";
 
 import { formatCurrency, getRowBackgroundColor } from "../utils";
-import { formatCellValue, inferColumnType } from "../../shared/utils/dynamic-columns";
+import {
+  formatCellValue,
+  inferColumnType,
+} from "../../shared/utils/dynamic-columns";
 import type { MiAdminIngresosRow } from "../types";
 import type { AuxiliarIngresosRow } from "../../auxiliar-ingresos";
 
@@ -148,19 +151,19 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
 
     // Campos que NO deben mostrarse como columnas normales
     const excludedFields = new Set([
-      'id',
-      'isSummary',
-      'subtotalAUX',    // Tiene columna especial al final
-      'subtotalMXN',    // Tiene columna especial al final
-      'tcSugerido',     // Tiene columna especial al final
-      'estadoSat',      // Tiene columna especial editable
-      'tipoCambio',     // Tiene columna especial editable
+      "id",
+      "isSummary",
+      "subtotalAUX", // Tiene columna especial al final
+      "subtotalMXN", // Tiene columna especial al final
+      "tcSugerido", // Tiene columna especial al final
+      "estadoSat", // Tiene columna especial editable
+      "tipoCambio", // Tiene columna especial editable
     ]);
 
     // 1️⃣ Detectar TODAS las columnas del Excel que están en los datos
     const allKeys = new Set<string>();
-    dataWithTotals.forEach(row => {
-      Object.keys(row).forEach(key => {
+    dataWithTotals.forEach((row) => {
+      Object.keys(row).forEach((key) => {
         if (!excludedFields.has(key)) {
           allKeys.add(key);
         }
@@ -170,12 +173,12 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
     const dynamicColumns: any[] = [];
 
     // 2️⃣ Crear columnas dinámicas para TODAS las columnas del Excel
-    Array.from(allKeys).forEach(columnName => {
+    Array.from(allKeys).forEach((columnName) => {
       // Obtener valores de muestra para inferir tipo
       const sampleValues = dataWithTotals
         .slice(0, 20)
-        .map(row => row[columnName])
-        .filter(v => v != null);
+        .map((row) => row[columnName])
+        .filter((v) => v != null);
 
       const columnType = inferColumnType(columnName, sampleValues);
 
@@ -186,7 +189,7 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
             const row = info.row.original;
             if (row.isSummary) {
               // Para totales, solo mostrar en columnas de moneda
-              if (columnType === 'currency') {
+              if (columnType === "currency") {
                 return (
                   <span className="font-semibold text-blue-700">
                     {formatCellValue(info.getValue(), columnType)}
@@ -200,17 +203,18 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
             const formattedValue = formatCellValue(value, columnType);
 
             // Aplicar estilos según el tipo
-            let className = 'text-sm';
-            if (columnType === 'currency' || columnType === 'number') {
-              className += ' text-right font-mono';
+            let className = "text-sm";
+            if (columnType === "currency" || columnType === "number") {
+              className += " text-right font-mono";
             }
-            if (columnName === 'folio') {
-              className += ' font-semibold';
+            if (columnName === "folio") {
+              className += " font-semibold";
             }
 
             return <span className={className}>{formattedValue}</span>;
           },
-          size: columnType === 'date' ? 100 : columnType === 'currency' ? 120 : 150,
+          size:
+            columnType === "date" ? 100 : columnType === "currency" ? 120 : 150,
         })
       );
     });

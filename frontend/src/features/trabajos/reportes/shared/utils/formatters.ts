@@ -7,7 +7,7 @@
  */
 export function formatCurrency(value: number | null | undefined): string {
     if (value == null) return '-';
-    
+
     return new Intl.NumberFormat('es-MX', {
         style: 'currency',
         currency: 'MXN',
@@ -21,7 +21,7 @@ export function formatCurrency(value: number | null | undefined): string {
  */
 export function formatTipoCambio(value: number | null | undefined): string {
     if (value == null) return '-';
-    
+
     return value.toFixed(4);
 }
 
@@ -33,7 +33,7 @@ export function formatDate(value: string | Date | null | undefined): string {
 
     try {
         const date = typeof value === 'string' ? new Date(value) : value;
-        
+
         if (isNaN(date.getTime())) return '-';
 
         const day = date.getDate().toString().padStart(2, '0');
@@ -51,6 +51,6 @@ export function formatDate(value: string | Date | null | undefined): string {
  */
 export function formatPercentage(value: number | null | undefined): string {
     if (value == null) return '-';
-    
+
     return `${value.toFixed(2)}%`;
 }
