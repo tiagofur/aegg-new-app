@@ -103,7 +103,12 @@ export const useMiAdminIngresosEdit = ({
         const newEdits = new Map(edits);
 
         editedData.forEach((row) => {
-            if (row.tcSugerido !== null && row.estadoSat === 'Vigente') {
+            // Solo aplicar si el TC sugerido es válido, la fila está vigente Y el valor es diferente al actual
+            if (
+                row.tcSugerido !== null &&
+                row.estadoSat === 'Vigente' &&
+                Math.abs((row.tipoCambio || 0) - row.tcSugerido) > 0.0001
+            ) {
                 const updatedRow = recalculateRowAfterTipoCambioChange(row, row.tcSugerido);
                 const existing = newEdits.get(row.folio) || {};
                 newEdits.set(row.folio, {

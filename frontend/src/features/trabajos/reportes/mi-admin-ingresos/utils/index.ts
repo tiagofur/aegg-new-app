@@ -3,28 +3,10 @@
  */
 
 // Cálculos y transformaciones
-export {
-    parseExcelToMiAdminIngresos,
-    calculateSubtotalMXN,
-    calculateTCSugerido,
-    calculateTotales,
-    recalculateRowAfterTipoCambioChange,
-    updateRowEstadoSat,
-    formatCurrency,
-    formatTipoCambio,
-    formatDate,
-    isValidTipoCambio,
-    convertToExcelFormat,
-} from './mi-admin-ingresos-calculations';
+export * from './mi-admin-ingresos-calculations';
 
 // Estilos y clases CSS
-export {
-    rowStyles,
-    footerStyles,
-    inputStyles,
-    badgeStyles,
-    getRowBackgroundColor,
-    getFooterBackgroundColor,
-    getEstadoSatCellClasses,
-    getComparisonBadgeVariant,
-} from './mi-admin-ingresos-styles';
+export * from './mi-admin-ingresos-styles';
+
+// Fábrica de columnas
+export * from './column-factory';
