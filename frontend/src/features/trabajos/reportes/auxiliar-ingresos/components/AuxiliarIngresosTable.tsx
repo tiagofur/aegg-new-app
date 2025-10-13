@@ -22,10 +22,8 @@ import { useAuxiliarIngresosComparison } from "../hooks/useAuxiliarIngresosCompa
 
 import { AuxiliarIngresosToolbar } from "./AuxiliarIngresosToolbar";
 import { AuxiliarIngresosFooter } from "./AuxiliarIngresosFooter";
-import { EditableTipoCambioCell } from "./cells/EditableTipoCambioCell";
-import { EditableEstadoSatCell } from "./cells/EditableEstadoSatCell";
 
-import { formatCurrency, formatDate, getRowBackgroundColor } from "../utils";
+import { getRowBackgroundColor, createDynamicColumns } from "../utils";
 import type { AuxiliarIngresosRow } from "../types";
 
 interface AuxiliarIngresosTableProps {
@@ -108,180 +106,79 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
-  // Definición de columnas
-  const columns = useMemo(
-    () => [
-      columnHelper.accessor("folio", {
-        header: "Folio",
-        cell: (info) => {
-          const row = info.row.original;
-          if (row.isSummary) {
-            return (
-              <span className="font-mono text-xs font-bold uppercase text-blue-700">
-                Totales
-              </span>
-            );
-          }
-          return (
-            <span className="font-mono text-xs">{info.getValue() || "-"}</span>
-          );
-        },
-        size: 100,
-      }),
-      columnHelper.accessor("fecha", {
-        header: "Fecha",
-        cell: (info) => {
-          const row = info.row.original;
-          if (row.isSummary) {
-            return <span className="text-xs text-gray-500">-</span>;
-          }
-          return formatDate(info.getValue());
-        },
-        size: 100,
-      }),
-      columnHelper.accessor("rfc", {
-        header: "RFC",
-        cell: (info) => {
-          const row = info.row.original;
-          if (row.isSummary) {
-            return <span className="text-xs text-gray-500">-</span>;
-          }
-          return <span className="font-mono text-sm">{info.getValue()}</span>;
-        },
-        size: 140,
-      }),
-      columnHelper.accessor("subtotal", {
-        header: "Subtotal MXN",
-        cell: (info) => {
-          const row = info.row.original;
-          const value = info.getValue();
-          return (
-            <span
-              className={
-                row.isSummary ? "font-semibold text-blue-700" : undefined
-              }
-            >
-              {formatCurrency(value)}
-            </span>
-          );
-        },
-        size: 130,
-      }),
-      columnHelper.accessor("moneda", {
-        header: "Moneda",
-        cell: (info) => {
-          const row = info.row.original;
-          if (row.isSummary) {
-            return (
-              <span className="text-center block font-semibold text-xs text-blue-700">
-                MXN
-              </span>
-            );
-          }
-          return (
-            <span className="text-center block font-semibold text-xs">
-              {info.getValue()}
-            </span>
-          );
-        },
-        size: 70,
-      }),
-      columnHelper.accessor("tipoCambio", {
-        header: "Tipo Cambio",
-        cell: (info) => {
-          const row = info.row.original;
-          if (row.isSummary) {
-            return (
-              <span className="text-center block text-sm font-semibold text-blue-700">
-                -
-              </span>
-            );
-          }
-          return (
-            <EditableTipoCambioCell
-              value={info.getValue()}
-              onChange={(newValue) => updateTipoCambio(row.id, newValue)}
-              disabled={row.moneda === "MXN"}
-              moneda={row.moneda}
-            />
-          );
-        },
-        size: 110,
-      }),
-      columnHelper.accessor("estadoSat", {
-        header: "Estado SAT",
-        cell: (info) => {
-          const row = info.row.original;
-          const value = info.getValue();
-          if (row.isSummary) {
-            return (
-              <span className="text-center block text-sm font-semibold text-blue-700">
-                --
-              </span>
-            );
-          }
-          return (
-            <EditableEstadoSatCell
-              value={value || "Vigente"}
-              onChange={(newValue) => updateEstadoSat(row.id, newValue)}
-            />
-          );
-        },
-        size: 120,
-      }),
-      // Columna de comparación (solo si está activa)
-      ...(isComparisonActive
-        ? [
-            columnHelper.display({
-              id: "comparison",
-              header: "Comparación",
-              cell: (info) => {
-                const row = info.row.original;
-                if (row.isSummary) {
-                  return null;
-                }
-                const comparison = comparisonMap.get(row.id);
+  // Definición de columnas - AHORA DINÁMICA
+  const columns = useMemo(() => {
+    // Prevenimos error si los datos aún no llegan
+    if (dataWithTotals.length === 0) {
+      return [];
+    }
 
-                if (!comparison) return null;
+    const baseColumns = createDynamicColumns(
+      dataWithTotals,
+      updateTipoCambio,
+      updateEstadoSat
+    );
 
-                const icon =
-                  comparison.status === "match"
-                    ? "✅"
-                    : comparison.status === "mismatch"
-                    ? "❌"
-                    : comparison.status === "only-auxiliar"
-                    ? "🔵"
-                    : "🟣";
+    // Añadir la columna de comparación condicionalmente
+    if (isComparisonActive) {
+      return [
+        ...baseColumns,
+        columnHelper.display({
+          id: "comparison",
+          header: "Comparación",
+          cell: (info) => {
+            const row = info.row.original;
+            if (row.isSummary) {
+              return null;
+            }
+            const comparison = comparisonMap.get(row.id);
 
-                const tooltip =
-                  comparison.status === "match"
-                    ? `Coincide (Dif: $${Math.abs(
-                        comparison.difference || 0
-                      ).toFixed(2)})`
-                    : comparison.status === "mismatch"
-                    ? `Discrepancia: $${Math.abs(
-                        comparison.difference || 0
-                      ).toFixed(2)}`
-                    : comparison.status === "only-auxiliar"
-                    ? "Solo en Auxiliar"
-                    : "Solo en Mi Admin";
+            if (!comparison) return null;
 
-                return (
-                  <div
-                    className="flex items-center justify-center"
-                    title={tooltip}
-                  >
-                    <span className="text-lg">{icon}</span>
-                  </div>
-                );
-              },
-              size: 100,
-            }),
-          ]
-        : []),
-    ],
-    [isComparisonActive, comparisonMap, updateEstadoSat, updateTipoCambio]
-  );
+            const icon =
+              comparison.status === "match"
+                ? "✅"
+                : comparison.status === "mismatch"
+                ? "❌"
+                : comparison.status === "only-auxiliar"
+                ? "🔵"
+                : "🟣";
+
+            const tooltip =
+              comparison.status === "match"
+                ? `Coincide (Dif: $${Math.abs(
+                    comparison.difference || 0
+                  ).toFixed(2)})`
+                : comparison.status === "mismatch"
+                ? `Discrepancia: $${Math.abs(
+                    comparison.difference || 0
+                  ).toFixed(2)}`
+                : comparison.status === "only-auxiliar"
+                ? "Solo en Auxiliar"
+                : "Solo en Mi Admin";
+
+            return (
+              <div
+                className="flex items-center justify-center"
+                title={tooltip}
+              >
+                <span className="text-lg">{icon}</span>
+              </div>
+            );
+          },
+          size: 100,
+        }),
+      ];
+    }
+
+    return baseColumns;
+  }, [
+    dataWithTotals,
+    updateTipoCambio,
+    updateEstadoSat,
+    isComparisonActive,
+    comparisonMap,
+  ]);
 
   // Configuración de TanStack Table
   const table = useReactTable({

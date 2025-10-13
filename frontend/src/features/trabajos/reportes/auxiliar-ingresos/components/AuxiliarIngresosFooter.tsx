@@ -43,7 +43,7 @@ export const AuxiliarIngresosFooter: React.FC<AuxiliarIngresosFooterProps> = ({
 
         {/* Total Subtotal MXN */}
         <div className="col-span-3 flex flex-col">
-          <span className="text-xs text-gray-600 uppercase">Subtotal MXN</span>
+          <span className="text-xs text-gray-600 uppercase">Subtotal</span>
           <span className="text-lg font-bold">
             {formatCurrency(totales.totalSubtotal)}
           </span>

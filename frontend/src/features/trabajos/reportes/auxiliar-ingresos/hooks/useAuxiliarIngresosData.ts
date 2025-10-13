@@ -119,7 +119,7 @@ const convertToExcelFormat = (data: AuxiliarIngresosRow[]): any[][] => {
         'Fecha',
         'RFC',
         'Razón Social',
-        'Subtotal MXN',
+        'Subtotal',
         'Moneda',
         'Tipo de Cambio',
         'Estado SAT',
