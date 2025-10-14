@@ -4,7 +4,6 @@
  */
 
 import { ArrowDownCircle, GitCompare, Save, XCircle } from "lucide-react";
-import { GuardarEnBaseButton } from "../../reporte-anual";
 import type { MiAdminIngresosTotales, TotalesComparison } from "../types";
 import { badgeStyles } from "../utils";
 
@@ -29,11 +28,9 @@ interface MiAdminIngresosToolbarProps {
   totalesComparison: TotalesComparison | null;
   /** Si hay datos de Auxiliar disponibles */
   hasAuxiliarData: boolean;
-  /** ID del trabajo (para Guardar en Base) - opcional */
+  /** Compatibilidad con implementaciones previas */
   trabajoId?: string;
-  /** Año del trabajo (para Guardar en Base) - opcional */
   anio?: number;
-  /** Mes del trabajo (para Guardar en Base) - opcional */
   mes?: number;
   /** Controla si se muestra el botón principal de guardar */
   showSaveButton?: boolean;
@@ -55,18 +52,9 @@ export const MiAdminIngresosToolbar: React.FC<MiAdminIngresosToolbarProps> = ({
   totales,
   totalesComparison,
   hasAuxiliarData,
-  trabajoId,
-  anio,
-  mes,
   showSaveButton = true,
   showComparisonButton = true,
 }) => {
-  // Calcular total de Auxiliar desde totalesComparison
-  const totalAuxiliar = totalesComparison?.auxiliarTotal ?? 0;
-  const showGuardarEnBase = Boolean(
-    trabajoId && anio && mes && hasAuxiliarData
-  );
-
   return (
     <div className="bg-white border-b border-gray-200 px-4 py-3">
       <div className="flex flex-col gap-3">
@@ -114,18 +102,6 @@ export const MiAdminIngresosToolbar: React.FC<MiAdminIngresosToolbarProps> = ({
                   ? "Sincronización activa"
                   : "Sincronizar con Auxiliar"}
               </button>
-            )}
-
-            {showGuardarEnBase && (
-              <GuardarEnBaseButton
-                trabajoId={trabajoId!}
-                anio={anio!}
-                mes={mes!}
-                totalMiAdmin={totales.totalSubtotalMXN}
-                totalAuxiliar={totalAuxiliar}
-                isDirty={isDirty}
-                isComparisonActive={isComparisonActive}
-              />
             )}
           </div>
 

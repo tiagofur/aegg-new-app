@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { GitCompare, Save } from "lucide-react";
 import { AuxiliarIngresosTable } from "../../features/trabajos/reportes/auxiliar-ingresos";
 import { MiAdminIngresosTable } from "../../features/trabajos/reportes/mi-admin-ingresos";
+import { GuardarEnBaseButton } from "../../features/trabajos/reportes/reporte-anual";
 import { ReporteMensual, TIPOS_REPORTE_NOMBRES } from "../../types/trabajo";
 
 type ReporteMensualViewerProps = {
@@ -20,6 +21,16 @@ type ReporteMensualViewerProps = {
 type ComparacionResultado = {
   foliosUnicos: Set<string>;
   foliosCoinciden: Map<string, boolean>;
+};
+
+type GuardarEnBaseContext = {
+  trabajoId: string;
+  anio: number;
+  mes: number;
+  totalMiAdmin: number;
+  totalAuxiliar: number;
+  isDirty: boolean;
+  isComparisonActive: boolean;
 };
 
 const getIconoReporte = (tipo: ReporteMensual["tipo"]): string => {
@@ -132,6 +143,8 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
     isDirty: boolean;
     isSaving: boolean;
   } | null>(null);
+  const [guardarEnBaseContext, setGuardarEnBaseContext] =
+    useState<GuardarEnBaseContext | null>(null);
 
   const estado = getEstadoInfo(reporte);
   const icono = getIconoReporte(reporte.tipo);
@@ -153,6 +166,7 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
 
     if (!soportaEdicionExterna) {
       setTablaSaveContext(null);
+      setGuardarEnBaseContext(null);
     }
   }, [reporte.tipo]);
 
@@ -479,6 +493,9 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
                   : `Sincronizar con ${comparacionTargetNombre}`}
               </button>
             )}
+            {guardarEnBaseContext && (
+              <GuardarEnBaseButton {...guardarEnBaseContext} />
+            )}
             {tablaSaveContext && (
               <button
                 onClick={handleGuardarTabla}
@@ -772,6 +789,7 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
                       esReporteComparable ? false : true
                     }
                     onSaveContextChange={setTablaSaveContext}
+                    onGuardarEnBaseContextChange={setGuardarEnBaseContext}
                     comparisonActive={
                       esReporteComparable ? comparacionActiva : undefined
                     }

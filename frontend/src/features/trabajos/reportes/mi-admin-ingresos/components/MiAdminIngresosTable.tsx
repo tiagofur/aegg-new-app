@@ -78,6 +78,18 @@ interface MiAdminIngresosTableProps {
   showSaveButtonInToolbar?: boolean;
   /** Controla si se muestra el botón de sincronización en el toolbar */
   showComparisonButtonInToolbar?: boolean;
+  /** Permite portalizar el botón Guardar en Base fuera del toolbar */
+  onGuardarEnBaseContextChange?: (
+    context: {
+      trabajoId: string;
+      anio: number;
+      mes: number;
+      totalMiAdmin: number;
+      totalAuxiliar: number;
+      isDirty: boolean;
+      isComparisonActive: boolean;
+    } | null
+  ) => void;
   /** Estado controlado de la comparación */
   comparisonActive?: boolean;
   /** Callback cuando cambia el estado de comparación */
@@ -109,6 +121,7 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
 
   showSaveButtonInToolbar = true,
   showComparisonButtonInToolbar = true,
+  onGuardarEnBaseContextChange,
   comparisonActive,
   onComparisonActiveChange,
 }) => {
@@ -178,6 +191,44 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
     comparisonActive,
     onComparisonActiveChange,
   });
+
+  const hasAuxiliarData = Boolean(auxiliarData && auxiliarData.length > 0);
+  const totalAuxiliar = totalesComparison?.auxiliarTotal ?? 0;
+
+  useEffect(() => {
+    if (!onGuardarEnBaseContextChange) {
+      return;
+    }
+
+    if (!trabajoId || !anio || !mes || !hasAuxiliarData) {
+      onGuardarEnBaseContextChange(null);
+      return;
+    }
+
+    onGuardarEnBaseContextChange({
+      trabajoId,
+      anio,
+      mes,
+      totalMiAdmin: totales.totalSubtotalMXN,
+      totalAuxiliar,
+      isDirty: hasUnsavedChanges,
+      isComparisonActive,
+    });
+
+    return () => {
+      onGuardarEnBaseContextChange(null);
+    };
+  }, [
+    onGuardarEnBaseContextChange,
+    trabajoId,
+    anio,
+    mes,
+    hasAuxiliarData,
+    totales.totalSubtotalMXN,
+    totalAuxiliar,
+    hasUnsavedChanges,
+    isComparisonActive,
+  ]);
 
   useEffect(() => {
     if (!hasUnsavedChanges || isSaving || !mesId || !reporteId) {
@@ -317,11 +368,7 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
         onCancelarFoliosUnicos={cancelarFoliosUnicos}
         totales={totales}
         totalesComparison={totalesComparison}
-        hasAuxiliarData={!!auxiliarData && auxiliarData.length > 0}
-        // Props para Guardar en Base
-        trabajoId={trabajoId}
-        anio={anio}
-        mes={mes}
+        hasAuxiliarData={hasAuxiliarData}
         showSaveButton={showSaveButtonInToolbar}
         showComparisonButton={showComparisonButtonInToolbar}
       />

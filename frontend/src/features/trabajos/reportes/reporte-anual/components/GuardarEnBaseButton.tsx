@@ -98,18 +98,14 @@ export const GuardarEnBaseButton: React.FC<GuardarEnBaseButtonProps> = ({
       <button
         onClick={() => setShowConfirmDialog(true)}
         disabled={isDisabled}
-        className={`
-          flex items-center gap-2 px-4 py-2 rounded font-medium
-          transition-colors
-          ${
-            isDisabled
-              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-              : "bg-green-600 text-white hover:bg-green-700 active:bg-green-800"
-          }
-        `}
+        className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-emerald-500 ${
+          isDisabled
+            ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
+            : "border-emerald-600 bg-emerald-50 text-emerald-700 hover:border-emerald-700 hover:bg-emerald-100"
+        }`}
         title={getTooltip()}
       >
-        <Save className="w-4 h-4" />
+        <Save className="h-4 w-4" />
         {isLoading ? "Guardando..." : "Guardar en Base"}
       </button>
 
@@ -233,26 +229,22 @@ export const GuardarEnBaseButton: React.FC<GuardarEnBaseButtonProps> = ({
             )}
 
             {/* Actions */}
-            <div className="flex gap-3 justify-end">
+            <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowConfirmDialog(false)}
                 disabled={isLoading}
-                className="px-4 py-2 rounded font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleConfirm}
                 disabled={isLoading || isSuccess}
-                className={`
-                  px-4 py-2 rounded font-medium text-white
-                  transition-colors
-                  ${
-                    isLoading || isSuccess
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-green-600 hover:bg-green-700 active:bg-green-800"
-                  }
-                `}
+                className={`inline-flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-semibold text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-emerald-500 ${
+                  isLoading || isSuccess
+                    ? "cursor-not-allowed border-gray-300 bg-gray-400"
+                    : "border-emerald-600 bg-emerald-600 hover:bg-emerald-700"
+                }`}
               >
                 {isLoading
                   ? "Guardando..."
