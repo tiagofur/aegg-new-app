@@ -38,13 +38,11 @@ interface AuxiliarIngresosTableProps {
   miAdminData?: MiAdminIngresosRow[];
   /** Permite portalizar el botón de guardar fuera del toolbar */
   onSaveContextChange?: (
-    context:
-      | {
-          save: () => Promise<void>;
-          isDirty: boolean;
-          isSaving: boolean;
-        }
-      | null
+    context: {
+      save: () => Promise<void>;
+      isDirty: boolean;
+      isSaving: boolean;
+    } | null
   ) => void;
   /** Controla si se muestra el botón de guardar en la barra interna */
   showSaveButtonInToolbar?: boolean;

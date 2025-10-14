@@ -127,14 +127,11 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
 }) => {
   const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
   const [comparacionActiva, setComparacionActiva] = useState(false);
-  const [tablaSaveContext, setTablaSaveContext] = useState<
-    | {
-        save: () => Promise<void>;
-        isDirty: boolean;
-        isSaving: boolean;
-      }
-    | null
-  >(null);
+  const [tablaSaveContext, setTablaSaveContext] = useState<{
+    save: () => Promise<void>;
+    isDirty: boolean;
+    isSaving: boolean;
+  } | null>(null);
 
   const estado = getEstadoInfo(reporte);
   const icono = getIconoReporte(reporte.tipo);
@@ -361,10 +358,9 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
     return acciones.slice(0, 3);
   }, [comparacionDisponible, comparacionActiva, tieneDatos, onLimpiarDatos]);
 
-  const estadoChipClasses = `inline-flex items-center gap-1 rounded-full border bg-white/70 px-2.5 py-0.5 text-xs font-semibold ${estado.color} ${estado.color.replace(
-    "text-",
-    "border-"
-  )}`;
+  const estadoChipClasses = `inline-flex items-center gap-1 rounded-full border bg-white/70 px-2.5 py-0.5 text-xs font-semibold ${
+    estado.color
+  } ${estado.color.replace("text-", "border-")}`;
   const complementoNombre = reporteComplementario
     ? TIPOS_REPORTE_NOMBRES[reporteComplementario.tipo]
     : null;
@@ -413,7 +409,9 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
 
   return (
     <div className="mt-3 overflow-hidden rounded-lg border border-gray-200 bg-white">
-      <header className={`${estado.bgColor} border-b border-gray-200 px-4 py-3`}>
+      <header
+        className={`${estado.bgColor} border-b border-gray-200 px-4 py-3`}
+      >
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex min-w-0 items-start gap-3">
             <span className="text-3xl" aria-hidden>
@@ -448,7 +446,9 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
             {tablaSaveContext && (
               <button
                 onClick={handleGuardarTabla}
-                disabled={!tablaSaveContext.isDirty || tablaSaveContext.isSaving}
+                disabled={
+                  !tablaSaveContext.isDirty || tablaSaveContext.isSaving
+                }
                 className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 ${
                   tablaSaveContext.isDirty && !tablaSaveContext.isSaving
                     ? "bg-blue-600 text-white hover:bg-blue-700"
@@ -540,19 +540,22 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
               <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600">
                 <div className="flex flex-wrap items-center gap-4">
                   <span className="font-semibold text-gray-700">
-                    Registros importados: {totalRegistros.toLocaleString("es-MX")}
+                    Registros importados:{" "}
+                    {totalRegistros.toLocaleString("es-MX")}
                   </span>
                   <span>
-                    Actualizado: {" "}
+                    Actualizado:{" "}
                     <span className="font-semibold text-gray-800">
                       {ultimaActualizacion}
                     </span>
                   </span>
-                  {comparacionActiva && !usaTablaEspecializada && complementoNombre && (
-                    <span className="text-xs text-blue-700">
-                      Comparando contra {complementoNombre}.
-                    </span>
-                  )}
+                  {comparacionActiva &&
+                    !usaTablaEspecializada &&
+                    complementoNombre && (
+                      <span className="text-xs text-blue-700">
+                        Comparando contra {complementoNombre}.
+                      </span>
+                    )}
                 </div>
                 {comparacionDisponible && !usaTablaEspecializada && (
                   <button
@@ -660,7 +663,8 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
                     )
                   ) : (
                     <p className="mt-3 text-sm text-gray-600">
-                      Este reporte no cuenta con un archivo auxiliar complementario.
+                      Este reporte no cuenta con un archivo auxiliar
+                      complementario.
                     </p>
                   )}
                 </div>
@@ -684,7 +688,9 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
               {comparacionActiva && !usaTablaEspecializada && (
                 <div className="rounded-lg border border-blue-200 bg-blue-50 p-2 text-xs text-blue-900">
                   <div className="flex flex-wrap items-center gap-4">
-                    <span className="font-semibold">Leyenda de diferencias</span>
+                    <span className="font-semibold">
+                      Leyenda de diferencias
+                    </span>
                     <div className="flex items-center gap-1">
                       <span className="h-3 w-3 rounded border border-yellow-400 bg-yellow-300" />
                       <span>Folio único</span>
@@ -711,7 +717,8 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
                     onSaveContextChange={setTablaSaveContext}
                   />
                 </div>
-              ) : reporte.tipo === "INGRESOS_MI_ADMIN" || reporte.tipo === "INGRESOS" ? (
+              ) : reporte.tipo === "INGRESOS_MI_ADMIN" ||
+                reporte.tipo === "INGRESOS" ? (
                 <div className="h-[1200px]">
                   <MiAdminIngresosTable
                     mesId={mesId}
@@ -727,7 +734,10 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
                 </div>
               ) : (
                 <div className="overflow-hidden rounded-lg border border-gray-200">
-                  <div className="overflow-auto" style={{ maxHeight: "1200px" }}>
+                  <div
+                    className="overflow-auto"
+                    style={{ maxHeight: "1200px" }}
+                  >
                     <table className="min-w-full divide-y divide-gray-200 text-xs">
                       <thead className="sticky top-0 z-10 bg-gray-100">
                         <tr>
@@ -745,8 +755,13 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
                         {filas.map((fila, rowIndex) => (
                           <tr key={rowIndex} className={getRowClassName(fila)}>
                             {Object.values(fila).map((valor, colIndex) => (
-                              <td key={colIndex} className="px-3 py-2 whitespace-nowrap text-gray-900">
-                                {valor !== null && valor !== undefined ? String(valor) : "-"}
+                              <td
+                                key={colIndex}
+                                className="px-3 py-2 whitespace-nowrap text-gray-900"
+                              >
+                                {valor !== null && valor !== undefined
+                                  ? String(valor)
+                                  : "-"}
                               </td>
                             ))}
                           </tr>
@@ -813,8 +828,9 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
                           ¿Eliminar datos del reporte?
                         </h3>
                         <p className="mb-4 text-sm text-gray-600">
-                          Esta acción eliminará todos los datos importados del reporte {" "}
-                          <strong>{nombre}</strong>. El reporte volverá al estado "Sin importar".
+                          Esta acción eliminará todos los datos importados del
+                          reporte <strong>{nombre}</strong>. El reporte volverá
+                          al estado "Sin importar".
                         </p>
                         <p className="text-sm font-medium text-red-600">
                           Esta acción no se puede deshacer.
@@ -878,7 +894,8 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
 
               {reporte.estado === "ERROR" && (
                 <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-                  <strong>Error:</strong> Hubo un problema al procesar el archivo.
+                  <strong>Error:</strong> Hubo un problema al procesar el
+                  archivo.
                 </div>
               )}
             </div>

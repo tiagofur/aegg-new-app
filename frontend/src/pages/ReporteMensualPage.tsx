@@ -90,7 +90,8 @@ export const ReporteMensualPage: React.FC = () => {
         return;
       }
 
-      let reporteEncontrado = mes.reportes.find((r) => r.id === reporteId) ?? null;
+      let reporteEncontrado =
+        mes.reportes.find((r) => r.id === reporteId) ?? null;
 
       if (!reporteEncontrado) {
         setError("No se encontró el reporte solicitado.");
@@ -274,11 +275,13 @@ export const ReporteMensualPage: React.FC = () => {
           />
         ) : null}
 
-        {!error && !loading && (!reporteActual || !trabajoYear || !mesNumber) && (
-          <div className="bg-white rounded-lg shadow p-8 text-center">
-            <p className="text-gray-500">No hay datos para mostrar.</p>
-          </div>
-        )}
+        {!error &&
+          !loading &&
+          (!reporteActual || !trabajoYear || !mesNumber) && (
+            <div className="bg-white rounded-lg shadow p-8 text-center">
+              <p className="text-gray-500">No hay datos para mostrar.</p>
+            </div>
+          )}
       </div>
 
       {reporteActual && (

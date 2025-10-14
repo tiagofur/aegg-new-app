@@ -107,7 +107,9 @@ export const MiAdminIngresosToolbar: React.FC<MiAdminIngresosToolbarProps> = ({
             }
           >
             <GitCompare className="h-4 w-4" />
-            {isComparisonActive ? "Sincronización activa" : "Sincronizar con Auxiliar"}
+            {isComparisonActive
+              ? "Sincronización activa"
+              : "Sincronizar con Auxiliar"}
           </button>
 
           {showGuardarEnBase && (
