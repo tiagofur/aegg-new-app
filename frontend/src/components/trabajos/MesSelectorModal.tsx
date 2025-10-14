@@ -1,9 +1,6 @@
 import React, { useMemo } from "react";
 import { Mes, MESES_NOMBRES } from "../../types/trabajo";
-import {
-  getMesEstadoVisual,
-  MES_ESTADO_TONE_CLASSES,
-} from "./mesEstadoVisual";
+import { getMesEstadoVisual, MES_ESTADO_TONE_CLASSES } from "./mesEstadoVisual";
 
 interface MesSelectorModalProps {
   isOpen: boolean;

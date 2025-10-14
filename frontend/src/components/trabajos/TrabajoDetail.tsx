@@ -10,10 +10,7 @@ import { ImportReporteMensualDialog } from "./ImportReporteMensualDialog";
 import { EditTrabajoDialog } from "./EditTrabajoDialog";
 import { trabajosService, reportesMensualesService } from "../../services";
 import { MesSelectorModal } from "./MesSelectorModal";
-import {
-  getMesEstadoVisual,
-  MES_ESTADO_TONE_CLASSES,
-} from "./mesEstadoVisual";
+import { getMesEstadoVisual, MES_ESTADO_TONE_CLASSES } from "./mesEstadoVisual";
 
 interface TrabajoDetailProps {
   trabajo: Trabajo;
@@ -192,9 +189,7 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
             <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
               {trabajo.clienteRfc && <span>RFC: {trabajo.clienteRfc}</span>}
               {trabajo.meses.length > 0 && (
-                <span>
-                  {progreso}/12 meses completados
-                </span>
+                <span>{progreso}/12 meses completados</span>
               )}
             </div>
           </div>
@@ -365,17 +360,17 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
         />
       )}
 
-        <MesSelectorModal
-          isOpen={mostrarSelectorMeses}
-          onClose={() => setMostrarSelectorMeses(false)}
-          meses={trabajo.meses}
-          mesSeleccionado={mesSeleccionado}
-          onSelectMes={(mesId) => {
-            setMesSeleccionado(mesId);
-            setMostrarSelectorMeses(false);
-          }}
-          onAddMesRequest={onAddMes}
-        />
+      <MesSelectorModal
+        isOpen={mostrarSelectorMeses}
+        onClose={() => setMostrarSelectorMeses(false)}
+        meses={trabajo.meses}
+        mesSeleccionado={mesSeleccionado}
+        onSelectMes={(mesId) => {
+          setMesSeleccionado(mesId);
+          setMostrarSelectorMeses(false);
+        }}
+        onAddMesRequest={onAddMes}
+      />
     </div>
   );
 };
