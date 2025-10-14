@@ -46,6 +46,12 @@ interface AuxiliarIngresosTableProps {
   ) => void;
   /** Controla si se muestra el botón de guardar en la barra interna */
   showSaveButtonInToolbar?: boolean;
+  /** Controla si se muestra el botón de comparación en la barra interna */
+  showComparisonButtonInToolbar?: boolean;
+  /** Estado controlado para la comparación */
+  comparisonActive?: boolean;
+  /** Callback cuando el estado de comparación cambia */
+  onComparisonActiveChange?: (active: boolean) => void;
 }
 
 const columnHelper = createColumnHelper<AuxiliarIngresosRow>();
@@ -60,6 +66,9 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
   miAdminData: providedMiAdminData,
   onSaveContextChange,
   showSaveButtonInToolbar = true,
+  showComparisonButtonInToolbar = true,
+  comparisonActive,
+  onComparisonActiveChange,
 }) => {
   // Hooks de datos y lógica
   const { data, isLoading, error, saveChanges, isSaving } =
@@ -102,6 +111,8 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
   } = useAuxiliarIngresosComparison({
     auxiliarData: editedData,
     miadminData: miAdminData,
+    comparisonActive,
+    onComparisonActiveChange,
   });
 
   const hasMiAdminData = !!miAdminData && miAdminData.length > 0;
@@ -306,6 +317,7 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
         totalesComparison={totalesComparison}
         hasMiAdminData={hasMiAdminData}
         showSaveButton={showSaveButtonInToolbar}
+        showComparisonButton={showComparisonButtonInToolbar}
       />
 
       {/* Table container */}

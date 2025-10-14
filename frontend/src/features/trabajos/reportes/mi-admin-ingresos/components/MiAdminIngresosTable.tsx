@@ -76,6 +76,12 @@ interface MiAdminIngresosTableProps {
 
   /** Controla si se muestra el botón de guardar en la barra interna */
   showSaveButtonInToolbar?: boolean;
+  /** Controla si se muestra el botón de sincronización en el toolbar */
+  showComparisonButtonInToolbar?: boolean;
+  /** Estado controlado de la comparación */
+  comparisonActive?: boolean;
+  /** Callback cuando cambia el estado de comparación */
+  onComparisonActiveChange?: (active: boolean) => void;
 }
 
 /**
@@ -102,6 +108,9 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
   onSaveContextChange,
 
   showSaveButtonInToolbar = true,
+  showComparisonButtonInToolbar = true,
+  comparisonActive,
+  onComparisonActiveChange,
 }) => {
   // 🔥 Si no se proporciona auxiliarData, buscar el reporte Auxiliar del mismo mes
 
@@ -166,6 +175,8 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
     miAdminData: editedData,
 
     auxiliarData,
+    comparisonActive,
+    onComparisonActiveChange,
   });
 
   useEffect(() => {
@@ -312,6 +323,7 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
         anio={anio}
         mes={mes}
         showSaveButton={showSaveButtonInToolbar}
+        showComparisonButton={showComparisonButtonInToolbar}
       />
 
       <div className="border-b border-gray-100 bg-slate-50 px-4 py-2.5 text-sm text-slate-700">

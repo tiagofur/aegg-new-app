@@ -3,7 +3,7 @@
  * Comparación por FOLIO con tolerancia configurable
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { MI_ADMIN_INGRESOS_CONFIG } from '../types';
 import type {
     MiAdminIngresosRow,
@@ -15,13 +15,38 @@ import type { AuxiliarIngresosRow } from '../../auxiliar-ingresos';
 interface UseMiAdminIngresosComparisonProps {
     miAdminData: MiAdminIngresosRow[];
     auxiliarData: AuxiliarIngresosRow[] | undefined;
+    comparisonActive?: boolean;
+    onComparisonActiveChange?: (active: boolean) => void;
 }
 
 export const useMiAdminIngresosComparison = ({
     miAdminData,
     auxiliarData,
+    comparisonActive,
+    onComparisonActiveChange,
 }: UseMiAdminIngresosComparisonProps) => {
-    const [isComparisonActive, setIsComparisonActive] = useState(false);
+    const isControlled = typeof comparisonActive === 'boolean';
+    const [internalActive, setInternalActive] = useState<boolean>(
+        comparisonActive ?? false
+    );
+
+    useEffect(() => {
+        if (isControlled) {
+            setInternalActive(comparisonActive!);
+        }
+    }, [comparisonActive, isControlled]);
+
+    const setComparisonActive = useCallback(
+        (next: boolean) => {
+            if (!isControlled) {
+                setInternalActive(next);
+            }
+            onComparisonActiveChange?.(next);
+        },
+        [isControlled, onComparisonActiveChange]
+    );
+
+    const isComparisonActive = isControlled ? comparisonActive! : internalActive;
 
     // Map de Auxiliar por folio para lookup O(1)
     const auxiliarMap = useMemo(() => {
@@ -170,9 +195,9 @@ export const useMiAdminIngresosComparison = ({
         };
     }, [isComparisonActive, miAdminData, auxiliarData]);
 
-    const toggleComparison = () => {
-        setIsComparisonActive((prev) => !prev);
-    };
+    const toggleComparison = useCallback(() => {
+        setComparisonActive(!isComparisonActive);
+    }, [isComparisonActive, setComparisonActive]);
 
     return {
         comparisonMap,
@@ -180,5 +205,6 @@ export const useMiAdminIngresosComparison = ({
         totalesComparison,
         isComparisonActive,
         toggleComparison,
+        setComparisonActive,
     };
 };

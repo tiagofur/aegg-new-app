@@ -3,7 +3,7 @@
  * Compara por FOLIO (no por UUID) y detecta coincidencias, discrepancias y diferencias
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
     AuxiliarIngresosRow,
     MiAdminIngresosRow,
@@ -17,6 +17,10 @@ interface UseAuxiliarIngresosComparisonProps {
     auxiliarData: AuxiliarIngresosRow[];
     /** Datos de Mi Admin (opcional) */
     miadminData?: MiAdminIngresosRow[];
+    /** Estado controlado de comparación */
+    comparisonActive?: boolean;
+    /** Notificación cuando cambia el estado de comparación */
+    onComparisonActiveChange?: (active: boolean) => void;
 }
 
 interface UseAuxiliarIngresosComparisonReturn {
@@ -24,6 +28,8 @@ interface UseAuxiliarIngresosComparisonReturn {
     isActive: boolean;
     /** Toggle para activar/desactivar comparación */
     toggle: () => void;
+    /** Setter para definir el estado de comparación */
+    setComparisonActive: (active: boolean) => void;
     /** Mapa de resultados de comparación por ID (para renderizado) */
     comparisonMap: Map<string, ComparisonResult>;
     /** Comparación de totales */
@@ -46,16 +52,39 @@ interface UseAuxiliarIngresosComparisonReturn {
 export const useAuxiliarIngresosComparison = ({
     auxiliarData,
     miadminData,
+    comparisonActive,
+    onComparisonActiveChange,
 }: UseAuxiliarIngresosComparisonProps): UseAuxiliarIngresosComparisonReturn => {
     // Estado: Si la comparación está activa
-    const [isActive, setIsActive] = useState(false);
+    const isControlled = typeof comparisonActive === 'boolean';
+    const [internalActive, setInternalActive] = useState<boolean>(
+        comparisonActive ?? false
+    );
+
+    useEffect(() => {
+        if (isControlled) {
+            setInternalActive(comparisonActive!);
+        }
+    }, [comparisonActive, isControlled]);
+
+    const setActive = useCallback(
+        (next: boolean) => {
+            if (!isControlled) {
+                setInternalActive(next);
+            }
+            onComparisonActiveChange?.(next);
+        },
+        [isControlled, onComparisonActiveChange]
+    );
+
+    const isActive = isControlled ? comparisonActive! : internalActive;
 
     /**
      * Toggle para activar/desactivar la comparación
      */
     const toggle = useCallback(() => {
-        setIsActive((prev) => !prev);
-    }, []);
+        setActive(!isActive);
+    }, [isActive, setActive]);
 
     /**
      * Verifica si hay datos de Mi Admin disponibles
@@ -243,5 +272,6 @@ export const useAuxiliarIngresosComparison = ({
         totalesComparison,
         stats,
         hasComparisonData,
+        setComparisonActive: setActive,
     };
 };

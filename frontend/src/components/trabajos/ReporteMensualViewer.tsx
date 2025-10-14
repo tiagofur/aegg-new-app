@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Save } from "lucide-react";
+import { GitCompare, Save } from "lucide-react";
 import { AuxiliarIngresosTable } from "../../features/trabajos/reportes/auxiliar-ingresos";
 import { MiAdminIngresosTable } from "../../features/trabajos/reportes/mi-admin-ingresos";
 import { ReporteMensual, TIPOS_REPORTE_NOMBRES } from "../../types/trabajo";
@@ -309,6 +309,14 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
   const comparacionDisponible = Boolean(
     esReporteComparable && reporteComplementario
   );
+  const comparacionTargetNombre =
+    reporte.tipo === "INGRESOS_AUXILIAR" ? "Mi Admin" : "Auxiliar";
+
+  useEffect(() => {
+    if (!comparacionDisponible && comparacionActiva) {
+      setComparacionActiva(false);
+    }
+  }, [comparacionDisponible, comparacionActiva]);
 
   const comparacionStats = useMemo(() => {
     if (!comparacionDisponible || !comparacionActiva) return null;
@@ -366,6 +374,9 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
     : null;
 
   const toggleComparacion = () => {
+    if (!comparacionDisponible) {
+      return;
+    }
     setComparacionActiva((prev) => !prev);
   };
 
@@ -443,6 +454,31 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
             </div>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
+            {esReporteComparable && (
+              <button
+                onClick={toggleComparacion}
+                disabled={!comparacionDisponible}
+                className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-purple-500 ${
+                  !comparacionDisponible
+                    ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : comparacionActiva
+                    ? "border-purple-600 bg-purple-50 text-purple-700 hover:bg-purple-100"
+                    : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+                }`}
+                title={
+                  comparacionDisponible
+                    ? comparacionActiva
+                      ? "Desactivar la sincronización entre reportes"
+                      : `Sincronizar con ${comparacionTargetNombre}`
+                    : "Importa ambos reportes para habilitar la sincronización"
+                }
+              >
+                <GitCompare className="h-4 w-4" aria-hidden />
+                {comparacionActiva
+                  ? "Sincronización activa"
+                  : `Sincronizar con ${comparacionTargetNombre}`}
+              </button>
+            )}
             {tablaSaveContext && (
               <button
                 onClick={handleGuardarTabla}
@@ -714,7 +750,10 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
                     reporteId={reporte.id}
                     miAdminReporteId={miAdminReporte?.id}
                     showSaveButtonInToolbar={false}
+                    showComparisonButtonInToolbar={false}
                     onSaveContextChange={setTablaSaveContext}
+                    comparisonActive={comparacionActiva}
+                    onComparisonActiveChange={setComparacionActiva}
                   />
                 </div>
               ) : reporte.tipo === "INGRESOS_MI_ADMIN" ||
@@ -729,7 +768,16 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
                     anio={trabajoYear}
                     mes={mesNumber}
                     showSaveButtonInToolbar={false}
+                    showComparisonButtonInToolbar={
+                      esReporteComparable ? false : true
+                    }
                     onSaveContextChange={setTablaSaveContext}
+                    comparisonActive={
+                      esReporteComparable ? comparacionActiva : undefined
+                    }
+                    onComparisonActiveChange={
+                      esReporteComparable ? setComparacionActiva : undefined
+                    }
                   />
                 </div>
               ) : (
