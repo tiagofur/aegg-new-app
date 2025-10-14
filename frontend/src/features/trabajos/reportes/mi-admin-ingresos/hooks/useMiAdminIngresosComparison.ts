@@ -77,31 +77,33 @@ export const useMiAdminIngresosComparison = ({
             .filter((row) => row.estadoSat === 'Vigente')
             .forEach((miAdminRow) => {
                 const auxiliarRow = auxiliarMap.get(miAdminRow.folio);
+                const miAdminSubtotal = Number(miAdminRow.subtotalMXN ?? 0);
 
                 if (!auxiliarRow) {
                     // Solo existe en Mi Admin
                     map.set(miAdminRow.folio, {
                         folio: miAdminRow.folio,
                         status: 'only-miadmin',
-                        miAdminSubtotal: miAdminRow.subtotal,
-                        tooltip: `Folio ${miAdminRow.folio} solo existe en Mi Admin`,
+                        miAdminSubtotal,
+                        tooltip: `Folio ${miAdminRow.folio} solo existe en Mi Admin (Subtotal MXN: $${miAdminSubtotal.toFixed(2)})`,
                     });
                     return;
                 }
 
                 // Comparar subtotales
-                const difference = Math.abs(miAdminRow.subtotal - auxiliarRow.subtotal);
+                const auxiliarSubtotal = Number(auxiliarRow.subtotal ?? 0);
+                const difference = Math.abs(miAdminSubtotal - auxiliarSubtotal);
                 const isMatch = difference <= COMPARISON_TOLERANCE;
 
                 map.set(miAdminRow.folio, {
                     folio: miAdminRow.folio,
                     status: isMatch ? 'match' : 'mismatch',
-                    miAdminSubtotal: miAdminRow.subtotal,
-                    auxiliarSubtotal: auxiliarRow.subtotal,
+                    miAdminSubtotal,
+                    auxiliarSubtotal,
                     difference,
                     tooltip: isMatch
-                        ? `Coincidencia: $${miAdminRow.subtotal.toFixed(2)}`
-                        : `Discrepancia: Mi Admin $${miAdminRow.subtotal.toFixed(2)} vs Auxiliar $${auxiliarRow.subtotal.toFixed(2)} (diff: $${difference.toFixed(2)})`,
+                        ? `Coincidencia: Mi Admin $${miAdminSubtotal.toFixed(2)} vs Auxiliar $${auxiliarSubtotal.toFixed(2)}`
+                        : `Discrepancia: Mi Admin $${miAdminSubtotal.toFixed(2)} vs Auxiliar $${auxiliarSubtotal.toFixed(2)} (diff: $${difference.toFixed(2)})`,
                 });
             });
 
@@ -115,11 +117,12 @@ export const useMiAdminIngresosComparison = ({
                 );
 
                 if (!miAdminRow) {
+                    const auxiliarSubtotal = Number(auxiliarRow.subtotal ?? 0);
                     map.set(auxiliarKey, {
                         folio: auxiliarKey,
                         status: 'only-auxiliar',
-                        auxiliarSubtotal: auxiliarRow.subtotal,
-                        tooltip: `Folio ${auxiliarKey} solo existe en Auxiliar`,
+                        auxiliarSubtotal,
+                        tooltip: `Folio ${auxiliarKey} solo existe en Auxiliar (Subtotal MXN: $${auxiliarSubtotal.toFixed(2)})`,
                     });
                 }
             });
@@ -172,12 +175,12 @@ export const useMiAdminIngresosComparison = ({
         // Total de Mi Admin (solo vigentes)
         const miAdminTotal = miAdminData
             .filter((row) => row.estadoSat === 'Vigente')
-            .reduce((sum, row) => sum + row.subtotal, 0);
+            .reduce((sum, row) => sum + Number(row.subtotalMXN ?? 0), 0);
 
         // Total de Auxiliar (solo vigentes)
         const auxiliarTotal = auxiliarData
             .filter((row) => row.estadoSat === 'Vigente')
-            .reduce((sum, row) => sum + row.subtotal, 0);
+            .reduce((sum, row) => sum + Number(row.subtotal ?? 0), 0);
 
         const difference = Math.abs(miAdminTotal - auxiliarTotal);
         const { COMPARISON_TOLERANCE } = MI_ADMIN_INGRESOS_CONFIG;
@@ -190,7 +193,7 @@ export const useMiAdminIngresosComparison = ({
             difference,
             isMatch,
             tooltip: isMatch
-                ? `Totales coinciden: $${miAdminTotal.toFixed(2)}`
+                ? `Totales coinciden: $${miAdminTotal.toFixed(2)} vs $${auxiliarTotal.toFixed(2)}`
                 : `Discrepancia en totales: Mi Admin $${miAdminTotal.toFixed(2)} vs Auxiliar $${auxiliarTotal.toFixed(2)} (diff: $${difference.toFixed(2)})`,
         };
     }, [isComparisonActive, miAdminData, auxiliarData]);
