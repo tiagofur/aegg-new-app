@@ -1,1 +1,2 @@
-export * from './trabajo';
+export * from "./trabajo";
+export * from "./dashboard";

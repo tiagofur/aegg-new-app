@@ -8,6 +8,7 @@ import {
 import { reportesMensualesService, trabajosService } from "../services";
 import { ReporteMensualViewer } from "../components/trabajos/ReporteMensualViewer";
 import { ImportReporteMensualDialog } from "../components/trabajos/ImportReporteMensualDialog";
+import { AppShell } from "../components/layout/AppShell";
 
 type ReporteMensualLocationState = {
   reporte?: ReporteMensual;
@@ -53,11 +54,6 @@ export const ReporteMensualPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [mostrarImportDialog, setMostrarImportDialog] = useState(false);
-
-  const nombreTipo =
-    (reporteActual && TIPOS_REPORTE_NOMBRES[reporteActual.tipo]) ||
-    TIPOS_REPORTE_NOMBRES[tipo as keyof typeof TIPOS_REPORTE_NOMBRES] ||
-    tipo;
 
   const hasPrefetchedData = Boolean(locationState?.reporte);
   const prefetchedMatchesRoute =
@@ -172,7 +168,6 @@ export const ReporteMensualPage: React.FC = () => {
     }
   };
 
-  // Validar parámetros tempranamente
   if (!trabajoId || !mesId || !reporteId || !tipo) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -194,30 +189,33 @@ export const ReporteMensualPage: React.FC = () => {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="px-2 py-3 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3 text-sm">
-            <button
-              onClick={() => navigate(`/trabajos/${trabajoId}`)}
-              className="text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-2"
-            >
-              <span className="text-xl">←</span>
-              <span>Volver al Proyecto</span>
-            </button>
-            <span className="text-gray-400">/</span>
-            <span className="text-gray-700 font-medium">{nombreTipo}</span>
-          </div>
-          {trabajoNombre && (
-            <span className="text-xs font-medium uppercase tracking-wide text-gray-500">
-              {trabajoNombre}
-            </span>
-          )}
-        </div>
-      </div>
+  const safeTrabajoId = trabajoId as string;
+  const safeMesId = mesId as string;
+  const safeTipo = tipo as string;
+  const nombreTipo =
+    (reporteActual && TIPOS_REPORTE_NOMBRES[reporteActual.tipo]) ||
+    TIPOS_REPORTE_NOMBRES[safeTipo as keyof typeof TIPOS_REPORTE_NOMBRES] ||
+    safeTipo;
 
-      <div className="px-2 py-4 space-y-4">
+  return (
+    <AppShell
+      title={nombreTipo}
+      breadcrumbs={[
+        { label: "Inicio", to: "/dashboard" },
+        { label: "Trabajos", to: "/trabajos" },
+        { label: "Proyecto", to: `/trabajos/${safeTrabajoId}` },
+        { label: nombreTipo },
+      ]}
+      fullWidth
+      contentClassName="max-w-6xl"
+    >
+      <div className="space-y-4">
+        {trabajoNombre && (
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-medium uppercase tracking-wide text-slate-500">
+            {trabajoNombre}
+          </div>
+        )}
+
         {loading && reporteActual && (
           <div className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-700">
             <svg
@@ -246,14 +244,14 @@ export const ReporteMensualPage: React.FC = () => {
         )}
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-            <h2 className="text-red-800 font-semibold text-xl mb-2">
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-6">
+            <h2 className="text-lg font-semibold text-red-800">
               ⚠️ Error al cargar reporte
             </h2>
-            <p className="text-red-600 mb-4">{error}</p>
+            <p className="mt-2 text-sm text-red-600">{error}</p>
             <button
-              onClick={() => navigate(`/trabajos/${trabajoId}`)}
-              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+              onClick={() => navigate(`/trabajos/${safeTrabajoId}`)}
+              className="mt-4 inline-flex items-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
             >
               Volver al Proyecto
             </button>
@@ -265,8 +263,8 @@ export const ReporteMensualPage: React.FC = () => {
             reporte={reporteActual}
             reportes={reportes}
             mesNombre={mesNombre || MESES_NOMBRES[mesNumber - 1] || ""}
-            mesId={mesId}
-            trabajoId={trabajoId}
+            mesId={safeMesId}
+            trabajoId={safeTrabajoId}
             trabajoYear={trabajoYear}
             mesNumber={mesNumber}
             onImportarReporte={handleAbrirImportDialog}
@@ -278,8 +276,8 @@ export const ReporteMensualPage: React.FC = () => {
         {!error &&
           !loading &&
           (!reporteActual || !trabajoYear || !mesNumber) && (
-            <div className="bg-white rounded-lg shadow p-8 text-center">
-              <p className="text-gray-500">No hay datos para mostrar.</p>
+            <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+              No hay datos para mostrar.
             </div>
           )}
       </div>
@@ -292,11 +290,11 @@ export const ReporteMensualPage: React.FC = () => {
             setMostrarImportDialog(false);
             await cargarDetalle();
           }}
-          mesId={mesId}
+          mesId={safeMesId}
           tipo={reporteActual.tipo}
           mesNombre={mesNombre || MESES_NOMBRES[(mesNumber || 1) - 1] || ""}
         />
       )}
-    </div>
+    </AppShell>
   );
 };

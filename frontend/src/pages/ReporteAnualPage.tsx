@@ -7,6 +7,7 @@
 
 import { useParams, useNavigate } from "react-router-dom";
 import { ReporteAnualTable } from "../features/trabajos/reportes/reporte-anual/components/ReporteAnualTable";
+import { AppShell } from "../components/layout/AppShell";
 
 export const ReporteAnualPage: React.FC = () => {
   const { trabajoId, anio } = useParams<{
@@ -61,30 +62,20 @@ export const ReporteAnualPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="px-2 py-3">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate(`/trabajos/${trabajoId}`)}
-              className="text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-2"
-            >
-              <span className="text-xl">←</span>
-              <span>Volver a Trabajos</span>
-            </button>
-            <span className="text-gray-400">/</span>
-            <span className="text-gray-700 font-medium">
-              Reporte Anual {anioNum}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="px-1 py-2">
+    <AppShell
+      title={`Reporte anual ${anioNum}`}
+      breadcrumbs={[
+        { label: "Inicio", to: "/dashboard" },
+        { label: "Trabajos", to: "/trabajos" },
+        { label: "Proyecto", to: `/trabajos/${trabajoId}` },
+        { label: `Reporte anual ${anioNum}` },
+      ]}
+      fullWidth
+      contentClassName="max-w-6xl"
+    >
+      <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm sm:p-4">
         <ReporteAnualTable trabajoId={trabajoId} anio={anioNum} />
       </div>
-    </div>
+    </AppShell>
   );
 };

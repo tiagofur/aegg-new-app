@@ -9,6 +9,7 @@ import {
 import { trabajosService } from "../services";
 import { Trabajo } from "../types/trabajo";
 import { useAuth } from "../context/AuthContext";
+import { AppShell } from "../components/layout/AppShell";
 
 export const TrabajosPage: React.FC = () => {
   const { trabajoId } = useParams<{ trabajoId: string }>();
@@ -106,22 +107,41 @@ export const TrabajosPage: React.FC = () => {
     );
   }
 
+  const breadcrumbs = selectedTrabajo
+    ? [
+        { label: "Inicio", to: "/dashboard" },
+        { label: "Trabajos", to: "/trabajos" },
+        { label: selectedTrabajo.clienteNombre },
+      ]
+    : [{ label: "Inicio", to: "/dashboard" }, { label: "Trabajos" }];
+
   return (
-    <>
-      {selectedTrabajo ? (
-        <TrabajoDetail
-          trabajo={selectedTrabajo}
-          onAddMes={() => setCreateMesOpen(true)}
-          onBack={handleBackToList}
-          onReload={handleReloadTrabajo}
-        />
-      ) : (
-        <TrabajosList
-          trabajos={trabajos}
-          onSelectTrabajo={handleSelectTrabajo}
-          onCreateTrabajo={() => setCreateTrabajoOpen(true)}
-        />
-      )}
+    <AppShell
+      title={
+        selectedTrabajo
+          ? `${selectedTrabajo.clienteNombre} - ${selectedTrabajo.anio}`
+          : "Trabajos"
+      }
+      breadcrumbs={breadcrumbs}
+      fullWidth={!!selectedTrabajo}
+      contentClassName={selectedTrabajo ? "max-w-6xl" : undefined}
+    >
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        {selectedTrabajo ? (
+          <TrabajoDetail
+            trabajo={selectedTrabajo}
+            onAddMes={() => setCreateMesOpen(true)}
+            onBack={handleBackToList}
+            onReload={handleReloadTrabajo}
+          />
+        ) : (
+          <TrabajosList
+            trabajos={trabajos}
+            onSelectTrabajo={handleSelectTrabajo}
+            onCreateTrabajo={() => setCreateTrabajoOpen(true)}
+          />
+        )}
+      </div>
 
       {user && (
         <CreateTrabajoDialog
@@ -141,6 +161,6 @@ export const TrabajosPage: React.FC = () => {
           existingMeses={selectedTrabajo.meses.map((m) => m.mes)}
         />
       )}
-    </>
+    </AppShell>
   );
 };

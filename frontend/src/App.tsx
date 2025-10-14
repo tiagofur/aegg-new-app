@@ -65,7 +65,7 @@ function App() {
               </PrivateRoute>
             }
           />
-          <Route path="/" element={<Navigate to="/trabajos" replace />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </Router>
     </AuthProvider>
