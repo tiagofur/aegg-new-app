@@ -116,11 +116,15 @@ export const COLUMN_KEYWORDS = {
     ],
     FOLIO: [
         'folio',
-        'uuid',
-        'foliofiscal',
-        'numerofactura',
+        'serie/folio',
+        'serie folio',
+        'seriefolio',
+        'folio factura',
+        'foliofactura',
         'numero factura',
         'numero de factura',
+        'numerofactura',
+        'factura',
     ],
     SERIE: ['serie'],
 

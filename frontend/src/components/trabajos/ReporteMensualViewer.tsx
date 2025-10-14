@@ -128,6 +128,21 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
     reporte.tipo === "INGRESOS_AUXILIAR" ||
     reporte.tipo === "INGRESOS_MI_ADMIN";
 
+  const usaTablaEspecializada =
+    reporte.tipo === "INGRESOS_AUXILIAR" ||
+    reporte.tipo === "INGRESOS_MI_ADMIN" ||
+    reporte.tipo === "INGRESOS";
+
+  const auxiliarReporte = useMemo(
+    () => reportes.find((r) => r.tipo === "INGRESOS_AUXILIAR"),
+    [reportes]
+  );
+
+  const miAdminReporte = useMemo(
+    () => reportes.find((r) => r.tipo === "INGRESOS_MI_ADMIN"),
+    [reportes]
+  );
+
   // Encontrar el reporte complementario para comparación
   const reporteComplementario = useMemo(() => {
     if (!esReporteComparable) return null;
@@ -346,37 +361,40 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
               {estado.label}
             </span>
 
-            {tieneDatos && esReporteComparable && reporteComplementario && (
-              <button
-                onClick={toggleComparacion}
-                className={`${
-                  comparacionActiva
-                    ? "bg-purple-600 hover:bg-purple-700"
-                    : "bg-blue-600 hover:bg-blue-700"
-                } text-white px-3 py-1.5 rounded-lg font-semibold text-sm flex items-center gap-1.5 transition-colors shadow-sm hover:shadow-md`}
-                title={
-                  comparacionActiva
-                    ? "Desactivar comparación"
-                    : "Comparar con " +
-                      TIPOS_REPORTE_NOMBRES[reporteComplementario.tipo]
-                }
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
+            {tieneDatos &&
+              esReporteComparable &&
+              reporteComplementario &&
+              !usaTablaEspecializada && (
+                <button
+                  onClick={toggleComparacion}
+                  className={`${
+                    comparacionActiva
+                      ? "bg-purple-600 hover:bg-purple-700"
+                      : "bg-blue-600 hover:bg-blue-700"
+                  } text-white px-3 py-1.5 rounded-lg font-semibold text-sm flex items-center gap-1.5 transition-colors shadow-sm hover:shadow-md`}
+                  title={
+                    comparacionActiva
+                      ? "Desactivar comparación"
+                      : "Comparar con " +
+                        TIPOS_REPORTE_NOMBRES[reporteComplementario.tipo]
+                  }
                 >
-                  <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                  <path
-                    fillRule="evenodd"
-                    d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                {comparacionActiva ? "Comparando" : "Comparar"}
-              </button>
-            )}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                    <path
+                      fillRule="evenodd"
+                      d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  {comparacionActiva ? "Comparando" : "Comparar"}
+                </button>
+              )}
 
             {tieneDatos && (
               <button
@@ -453,7 +471,7 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
             </div>
 
             {/* Leyenda de comparación */}
-            {comparacionActiva && (
+            {comparacionActiva && !usaTablaEspecializada && (
               <div className="mb-3 bg-blue-50 border border-blue-200 rounded-lg p-2">
                 <div className="flex items-center gap-4 text-xs">
                   <span className="font-semibold text-blue-900">
@@ -481,7 +499,11 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
             {/* 🔥 Usar componentes especializados según el tipo de reporte */}
             {reporte.tipo === "INGRESOS_AUXILIAR" ? (
               <div className="h-[600px]">
-                <AuxiliarIngresosTable mesId={mesId} reporteId={reporte.id} />
+                <AuxiliarIngresosTable
+                  mesId={mesId}
+                  reporteId={reporte.id}
+                  miAdminReporteId={miAdminReporte?.id}
+                />
               </div>
             ) : reporte.tipo === "INGRESOS_MI_ADMIN" ||
               reporte.tipo === "INGRESOS" ? (
@@ -490,6 +512,7 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
                   mesId={mesId}
                   reporteId={reporte.id}
                   auxiliarData={undefined} // El hook interno cargará los datos
+                  auxiliarReporteId={auxiliarReporte?.id}
                   trabajoId={trabajoId}
                   anio={trabajoYear}
                   mes={mesNumber}

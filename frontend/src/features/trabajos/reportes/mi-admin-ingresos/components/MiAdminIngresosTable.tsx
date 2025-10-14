@@ -6,26 +6,14 @@
 import { useEffect, useMemo, useState } from "react";
 
 import {
-
   useReactTable,
-
   getCoreRowModel,
-
   getSortedRowModel,
-
   getFilteredRowModel,
-
   flexRender,
-
-  createColumnHelper,
-
   type SortingState,
-
   type ColumnFiltersState,
-
 } from "@tanstack/react-table";
-
-
 
 import { useMiAdminIngresosData } from "../hooks/useMiAdminIngresosData";
 
@@ -37,24 +25,15 @@ import { useMiAdminIngresosCalculations } from "../hooks/useMiAdminIngresosCalcu
 
 import { useMiAdminIngresosComparison } from "../hooks/useMiAdminIngresosComparison";
 
-
-
 import { MiAdminIngresosToolbar } from "./MiAdminIngresosToolbar";
 
 import { MiAdminIngresosFooter } from "./MiAdminIngresosFooter";
 
-
-
 import { getRowBackgroundColor, createMiAdminDynamicColumns } from "../utils";
-
-import type { MiAdminIngresosRow } from "../types";
 
 import type { AuxiliarIngresosRow } from "../../auxiliar-ingresos";
 
-
-
 interface MiAdminIngresosTableProps {
-
   /** ID del mes */
 
   mesId: string | undefined;
@@ -67,6 +46,9 @@ interface MiAdminIngresosTableProps {
 
   auxiliarData: AuxiliarIngresosRow[] | undefined;
 
+  /** ID del reporte Auxiliar (para cargar datos si no se proporcionan) */
+  auxiliarReporteId?: string;
+
   /** ID del trabajo (para Guardar en Base) */
 
   trabajoId?: string;
@@ -78,10 +60,7 @@ interface MiAdminIngresosTableProps {
   /** Mes del trabajo (para Guardar en Base) */
 
   mes?: number;
-
 }
-
-
 
 /**
 
@@ -90,57 +69,46 @@ interface MiAdminIngresosTableProps {
  */
 
 export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
-
   mesId,
 
   reporteId,
 
   auxiliarData: providedAuxiliarData,
 
+  auxiliarReporteId,
+
   trabajoId,
 
   anio,
 
   mes,
-
 }) => {
-
   // 🔥 Si no se proporciona auxiliarData, buscar el reporte Auxiliar del mismo mes
 
   const { data: loadedAuxiliarData } = useAuxiliarIngresosData({
+    mesId: mesId || "",
 
-    mesId: mesId || "", // Proporcionar string vacío si mesId es undefined
+    reporteId: auxiliarReporteId || "",
 
-    reporteId: "", // Buscaremos el ID del reporte Auxiliar automáticamente
-
-    enabled: !providedAuxiliarData && !!mesId,
-
+    enabled: !providedAuxiliarData && !!mesId && !!auxiliarReporteId,
   });
-
-
 
   // Usar los datos proporcionados o los cargados
 
   const auxiliarData = providedAuxiliarData || loadedAuxiliarData;
 
-
-
   // Hooks de datos y lógica
 
-  const { data, isLoading, error, handleSave, isSaving } = useMiAdminIngresosData({
+  const { data, isLoading, error, handleSave, isSaving } =
+    useMiAdminIngresosData({
+      mesId,
 
-    mesId,
+      reporteId,
 
-    reporteId,
-
-    auxiliarData,
-
-  });
-
-
+      auxiliarData,
+    });
 
   const {
-
     editedData,
 
     hasUnsavedChanges,
@@ -156,27 +124,17 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
     cancelarFoliosUnicos,
 
     resetChanges,
-
   } = useMiAdminIngresosEdit({
-
     data,
 
     auxiliarData,
-
   });
-
-
 
   const { totales, dataWithTotals } = useMiAdminIngresosCalculations({
-
     data: editedData,
-
   });
 
-
-
   const {
-
     comparisonMap,
 
     totalesComparison,
@@ -184,59 +142,35 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
     isComparisonActive,
 
     toggleComparison,
-
   } = useMiAdminIngresosComparison({
-
     miAdminData: editedData,
 
     auxiliarData,
-
   });
 
-
-
   useEffect(() => {
-
     if (!hasUnsavedChanges || isSaving || !mesId || !reporteId) {
-
       return;
-
     }
 
-
-
     const timeoutId = window.setTimeout(async () => {
-
       try {
-
         await handleSave(editedData);
 
         resetChanges();
-
       } catch (autoSaveError) {
-
         console.error(
-
           "❌ Error auto-guardando Mi Admin Ingresos:",
 
           autoSaveError
-
         );
-
       }
-
     }, 2000);
 
-
-
     return () => {
-
       window.clearTimeout(timeoutId);
-
     };
-
   }, [
-
     editedData,
 
     handleSave,
@@ -250,10 +184,7 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
     reporteId,
 
     resetChanges,
-
   ]);
-
-
 
   // State local para sorting y filtering
 
@@ -261,26 +192,20 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
 
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
-
-
   // 🔥 DEFINICIÓN DE COLUMNAS 100% DINÁMICA USANDO LA FÁBRICA
 
   const columns = useMemo(() => {
-
     // Empaquetar todos los callbacks para pasarlos a la fábrica
 
     const callbacks = {
-
       updateTipoCambio,
 
       updateEstadoSat,
 
       aplicarTCSugerido,
-
     };
 
     return createMiAdminDynamicColumns(dataWithTotals, callbacks);
-
   }, [dataWithTotals, updateTipoCambio, updateEstadoSat, aplicarTCSugerido]);
 
   // Configuración de TanStack Table

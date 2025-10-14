@@ -19,18 +19,23 @@ import { useAuxiliarIngresosData } from "../hooks/useAuxiliarIngresosData";
 import { useAuxiliarIngresosEdit } from "../hooks/useAuxiliarIngresosEdit";
 import { useAuxiliarIngresosCalculations } from "../hooks/useAuxiliarIngresosCalculations";
 import { useAuxiliarIngresosComparison } from "../hooks/useAuxiliarIngresosComparison";
+import { useMiAdminIngresosData } from "../../mi-admin-ingresos/hooks/useMiAdminIngresosData";
 
 import { AuxiliarIngresosToolbar } from "./AuxiliarIngresosToolbar";
 import { AuxiliarIngresosFooter } from "./AuxiliarIngresosFooter";
 
 import { getRowBackgroundColor, createDynamicColumns } from "../utils";
-import type { AuxiliarIngresosRow } from "../types";
+import type { AuxiliarIngresosRow, MiAdminIngresosRow } from "../types";
 
 interface AuxiliarIngresosTableProps {
   /** ID del mes */
   mesId: string;
   /** ID del reporte */
   reporteId: string;
+  /** ID del reporte Mi Admin (para comparación) */
+  miAdminReporteId?: string;
+  /** Datos de Mi Admin precargados (opcional) */
+  miAdminData?: MiAdminIngresosRow[];
 }
 
 const columnHelper = createColumnHelper<AuxiliarIngresosRow>();
@@ -41,6 +46,8 @@ const columnHelper = createColumnHelper<AuxiliarIngresosRow>();
 export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
   mesId,
   reporteId,
+  miAdminReporteId,
+  miAdminData: providedMiAdminData,
 }) => {
   // Hooks de datos y lógica
   const { data, isLoading, error, saveChanges, isSaving } =
@@ -49,6 +56,18 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
       reporteId,
       enabled: true,
     });
+
+  const { data: fetchedMiAdminData } = useMiAdminIngresosData({
+    mesId,
+    reporteId: miAdminReporteId,
+    auxiliarData: undefined,
+    enabled: !providedMiAdminData && !!miAdminReporteId,
+  });
+
+  const miAdminData = useMemo(
+    () => providedMiAdminData ?? fetchedMiAdminData,
+    [providedMiAdminData, fetchedMiAdminData]
+  );
 
   const {
     data: editedData,
@@ -69,7 +88,7 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
     totalesComparison,
   } = useAuxiliarIngresosComparison({
     auxiliarData: editedData,
-    miadminData: undefined, // TODO: Load Mi Admin data when needed
+    miadminData: miAdminData,
   });
 
   useEffect(() => {
@@ -119,6 +138,23 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
       updateEstadoSat
     );
 
+    if (import.meta.env.DEV) {
+      console.log("[AuxiliarIngresosTable] filas", dataWithTotals.length);
+      console.log(
+        "[AuxiliarIngresosTable] columnas base",
+        baseColumns.map((col) => {
+          if ("id" in col && typeof col.id === "string") {
+            return col.id;
+          }
+          if ("accessorKey" in col && typeof col.accessorKey === "string") {
+            return col.accessorKey;
+          }
+          return "(sin id)";
+        })
+      );
+      console.log("[AuxiliarIngresosTable] sample row", dataWithTotals[0]);
+    }
+
     // Añadir la columna de comparación condicionalmente
     if (isComparisonActive) {
       return [
@@ -158,10 +194,7 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
                 : "Solo en Mi Admin";
 
             return (
-              <div
-                className="flex items-center justify-center"
-                title={tooltip}
-              >
+              <div className="flex items-center justify-center" title={tooltip}>
                 <span className="text-lg">{icon}</span>
               </div>
             );

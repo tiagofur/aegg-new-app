@@ -91,6 +91,7 @@ export const parseExcelToAuxiliarIngresos = (
     const fechaIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.FECHA);
     const rfcIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.RFC);
     const razonSocialIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.RAZON_SOCIAL);
+    const serieIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.SERIE);
     let estadoIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.ESTADO_SAT);
 
     if (estadoIndex === -1) {
@@ -126,8 +127,14 @@ export const parseExcelToAuxiliarIngresos = (
         }
 
         // FOLIO es el campo obligatorio ahora
-        const folio = row[folioIndex]?.toString().trim() || `row-${i}`;
-        if (!folio || folio === `row-${i}`) {
+        const rawSerie = serieIndex !== -1 ? row[serieIndex]?.toString().trim() || '' : '';
+        const rawFolio = row[folioIndex]?.toString().trim() || '';
+        const combinedFolio = rawSerie && rawFolio
+            ? `${rawSerie}${rawFolio.startsWith(rawSerie) ? '' : '-'}${rawFolio}`
+            : rawFolio || rawSerie;
+
+        const folio = combinedFolio || `row-${i}`;
+        if (!combinedFolio) {
             console.warn(`⚠️ Fila ${i + 1} sin FOLIO, se omitirá`);
             continue;
         }
@@ -250,6 +257,18 @@ export const formatCurrency = (
 ): string => {
     const formatted = value.toFixed(AUXILIAR_INGRESOS_CONFIG.CURRENCY_DECIMALS);
     return includeSymbol ? `$${formatted}` : formatted;
+};
+
+/**
+ * Formatear tipo de cambio con 4 decimales
+ * @param value - Valor del tipo de cambio
+ * @returns String formateado
+ */
+export const formatTipoCambio = (value: number | null): string => {
+    if (value === null || value === undefined) {
+        return '-';
+    }
+    return value.toFixed(AUXILIAR_INGRESOS_CONFIG.TC_DECIMALS);
 };
 
 /**

@@ -80,8 +80,14 @@ export const useAuxiliarIngresosComparison = ({
         // Crear lookup de Mi Admin por FOLIO para búsqueda rápida
         const miadminLookup = new Map(
             miadminData!
-                .filter((row) => row.estadoSat === 'Vigente')
-                .map((row) => [row.folio, { subtotal: row.subtotal, uuid: row.uuid }])
+                .filter((row) => row.estadoSat === 'Vigente' && !row.isSummary)
+                .map((row) => [
+                    row.folio,
+                    {
+                        subtotalMXN: row.subtotalMXN ?? 0,
+                        id: row.id,
+                    },
+                ])
         );
 
         // Comparar cada fila del Auxiliar
@@ -118,7 +124,9 @@ export const useAuxiliarIngresosComparison = ({
             }
 
             // Caso 2 y 3: FOLIO existe en ambos, comparar valores
-            const difference = Math.abs(auxRow.subtotal - miadminRow.subtotal);
+            const auxiliarSubtotal = auxRow.subtotal ?? 0;
+            const miadminSubtotal = miadminRow.subtotalMXN ?? 0;
+            const difference = Math.abs(auxiliarSubtotal - miadminSubtotal);
             const isMatch = difference <= AUXILIAR_INGRESOS_CONFIG.COMPARISON_TOLERANCE;
 
             if (isMatch) {
@@ -126,10 +134,10 @@ export const useAuxiliarIngresosComparison = ({
                 const result: ComparisonResult = {
                     uuid: auxRow.id,
                     status: 'match',
-                    auxiliarSubtotal: auxRow.subtotal,
-                    miadminSubtotal: miadminRow.subtotal,
+                    auxiliarSubtotal,
+                    miadminSubtotal,
                     difference,
-                    tooltip: `✅ Coincide - Folio: ${auxRow.folio} - Diferencia: $${difference.toFixed(2)}`,
+                    tooltip: `✅ Coincide - Folio: ${auxRow.folio} - Diferencia MXN: $${difference.toFixed(2)}`,
                 };
                 map.set(auxRow.id, result);
             } else {
@@ -137,10 +145,10 @@ export const useAuxiliarIngresosComparison = ({
                 const result: ComparisonResult = {
                     uuid: auxRow.id,
                     status: 'mismatch',
-                    auxiliarSubtotal: auxRow.subtotal,
-                    miadminSubtotal: miadminRow.subtotal,
+                    auxiliarSubtotal,
+                    miadminSubtotal,
                     difference,
-                    tooltip: `❌ Discrepancia - Folio: ${auxRow.folio} - Auxiliar: $${auxRow.subtotal.toFixed(2)} vs Mi Admin: $${miadminRow.subtotal.toFixed(2)} (Dif: $${difference.toFixed(2)})`,
+                    tooltip: `❌ Discrepancia - Folio: ${auxRow.folio} - Auxiliar: $${auxiliarSubtotal.toFixed(2)} vs Mi Admin MXN: $${miadminSubtotal.toFixed(2)} (Dif: $${difference.toFixed(2)})`,
                 };
                 map.set(auxRow.id, result);
             }
@@ -152,13 +160,13 @@ export const useAuxiliarIngresosComparison = ({
         // Caso 4: FOLIOs que solo existen en Mi Admin
         miadminLookup.forEach((rowData, folio) => {
             const result: ComparisonResult = {
-                uuid: rowData.uuid,
+                uuid: rowData.id,
                 status: 'only-miadmin',
-                miadminSubtotal: rowData.subtotal,
-                tooltip: `🟣 Solo en Mi Admin - Folio: ${folio} - Subtotal: $${rowData.subtotal.toFixed(2)}`,
+                miadminSubtotal: rowData.subtotalMXN,
+                tooltip: `🟣 Solo en Mi Admin - Folio: ${folio} - Subtotal MXN: $${rowData.subtotalMXN.toFixed(2)}`,
             };
             // Usamos el UUID de Mi Admin como key ya que no existe en Auxiliar
-            map.set(rowData.uuid, result);
+            map.set(rowData.id, result);
         });
 
         return map;
@@ -178,10 +186,9 @@ export const useAuxiliarIngresosComparison = ({
             .reduce((sum, row) => sum + row.subtotal, 0);
 
         // Sumar totales de Mi Admin
-        const miadminTotal = miadminData!.reduce(
-            (sum, row) => sum + row.subtotal,
-            0
-        );
+        const miadminTotal = miadminData!
+            .filter((row) => row.estadoSat === 'Vigente' && !row.isSummary)
+            .reduce((sum, row) => sum + (row.subtotalMXN ?? 0), 0);
 
         // Calcular diferencia
         const difference = Math.abs(auxiliarTotal - miadminTotal);

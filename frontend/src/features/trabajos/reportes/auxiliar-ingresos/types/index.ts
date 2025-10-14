@@ -141,8 +141,8 @@ export interface TotalesComparison {
  * Datos de una fila del reporte Mi Admin (para comparación)
  */
 export interface MiAdminIngresosRow {
-    /** UUID de la factura */
-    uuid: string;
+    /** Identificador único (id del registro en Mi Admin) */
+    id: string;
 
     /** Folio de la factura (para comparación) */
     folio: string;
@@ -150,8 +150,14 @@ export interface MiAdminIngresosRow {
     /** Estado SAT de la factura */
     estadoSat: 'Vigente' | 'Cancelada';
 
-    /** Subtotal en MXN */
-    subtotal: number;
+    /** Subtotal calculado en MXN */
+    subtotalMXN: number;
+
+    /** Subtotal AUX vinculado (si existe) */
+    subtotalAUX?: number | null;
+
+    /** Indica si la fila es de totales */
+    isSummary?: boolean;
 
     /** Otras propiedades opcionales */
     [key: string]: any;
@@ -166,6 +172,9 @@ export const AUXILIAR_INGRESOS_CONFIG = {
 
     /** Decimales para formateo de moneda */
     CURRENCY_DECIMALS: 2,
+
+    /** Decimales para formato de tipo de cambio */
+    TC_DECIMALS: 4,
 
     /** Moneda base del sistema */
     BASE_CURRENCY: 'MXN',

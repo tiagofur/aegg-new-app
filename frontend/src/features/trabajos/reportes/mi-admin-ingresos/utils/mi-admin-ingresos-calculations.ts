@@ -136,6 +136,7 @@ export const parseExcelToMiAdminIngresos = (
     const fechaIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.FECHA);
     const rfcIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.RFC);
     const razonSocialIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.RAZON_SOCIAL);
+    const serieIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.SERIE);
     const ivaIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.IVA);
     const totalIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.TOTAL);
     let estadoIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.ESTADO_SAT);
@@ -187,12 +188,19 @@ export const parseExcelToMiAdminIngresos = (
             continue;
         }
 
-        // FOLIO es el campo obligatorio ahora
-        const folio = row[folioIndex]?.toString().trim() || `row-${i}`;
-        if (!folio || folio === `row-${i}`) {
+        // FOLIO es el campo obligatorio ahora (preferir Serie + Folio si existen ambas columnas)
+        const rawSerie = serieIndex !== -1 ? row[serieIndex]?.toString().trim() || '' : '';
+        const rawFolio = row[folioIndex]?.toString().trim() || '';
+        const combinedFolio = rawSerie && rawFolio
+            ? `${rawSerie}${rawFolio.startsWith(rawSerie) ? '' : '-'}${rawFolio}`
+            : rawFolio || rawSerie;
+
+        if (!combinedFolio) {
             console.warn(`⚠️ Fila ${i + 1} sin FOLIO, se omitirá`);
             continue;
         }
+
+        const folio = combinedFolio;
 
         // UUID es opcional
         const uuid = uuidIndex !== -1 ? row[uuidIndex]?.toString().trim() || folio : folio;
