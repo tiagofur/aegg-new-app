@@ -13,7 +13,7 @@ import type {
  */
 export const rowStyles = {
     // Fila cancelada (prioridad alta)
-    cancelada: 'bg-gray-100 text-gray-500',
+    cancelada: 'bg-gray-100 text-gray-600 border-l-4 border-gray-400',
 
     // Comparación - coincidencia
     comparisonMatch: 'bg-green-50 border-l-4 border-green-500 hover:bg-green-100',
