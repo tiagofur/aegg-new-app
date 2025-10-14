@@ -166,7 +166,7 @@ export const parseExcelToMiAdminIngresos = (
     const auxiliarLookup = new Map<string, AuxiliarIngresosRow>();
     if (auxiliarData) {
         auxiliarData
-            .filter((row) => row.estadoSat === 'Vigente')
+            .filter((row) => row.estadoSat === 'Vigente' && !row.isSummary)
             .forEach((row) => {
                 auxiliarLookup.set(row.folio, row); // Lookup por FOLIO
             });

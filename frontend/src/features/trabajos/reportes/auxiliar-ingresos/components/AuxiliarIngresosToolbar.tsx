@@ -17,10 +17,14 @@ interface AuxiliarIngresosToolbarProps {
   isComparisonActive: boolean;
   /** Callback para toggle de comparación */
   onToggleComparison: () => void;
+  /** Callback para cancelar folios únicos */
+  onCancelarFoliosUnicos: () => void;
   /** Totales calculados */
   totales: AuxiliarIngresosTotales;
   /** Comparación de totales (null si no está activa) */
   totalesComparison: TotalesComparison | null;
+  /** Indica si hay datos de Mi Admin disponibles */
+  hasMiAdminData: boolean;
 }
 
 /**
@@ -34,8 +38,10 @@ export const AuxiliarIngresosToolbar: React.FC<
   isSaving,
   isComparisonActive,
   onToggleComparison,
+  onCancelarFoliosUnicos,
   totales,
   totalesComparison,
+  hasMiAdminData,
 }) => {
   return (
     <div className="bg-white border-b border-gray-200 px-4 py-3">
@@ -60,16 +66,21 @@ export const AuxiliarIngresosToolbar: React.FC<
 
           <button
             onClick={onToggleComparison}
+            disabled={!hasMiAdminData}
             className={`
               px-4 py-2 rounded font-medium transition-colors
               ${
-                isComparisonActive
+                !hasMiAdminData
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : isComparisonActive
                   ? "bg-purple-600 text-white hover:bg-purple-700"
                   : "bg-gray-200 text-gray-700 hover:bg-gray-300"
               }
             `}
             title={
-              isComparisonActive
+              !hasMiAdminData
+                ? "No hay datos de Mi Admin para comparar"
+                : isComparisonActive
                 ? "Desactivar comparación"
                 : "Activar comparación"
             }
@@ -127,6 +138,41 @@ export const AuxiliarIngresosToolbar: React.FC<
           )}
         </div>
       </div>
+
+      {/* Segunda fila - Acciones especiales */}
+      {hasMiAdminData && (
+        <div className="flex items-center gap-3 pt-2 border-t border-gray-100 mt-3">
+          <span className="text-sm text-gray-600 font-medium">
+            Acciones especiales:
+          </span>
+
+          <button
+            onClick={onCancelarFoliosUnicos}
+            disabled={isSaving || !isComparisonActive}
+            className={`
+              flex items-center gap-2 px-4 py-2 rounded font-medium transition-colors
+              ${
+                isSaving || !isComparisonActive
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-red-100 text-red-700 hover:bg-red-200 active:bg-red-300"
+              }
+            `}
+            title={
+              !isComparisonActive
+                ? "Activa la comparación para cancelar folios únicos"
+                : "Cancelar todos los folios que solo existen en Auxiliar (no en Mi Admin)"
+            }
+          >
+            🚫 Cancelar Folios Únicos
+          </button>
+
+          <span className="text-xs text-gray-500">
+            {isComparisonActive
+              ? "Comparación activa - puedes cancelar folios únicos"
+              : "Activa la comparación para cancelar folios únicos"}
+          </span>
+        </div>
+      )}
     </div>
   );
 };

@@ -74,8 +74,9 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
     updateTipoCambio,
     updateEstadoSat,
     isDirty,
+    cancelarFoliosUnicos,
     resetEdits,
-  } = useAuxiliarIngresosEdit({ initialData: data });
+  } = useAuxiliarIngresosEdit({ initialData: data, miAdminData });
 
   const { totales, dataWithTotals } = useAuxiliarIngresosCalculations({
     data: editedData,
@@ -90,6 +91,8 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
     auxiliarData: editedData,
     miadminData: miAdminData,
   });
+
+  const hasMiAdminData = !!miAdminData && miAdminData.length > 0;
 
   useEffect(() => {
     if (!isDirty || isSaving || !mesId || !reporteId) {
@@ -270,8 +273,10 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
         isSaving={isSaving}
         isComparisonActive={isComparisonActive}
         onToggleComparison={toggleComparison}
+        onCancelarFoliosUnicos={cancelarFoliosUnicos}
         totales={totales}
         totalesComparison={totalesComparison}
+        hasMiAdminData={hasMiAdminData}
       />
 
       {/* Table container */}

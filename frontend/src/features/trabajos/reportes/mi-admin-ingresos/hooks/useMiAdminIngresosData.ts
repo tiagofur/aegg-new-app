@@ -3,6 +3,7 @@
  * Integra con React Query y datos de Auxiliar Ingresos
  */
 
+import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reportesMensualesService } from '@/services';
 import { parseExcelToMiAdminIngresos, convertToExcelFormat } from '../utils';
@@ -27,27 +28,30 @@ export const useMiAdminIngresosData = ({
 
     // Query para cargar datos
     const {
-        data: miAdminData,
+        data: rawResponse,
         isLoading,
         error,
         refetch,
     } = useQuery({
         queryKey,
         queryFn: async () => {
-            if (!mesId || !reporteId) return [];
+            if (!mesId || !reporteId) return null;
 
-            const response = await reportesMensualesService.obtenerDatos(mesId, reporteId);
-
-            if (!response?.datos) return [];
-
-            // Parsear Excel e integrar con datos de Auxiliar
-            const parsedData = parseExcelToMiAdminIngresos(response.datos, auxiliarData || []);
-
-            return parsedData;
+            return await reportesMensualesService.obtenerDatos(mesId, reporteId);
         },
         enabled: enabled && !!mesId && !!reporteId,
         staleTime: 1000 * 60 * 5, // 5 minutos
     });
+
+    const miAdminData: MiAdminIngresosRow[] = useMemo(() => {
+        if (!rawResponse?.datos) {
+            return [];
+        }
+
+        const auxiliarRows = auxiliarData?.filter((row) => !row.isSummary) || [];
+
+        return parseExcelToMiAdminIngresos(rawResponse.datos, auxiliarRows);
+    }, [rawResponse, auxiliarData]);
 
     // Mutation para guardar cambios
     const saveMutation = useMutation({
@@ -89,7 +93,7 @@ export const useMiAdminIngresosData = ({
     };
 
     return {
-        data: miAdminData || [],
+        data: miAdminData,
         isLoading,
         error: error as Error | null,
         refetch,

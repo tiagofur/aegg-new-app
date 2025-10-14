@@ -6,12 +6,15 @@
 import { useState, useCallback, useMemo } from 'react';
 import {
     AuxiliarIngresosRow,
-    EstadoSat
+    EstadoSat,
+    MiAdminIngresosRow,
 } from '../types';
 
 interface UseAuxiliarIngresosEditProps {
     /** Datos originales del reporte */
     initialData: AuxiliarIngresosRow[];
+    /** Datos del reporte Mi Admin para detección de folios únicos */
+    miAdminData?: MiAdminIngresosRow[];
 }
 
 interface UseAuxiliarIngresosEditReturn {
@@ -25,6 +28,8 @@ interface UseAuxiliarIngresosEditReturn {
     updateTipoCambio: (uuid: string, tipoCambio: number) => void;
     /** Actualizar estado SAT de una fila */
     updateEstadoSat: (uuid: string, estadoSat: EstadoSat) => void;
+    /** Cancelar folios que no existen en Mi Admin */
+    cancelarFoliosUnicos: () => void;
     /** Resetear todas las ediciones */
     resetEdits: () => void;
     /** Obtener ediciones de una fila específica */
@@ -37,6 +42,7 @@ interface UseAuxiliarIngresosEditReturn {
  */
 export const useAuxiliarIngresosEdit = ({
     initialData,
+    miAdminData,
 }: UseAuxiliarIngresosEditProps): UseAuxiliarIngresosEditReturn => {
     // Estado: Mapa de ediciones por UUID
     const [editedRows, setEditedRows] = useState<
@@ -121,6 +127,46 @@ export const useAuxiliarIngresosEdit = ({
     }, [initialData, editedRows]);
 
     /**
+     * Cancela folios que solo existen en Auxiliar (no aparecen en Mi Admin)
+     */
+    const cancelarFoliosUnicos = useCallback(() => {
+        if (!miAdminData || miAdminData.length === 0) {
+            return;
+        }
+
+        const miAdminFolios = new Set(
+            miAdminData
+                .filter((row) => !row.isSummary && row.estadoSat === 'Vigente')
+                .map((row) => row.folio)
+        );
+
+        setEditedRows((prev) => {
+            let hasChanges = false;
+            const newMap = new Map(prev);
+
+            mergedData.forEach((row) => {
+                if (row.isSummary || row.estadoSat === 'Cancelada') {
+                    return;
+                }
+
+                if (!miAdminFolios.has(row.folio)) {
+                    const edits = newMap.get(row.id) || {};
+
+                    if (edits.estadoSat !== 'Cancelada') {
+                        newMap.set(row.id, {
+                            ...edits,
+                            estadoSat: 'Cancelada',
+                        });
+                        hasChanges = true;
+                    }
+                }
+            });
+
+            return hasChanges ? newMap : prev;
+        });
+    }, [miAdminData, mergedData]);
+
+    /**
      * Determina si hay cambios sin guardar
      */
     const isDirty = useMemo(() => {
@@ -133,6 +179,7 @@ export const useAuxiliarIngresosEdit = ({
         isDirty,
         updateTipoCambio,
         updateEstadoSat,
+        cancelarFoliosUnicos,
         resetEdits,
         getRowEdits,
     };
