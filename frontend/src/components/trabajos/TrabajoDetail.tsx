@@ -100,13 +100,6 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
     }
   };
 
-  const handleVerReporte = () => {
-    if (!reporteActual || !mesActual) return;
-    navigate(
-      `/trabajos/${trabajo.id}/reporte-mensual/${mesActual.id}/${reporteActual.id}/${reporteActual.tipo}`
-    );
-  };
-
   const handleImportarReporte = () => {
     setMostrarImportReporteMensualDialog(true);
   };
@@ -281,7 +274,6 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
                   trabajoId={trabajo.id}
                   trabajoYear={trabajo.anio}
                   mesNumber={mesActual.mes}
-                  onVerReporte={handleVerReporte}
                   onImportarReporte={handleImportarReporte}
                   onReimportarReporte={handleReimportarReporte}
                   onLimpiarDatos={handleLimpiarDatos}

@@ -1,9 +1,9 @@
 /**
- * Tabla principal de Mi Admin Ingresos
- * Integra todos los hooks y componentes del feature con columnas específicas
+ * Backup 2025-10-14 of MiAdminIngresosTable original implementation.
+ * Stored for manual restoration if needed.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   useReactTable,
@@ -29,11 +29,7 @@ import { MiAdminIngresosToolbar } from "./MiAdminIngresosToolbar";
 
 import { MiAdminIngresosFooter } from "./MiAdminIngresosFooter";
 
-import {
-  getRowBackgroundColor,
-  createMiAdminDynamicColumns,
-  formatCurrency,
-} from "../utils";
+import { getRowBackgroundColor, createMiAdminDynamicColumns } from "../utils";
 
 import type { AuxiliarIngresosRow } from "../../auxiliar-ingresos";
 
@@ -64,20 +60,6 @@ interface MiAdminIngresosTableProps {
   /** Mes del trabajo (para Guardar en Base) */
 
   mes?: number;
-
-  /** Permite portalizar el botón de guardar fuera del toolbar */
-  onSaveContextChange?: (
-    context:
-      | {
-          save: () => Promise<void>;
-          isDirty: boolean;
-          isSaving: boolean;
-        }
-      | null
-  ) => void;
-
-  /** Controla si se muestra el botón de guardar en la barra interna */
-  showSaveButtonInToolbar?: boolean;
 }
 
 /**
@@ -100,10 +82,6 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
   anio,
 
   mes,
-
-  onSaveContextChange,
-
-  showSaveButtonInToolbar = true,
 }) => {
   // 🔥 Si no se proporciona auxiliarData, buscar el reporte Auxiliar del mismo mes
 
@@ -245,32 +223,11 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
     getFilteredRowModel: getFilteredRowModel(),
   });
 
-  const latestEditedDataRef = useRef(editedData);
-  useEffect(() => {
-    latestEditedDataRef.current = editedData;
-  }, [editedData]);
-
   // Handler para guardar
-  const handleSaveClick = useCallback(async () => {
-    await handleSave(latestEditedDataRef.current);
+  const handleSaveClick = async () => {
+    await handleSave(editedData);
     resetChanges();
-  }, [handleSave, resetChanges]);
-
-  useEffect(() => {
-    if (onSaveContextChange) {
-      onSaveContextChange({
-        save: handleSaveClick,
-        isDirty: hasUnsavedChanges,
-        isSaving,
-      });
-    }
-  }, [onSaveContextChange, handleSaveClick, hasUnsavedChanges, isSaving]);
-
-  useEffect(() => {
-    return () => {
-      onSaveContextChange?.(null);
-    };
-  }, [onSaveContextChange]);
+  };
 
   // Estados de carga y error
   if (isLoading) {
@@ -313,43 +270,7 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
         trabajoId={trabajoId}
         anio={anio}
         mes={mes}
-        showSaveButton={showSaveButtonInToolbar}
       />
-
-      <div className="border-b border-gray-100 bg-slate-50 px-4 py-2.5 text-sm text-slate-700">
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-          <span>
-            Facturas:{" "}
-            <strong>{totales.cantidadTotal.toLocaleString("es-MX")}</strong>
-          </span>
-          <span>
-            Vigentes:{" "}
-            <strong>{totales.cantidadVigentes.toLocaleString("es-MX")}</strong>
-          </span>
-          <span>
-            Canceladas:{" "}
-            <strong>
-              {totales.cantidadCanceladas.toLocaleString("es-MX")}
-            </strong>
-          </span>
-          <span>
-            Total MXN:{" "}
-            <strong>{formatCurrency(totales.totalSubtotalMXN)}</strong>
-          </span>
-          {totalesComparison && (
-            <span
-              className={
-                totalesComparison.match
-                  ? "text-emerald-700"
-                  : "text-red-600 font-semibold"
-              }
-            >
-              Diferencia vs Auxiliar:{" "}
-              {formatCurrency(totalesComparison.difference)}
-            </span>
-          )}
-        </div>
-      </div>
 
       {/* Table container */}
       <div className="flex-1 overflow-auto">

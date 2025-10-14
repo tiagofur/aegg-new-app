@@ -3,7 +3,7 @@
  * Incluye botones especiales: Aplicar TC Sugerido y Cancelar Folios Únicos
  */
 
-import { ArrowDownCircle, XCircle } from "lucide-react";
+import { ArrowDownCircle, GitCompare, Save, XCircle } from "lucide-react";
 import { badgeStyles } from "../utils";
 import type { MiAdminIngresosTotales, TotalesComparison } from "../types";
 import { GuardarEnBaseButton } from "../../reporte-anual";
@@ -35,6 +35,8 @@ interface MiAdminIngresosToolbarProps {
   anio?: number;
   /** Mes del trabajo (para Guardar en Base) - opcional */
   mes?: number;
+  /** Controla si se muestra el botón principal de guardar */
+  showSaveButton?: boolean;
 }
 
 /**
@@ -54,6 +56,7 @@ export const MiAdminIngresosToolbar: React.FC<MiAdminIngresosToolbarProps> = ({
   trabajoId,
   anio,
   mes,
+  showSaveButton = true,
 }) => {
   // Calcular total de Auxiliar desde totalesComparison
   const totalAuxiliar = totalesComparison?.auxiliarTotal ?? 0;
@@ -62,168 +65,159 @@ export const MiAdminIngresosToolbar: React.FC<MiAdminIngresosToolbarProps> = ({
   const showGuardarEnBase = trabajoId && anio && mes && hasAuxiliarData;
 
   return (
-    <div className="bg-white border-b border-gray-200 px-4 py-3">
-      <div className="flex flex-col gap-3">
-        {/* Primera fila - Botones principales */}
-        <div className="flex items-center justify-between">
-          {/* Left side - Action buttons */}
-          <div className="flex items-center gap-3">
+    <div className="border-b border-gray-200 bg-white px-4 py-3 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {showSaveButton && (
             <button
               onClick={onSave}
               disabled={!isDirty || isSaving}
-              className={`
-                px-4 py-2 rounded font-medium transition-colors
-                ${
-                  isDirty && !isSaving
-                    ? "bg-blue-600 text-white hover:bg-blue-700"
-                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                }
-              `}
-              title={isDirty ? "Guardar cambios" : "No hay cambios"}
-            >
-              {isSaving ? "Guardando..." : "Guardar"}
-            </button>
-
-            <button
-              onClick={onToggleComparison}
-              disabled={!hasAuxiliarData}
-              className={`
-                px-4 py-2 rounded font-medium transition-colors
-                ${
-                  !hasAuxiliarData
-                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                    : isComparisonActive
-                    ? "bg-purple-600 text-white hover:bg-purple-700"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                }
-              `}
+              className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 ${
+                isDirty && !isSaving
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
+                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
+              }`}
               title={
-                !hasAuxiliarData
-                  ? "No hay datos de Auxiliar para comparar"
-                  : isComparisonActive
-                  ? "Desactivar comparación"
-                  : "Activar comparación"
+                isDirty
+                  ? "Guardar los cambios pendientes"
+                  : "No hay cambios por guardar"
               }
             >
-              {isComparisonActive
-                ? "🔍 Comparación Activa"
-                : "🔍 Comparar con Auxiliar"}
+              <Save className="h-4 w-4" />
+              {isSaving ? "Guardando..." : "Guardar cambios"}
             </button>
+          )}
 
-            {/* Botón Guardar en Base - Solo si hay datos necesarios */}
-            {showGuardarEnBase && (
-              <GuardarEnBaseButton
-                trabajoId={trabajoId!}
-                anio={anio!}
-                mes={mes!}
-                totalMiAdmin={totales.totalSubtotalMXN}
-                totalAuxiliar={totalAuxiliar}
-                isDirty={isDirty}
-                isComparisonActive={isComparisonActive}
-              />
-            )}
-          </div>
+          <button
+            onClick={onToggleComparison}
+            disabled={!hasAuxiliarData}
+            className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-purple-500 ${
+              !hasAuxiliarData
+                ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+                : isComparisonActive
+                ? "border-purple-600 bg-purple-50 text-purple-700 hover:bg-purple-100"
+                : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+            }`}
+            title={
+              !hasAuxiliarData
+                ? "No hay datos del Auxiliar para sincronizar"
+                : isComparisonActive
+                ? "Desactivar la sincronización con el Auxiliar"
+                : "Activar la sincronización con el Auxiliar"
+            }
+          >
+            <GitCompare className="h-4 w-4" />
+            {isComparisonActive ? "Sincronización activa" : "Sincronizar con Auxiliar"}
+          </button>
 
-          {/* Right side - Status badges */}
-          <div className="flex items-center gap-2">
-            {/* Unsaved changes badge */}
-            {isDirty && (
-              <span
-                className={`px-3 py-1 rounded-full border text-sm font-medium ${badgeStyles.unsavedChanges}`}
-                title="Hay cambios sin guardar"
-              >
-                ⚠️ Cambios sin guardar
-              </span>
-            )}
-
-            {/* Canceladas badge */}
-            {totales.cantidadCanceladas > 0 && (
-              <span
-                className={`px-3 py-1 rounded-full border text-sm font-medium ${badgeStyles.canceladas}`}
-                title={`${totales.cantidadCanceladas} facturas canceladas`}
-              >
-                🚫 {totales.cantidadCanceladas} Canceladas
-              </span>
-            )}
-
-            {/* Comparison totals badge */}
-            {totalesComparison && (
-              <span
-                className={`px-3 py-1 rounded-full border text-sm font-medium ${
-                  totalesComparison.match
-                    ? badgeStyles.totalesMatch
-                    : badgeStyles.totalesMismatch
-                }`}
-                title={
-                  totalesComparison.match
-                    ? "Los totales coinciden"
-                    : `Diferencia: $${totalesComparison.difference.toFixed(2)}`
-                }
-              >
-                {totalesComparison.match ? "✅" : "❌"} Totales{" "}
-                {totalesComparison.match
-                  ? "OK"
-                  : `Dif: $${totalesComparison.difference.toFixed(2)}`}
-              </span>
-            )}
-          </div>
+          {showGuardarEnBase && (
+            <GuardarEnBaseButton
+              trabajoId={trabajoId!}
+              anio={anio!}
+              mes={mes!}
+              totalMiAdmin={totales.totalSubtotalMXN}
+              totalAuxiliar={totalAuxiliar}
+              isDirty={isDirty}
+              isComparisonActive={isComparisonActive}
+            />
+          )}
         </div>
 
-        {/* Segunda fila - Botones especiales (solo si hay Auxiliar) */}
-        {hasAuxiliarData && (
-          <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
-            <span className="text-sm text-gray-600 font-medium">
-              Acciones especiales:
+        <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
+          {isDirty && (
+            <span
+              className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 ${badgeStyles.unsavedChanges}`}
+              title="Hay cambios sin guardar en el reporte"
+            >
+              ⚠️ Cambios sin guardar
             </span>
+          )}
 
+          {totales.cantidadCanceladas > 0 && (
+            <span
+              className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 ${badgeStyles.canceladas}`}
+              title={`${totales.cantidadCanceladas} facturas aparecen como canceladas`}
+            >
+              🚫 {totales.cantidadCanceladas} canceladas
+            </span>
+          )}
+
+          {totalesComparison && (
+            <span
+              className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 ${
+                totalesComparison.match
+                  ? badgeStyles.totalesMatch
+                  : badgeStyles.totalesMismatch
+              }`}
+              title={
+                totalesComparison.match
+                  ? "Los totales coinciden con el Auxiliar"
+                  : `Diferencia contra Auxiliar: $${totalesComparison.difference.toFixed(
+                      2
+                    )}`
+              }
+            >
+              {totalesComparison.match
+                ? "✅ Totales conciliados"
+                : "❌ Diferencia vs Auxiliar"}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {hasAuxiliarData && (
+        <details
+          className="group mt-3 border-t border-gray-100 pt-2"
+          open={isComparisonActive}
+        >
+          <summary className="flex cursor-pointer items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+            Automatizaciones
+            <span className="text-gray-400 transition-transform group-open:-rotate-180">
+              ⌃
+            </span>
+          </summary>
+
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             <button
               onClick={onAplicarTCSugeridoATodos}
               disabled={isSaving}
-              className={`
-                flex items-center gap-2 px-4 py-2 rounded font-medium
-                transition-colors
-                ${
-                  isSaving
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-blue-100 text-blue-700 hover:bg-blue-200 active:bg-blue-300"
-                }
-              `}
-              title="Aplicar TC Sugerido a todas las filas que lo tengan disponible"
+              className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-400 ${
+                isSaving
+                  ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                  : "bg-blue-50 text-blue-700 hover:bg-blue-100"
+              }`}
+              title="Aplicar el tipo de cambio sugerido a todas las filas disponibles"
             >
-              <ArrowDownCircle className="w-4 h-4" />
-              Aplicar TC Sugerido a Todos
+              <ArrowDownCircle className="h-4 w-4" />
+              Aplicar TC sugerido
             </button>
 
             <button
               onClick={onCancelarFoliosUnicos}
               disabled={isSaving || !isComparisonActive}
-              className={`
-                flex items-center gap-2 px-4 py-2 rounded font-medium
-                transition-colors
-                ${
-                  isSaving || !isComparisonActive
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-red-100 text-red-700 hover:bg-red-200 active:bg-red-300"
-                }
-              `}
+              className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-400 ${
+                isSaving || !isComparisonActive
+                  ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                  : "bg-red-50 text-red-700 hover:bg-red-100"
+              }`}
               title={
                 !isComparisonActive
-                  ? "Activa la comparación para usar esta función"
-                  : "Cancelar todos los folios que solo existen en Mi Admin (no en Auxiliar)"
+                  ? "Activa la sincronización para poder quitar los folios exclusivos de Mi Admin"
+                  : "Quitar de Mi Admin los folios que no existen en Auxiliar"
               }
             >
-              <XCircle className="w-4 h-4" />
-              Cancelar Folios Únicos
+              <XCircle className="h-4 w-4" />
+              Quitar folios solo Mi Admin
             </button>
 
-            <span className="text-xs text-gray-500 ml-2">
+            <span className="ml-auto text-xs text-gray-500">
               {isComparisonActive
-                ? "Comparación activa - Puedes usar ambas acciones"
-                : "Activa la comparación para cancelar folios únicos"}
+                ? "Sincronización lista: puedes automatizar TC y limpieza de folios"
+                : "Activa la sincronización con Auxiliar para habilitar estas acciones"}
             </span>
           </div>
-        )}
-      </div>
+        </details>
+      )}
     </div>
   );
 };

@@ -3,7 +3,7 @@
  * Integra todos los hooks y componentes del feature
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -36,6 +36,18 @@ interface AuxiliarIngresosTableProps {
   miAdminReporteId?: string;
   /** Datos de Mi Admin precargados (opcional) */
   miAdminData?: MiAdminIngresosRow[];
+  /** Permite portalizar el botón de guardar fuera del toolbar */
+  onSaveContextChange?: (
+    context:
+      | {
+          save: () => Promise<void>;
+          isDirty: boolean;
+          isSaving: boolean;
+        }
+      | null
+  ) => void;
+  /** Controla si se muestra el botón de guardar en la barra interna */
+  showSaveButtonInToolbar?: boolean;
 }
 
 const columnHelper = createColumnHelper<AuxiliarIngresosRow>();
@@ -48,6 +60,8 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
   reporteId,
   miAdminReporteId,
   miAdminData: providedMiAdminData,
+  onSaveContextChange,
+  showSaveButtonInToolbar = true,
 }) => {
   // Hooks de datos y lógica
   const { data, isLoading, error, saveChanges, isSaving } =
@@ -93,6 +107,32 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
   });
 
   const hasMiAdminData = !!miAdminData && miAdminData.length > 0;
+
+  const latestEditedDataRef = useRef(editedData);
+  useEffect(() => {
+    latestEditedDataRef.current = editedData;
+  }, [editedData]);
+
+  const handleSaveClick = useCallback(async () => {
+    await saveChanges(latestEditedDataRef.current);
+    resetEdits();
+  }, [saveChanges, resetEdits]);
+
+  useEffect(() => {
+    if (onSaveContextChange) {
+      onSaveContextChange({
+        save: handleSaveClick,
+        isDirty,
+        isSaving,
+      });
+    }
+  }, [handleSaveClick, isDirty, isSaving, onSaveContextChange]);
+
+  useEffect(() => {
+    return () => {
+      onSaveContextChange?.(null);
+    };
+  }, [onSaveContextChange]);
 
   useEffect(() => {
     if (!isDirty || isSaving || !mesId || !reporteId) {
@@ -231,16 +271,6 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
     getFilteredRowModel: getFilteredRowModel(),
   });
 
-  // Handler para guardar
-  const handleSave = async () => {
-    try {
-      await saveChanges(editedData);
-      resetEdits();
-    } catch (error) {
-      console.error("Error saving changes:", error);
-    }
-  };
-
   // Estados de carga y error
   if (isLoading) {
     return (
@@ -269,7 +299,7 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
       {/* Toolbar */}
       <AuxiliarIngresosToolbar
         isDirty={isDirty}
-        onSave={handleSave}
+        onSave={handleSaveClick}
         isSaving={isSaving}
         isComparisonActive={isComparisonActive}
         onToggleComparison={toggleComparison}
@@ -277,6 +307,7 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
         totales={totales}
         totalesComparison={totalesComparison}
         hasMiAdminData={hasMiAdminData}
+        showSaveButton={showSaveButtonInToolbar}
       />
 
       {/* Table container */}

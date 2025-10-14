@@ -25,6 +25,8 @@ interface AuxiliarIngresosToolbarProps {
   totalesComparison: TotalesComparison | null;
   /** Indica si hay datos de Mi Admin disponibles */
   hasMiAdminData: boolean;
+  /** Controla si se muestra el botón principal de guardar */
+  showSaveButton?: boolean;
 }
 
 /**
@@ -42,27 +44,30 @@ export const AuxiliarIngresosToolbar: React.FC<
   totales,
   totalesComparison,
   hasMiAdminData,
+  showSaveButton = true,
 }) => {
   return (
     <div className="bg-white border-b border-gray-200 px-4 py-3">
       <div className="flex items-center justify-between">
         {/* Left side - Action buttons */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={onSave}
-            disabled={!isDirty || isSaving}
-            className={`
-              px-4 py-2 rounded font-medium transition-colors
-              ${
-                isDirty && !isSaving
-                  ? "bg-blue-600 text-white hover:bg-blue-700"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              }
-            `}
-            title={isDirty ? "Guardar cambios" : "No hay cambios"}
-          >
-            {isSaving ? "Guardando..." : "Guardar"}
-          </button>
+          {showSaveButton && (
+            <button
+              onClick={onSave}
+              disabled={!isDirty || isSaving}
+              className={`
+                px-4 py-2 rounded font-medium transition-colors
+                ${
+                  isDirty && !isSaving
+                    ? "bg-blue-600 text-white hover:bg-blue-700"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }
+              `}
+              title={isDirty ? "Guardar cambios" : "No hay cambios"}
+            >
+              {isSaving ? "Guardando..." : "Guardar"}
+            </button>
+          )}
 
           <button
             onClick={onToggleComparison}
