@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { CalendarDays } from "lucide-react";
 import { Trabajo, MESES_NOMBRES } from "../../types/trabajo";
-import { MesesSelector } from "./MesesSelector";
 import { ReporteAnualHeader } from "./ReporteAnualHeader";
 import { ReportesTabSelector } from "./ReportesTabSelector";
 import { ReporteMensualViewer } from "./ReporteMensualViewer";
@@ -9,6 +9,11 @@ import { ImportReporteBaseDialog } from "./ImportReporteBaseDialog";
 import { ImportReporteMensualDialog } from "./ImportReporteMensualDialog";
 import { EditTrabajoDialog } from "./EditTrabajoDialog";
 import { trabajosService, reportesMensualesService } from "../../services";
+import { MesSelectorModal } from "./MesSelectorModal";
+import {
+  getMesEstadoVisual,
+  MES_ESTADO_TONE_CLASSES,
+} from "./mesEstadoVisual";
 
 interface TrabajoDetailProps {
   trabajo: Trabajo;
@@ -37,6 +42,7 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
   ] = useState(false);
   const [mostrarEditDialog, setMostrarEditDialog] = useState(false);
   const [eliminando, setEliminando] = useState(false);
+  const [mostrarSelectorMeses, setMostrarSelectorMeses] = useState(false);
 
   const progreso = trabajo.reporteBaseAnual?.mesesCompletados.length || 0;
 
@@ -59,6 +65,14 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
       setReporteSeleccionado(undefined);
     }
   }, [mesSeleccionado, mesActual]);
+
+  const mesEstadoVisual = mesActual ? getMesEstadoVisual(mesActual) : null;
+  const mesToneClasses = mesEstadoVisual
+    ? MES_ESTADO_TONE_CLASSES[mesEstadoVisual.tone]
+    : null;
+  const mesSeleccionadoLabel = mesActual
+    ? MESES_NOMBRES[mesActual.mes - 1]
+    : "Seleccionar mes";
 
   // Encontrar el reporte seleccionado
   const reporteActual = mesActual?.reportes?.find(
@@ -151,16 +165,38 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
           Volver a la lista
         </button>
 
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">
-              {trabajo.clienteNombre} - {trabajo.anio}
-            </h1>
-            {trabajo.clienteRfc && (
-              <p className="text-gray-600 text-sm mt-1">
-                RFC: {trabajo.clienteRfc}
-              </p>
-            )}
+        <div className="flex items-start justify-between">
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-2xl font-bold text-gray-800">
+                {trabajo.clienteNombre} - {trabajo.anio}
+              </h1>
+              <button
+                type="button"
+                onClick={() => setMostrarSelectorMeses(true)}
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-blue-400 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                aria-haspopup="dialog"
+                aria-expanded={mostrarSelectorMeses}
+                title="Cambiar mes"
+              >
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    mesToneClasses?.dotClass ?? "bg-slate-300"
+                  }`}
+                  aria-hidden
+                />
+                <span>{mesSeleccionadoLabel}</span>
+                <CalendarDays className="h-4 w-4" aria-hidden />
+              </button>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+              {trabajo.clienteRfc && <span>RFC: {trabajo.clienteRfc}</span>}
+              {trabajo.meses.length > 0 && (
+                <span>
+                  {progreso}/12 meses completados
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="flex gap-2">
@@ -242,14 +278,6 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
           alert("Funcionalidad de descarga en desarrollo")
         }
         tieneHojas={tieneHojas}
-      />
-
-      {/* Selector de Meses */}
-      <MesesSelector
-        meses={trabajo.meses}
-        mesSeleccionado={mesSeleccionado}
-        onMesClick={(mes) => setMesSeleccionado(mes.id)}
-        progreso={`${progreso}/12 meses`}
       />
 
       {/* Reportes Mensuales del mes seleccionado */}
@@ -336,6 +364,18 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
           mesNombre={MESES_NOMBRES[mesActual.mes - 1]}
         />
       )}
+
+        <MesSelectorModal
+          isOpen={mostrarSelectorMeses}
+          onClose={() => setMostrarSelectorMeses(false)}
+          meses={trabajo.meses}
+          mesSeleccionado={mesSeleccionado}
+          onSelectMes={(mesId) => {
+            setMesSeleccionado(mesId);
+            setMostrarSelectorMeses(false);
+          }}
+          onAddMesRequest={onAddMes}
+        />
     </div>
   );
 };
