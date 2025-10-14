@@ -15,6 +15,8 @@ interface EditableTipoCambioCellProps {
   disabled?: boolean;
   /** Moneda para mostrar info adicional */
   moneda?: string;
+  /** Razón opcional para mostrar en tooltip cuando está deshabilitado */
+  disabledReason?: string;
 }
 
 /**
@@ -25,6 +27,7 @@ export const EditableTipoCambioCell: React.FC<EditableTipoCambioCellProps> = ({
   onChange,
   disabled = false,
   moneda = "USD",
+  disabledReason,
 }) => {
   const [localValue, setLocalValue] = useState(value?.toString() || "");
   const [hasError, setHasError] = useState(false);
@@ -75,7 +78,11 @@ export const EditableTipoCambioCell: React.FC<EditableTipoCambioCellProps> = ({
         disabled={disabled}
         step="0.0001"
         min="0"
-        placeholder={disabled ? "1.0000" : "0.0000"}
+        placeholder={
+          disabled
+            ? value?.toString() || (moneda === "MXN" ? "1.0000" : "0.0000")
+            : "0.0000"
+        }
         className={`
           ${inputStyles.base}
           ${disabled ? inputStyles.disabled : ""}
@@ -84,7 +91,10 @@ export const EditableTipoCambioCell: React.FC<EditableTipoCambioCellProps> = ({
         `}
         title={
           disabled
-            ? `Moneda ${moneda} - Tipo de cambio fijo 1.0`
+            ? disabledReason ??
+              (moneda === "MXN"
+                ? "Moneda MXN - Tipo de cambio fijo 1.0"
+                : "Edición deshabilitada")
             : "Tipo de cambio (ej: 19.5432)"
         }
       />

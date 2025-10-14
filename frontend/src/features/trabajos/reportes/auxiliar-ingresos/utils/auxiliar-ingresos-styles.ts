@@ -13,7 +13,7 @@ import {
  */
 export const rowStyles = {
     // Fila cancelada (prioridad alta)
-    cancelada: 'bg-purple-100 text-gray-500',
+    cancelada: 'bg-gray-100 text-gray-500',
 
     // Comparación - coincidencia
     comparisonMatch: 'bg-green-50 border-l-4 border-green-500 hover:bg-green-100',
@@ -147,7 +147,7 @@ export const badgeStyles = {
     unsavedChanges: 'bg-yellow-100 text-yellow-800 border-yellow-300',
     totalesMatch: 'bg-green-100 text-green-800 border-green-300',
     totalesMismatch: 'bg-red-100 text-red-800 border-red-300',
-    canceladas: 'bg-purple-100 text-purple-800 border-purple-300',
+    canceladas: 'bg-gray-100 text-gray-700 border-gray-300',
 } as const;
 
 /**
@@ -159,7 +159,7 @@ export const getEstadoSatCellClasses = (
     estadoSat: 'Vigente' | 'Cancelada'
 ): string => {
     return estadoSat === 'Cancelada'
-        ? 'bg-purple-100 text-purple-800 font-medium'
+        ? 'bg-gray-100 text-gray-700 font-medium'
         : 'bg-white text-gray-900';
 };
 

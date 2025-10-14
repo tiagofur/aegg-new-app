@@ -187,7 +187,10 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
     const baseColumns = createDynamicColumns(
       dataWithTotals,
       updateTipoCambio,
-      updateEstadoSat
+      updateEstadoSat,
+      {
+        isComparisonActive,
+      }
     );
 
     if (import.meta.env.DEV) {

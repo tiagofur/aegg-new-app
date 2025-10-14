@@ -46,138 +46,153 @@ type SpecialColumnConfig = Record<
 
 const getSpecialColumnConfig = (
   updateTipoCambio: (id: string, value: number) => void,
-  updateEstadoSat: (id: string, value: EstadoSat) => void
-): SpecialColumnConfig => ({
-  folio: {
-    header: "Folio",
-    cell: (info: SpecialCellContext) => {
-      const row = info.row.original;
-      if (row.isSummary) {
+  updateEstadoSat: (id: string, value: EstadoSat) => void,
+  options: { isComparisonActive?: boolean } = {}
+): SpecialColumnConfig => {
+  const { isComparisonActive = false } = options;
+
+  return {
+    folio: {
+      header: "Folio",
+      cell: (info: SpecialCellContext) => {
+        const row = info.row.original;
+        if (row.isSummary) {
+          return (
+            <span className="font-mono text-xs font-bold uppercase text-blue-700">
+              Totales
+            </span>
+          );
+        }
+        const value = info.getValue() as string | null;
         return (
-          <span className="font-mono text-xs font-bold uppercase text-blue-700">
-            Totales
+          <span className="font-mono text-xs">
+            {value && value.length > 0 ? value : "-"}
           </span>
         );
-      }
-      const value = info.getValue() as string | null;
-      return (
-        <span className="font-mono text-xs">
-          {value && value.length > 0 ? value : "-"}
-        </span>
-      );
+      },
+      size: 100,
     },
-    size: 100,
-  },
-  fecha: {
-    header: "Fecha",
-    cell: (info: SpecialCellContext) => {
-      const row = info.row.original;
-      if (row.isSummary) {
-        return <span className="text-xs text-gray-500">-</span>;
-      }
-      const value = info.getValue() as string | null;
-      return formatDate(value);
+    fecha: {
+      header: "Fecha",
+      cell: (info: SpecialCellContext) => {
+        const row = info.row.original;
+        if (row.isSummary) {
+          return <span className="text-xs text-gray-500">-</span>;
+        }
+        const value = info.getValue() as string | null;
+        return formatDate(value);
+      },
+      size: 100,
     },
-    size: 100,
-  },
-  rfc: {
-    header: "RFC",
-    cell: (info: SpecialCellContext) => {
-      const row = info.row.original;
-      if (row.isSummary) {
-        return <span className="text-xs text-gray-500">-</span>;
-      }
-      const value = info.getValue() as string | null;
-      return (
-        <span className="font-mono text-sm">
-          {value && value.length > 0 ? value : "-"}
-        </span>
-      );
-    },
-    size: 140,
-  },
-  subtotal: {
-    header: "Subtotal", // Corregido: de "Subtotal MXN" a "Subtotal"
-    cell: (info: SpecialCellContext) => {
-      const row = info.row.original;
-      const rawValue = info.getValue();
-      const value =
-        typeof rawValue === "number" ? rawValue : Number(rawValue ?? 0);
-      return (
-        <span
-          className={row.isSummary ? "font-semibold text-blue-700" : undefined}
-        >
-          {formatCurrency(value)}
-        </span>
-      );
-    },
-    size: 130,
-  },
-  moneda: {
-    header: "Moneda",
-    cell: (info: SpecialCellContext) => {
-      const row = info.row.original;
-      if (row.isSummary) {
+    rfc: {
+      header: "RFC",
+      cell: (info: SpecialCellContext) => {
+        const row = info.row.original;
+        if (row.isSummary) {
+          return <span className="text-xs text-gray-500">-</span>;
+        }
+        const value = info.getValue() as string | null;
         return (
-          <span className="text-center block font-semibold text-xs text-blue-700">
-            MXN
+          <span className="font-mono text-sm">
+            {value && value.length > 0 ? value : "-"}
           </span>
         );
-      }
-      const value = info.getValue() as string | null;
-      return (
-        <span className="text-center block font-semibold text-xs">
-          {value && value.length > 0 ? value : "-"}
-        </span>
-      );
+      },
+      size: 140,
     },
-    size: 70,
-  },
-  tipoCambio: {
-    header: "Tipo Cambio",
-    cell: (info: SpecialCellContext) => {
-      const row = info.row.original;
-      if (row.isSummary) {
+    subtotal: {
+      header: "Subtotal", // Corregido: de "Subtotal MXN" a "Subtotal"
+      cell: (info: SpecialCellContext) => {
+        const row = info.row.original;
+        const rawValue = info.getValue();
+        const value =
+          typeof rawValue === "number" ? rawValue : Number(rawValue ?? 0);
         return (
-          <span className="text-center block text-sm font-semibold text-blue-700">
-            -
+          <span
+            className={
+              row.isSummary ? "font-semibold text-blue-700" : undefined
+            }
+          >
+            {formatCurrency(value)}
           </span>
         );
-      }
-      const value = info.getValue() as number | null;
-      return (
-        <EditableTipoCambioCell
-          value={value}
-          onChange={(newValue) => updateTipoCambio(row.id, newValue)}
-          disabled={row.moneda === "MXN"}
-          moneda={row.moneda}
-        />
-      );
+      },
+      size: 130,
     },
-    size: 140,
-  },
-  estadoSat: {
-    header: "Estado SAT",
-    cell: (info: SpecialCellContext) => {
-      const row = info.row.original;
-      const value = (info.getValue() as EstadoSat | null) ?? "Vigente";
-      if (row.isSummary) {
+    moneda: {
+      header: "Moneda",
+      cell: (info: SpecialCellContext) => {
+        const row = info.row.original;
+        if (row.isSummary) {
+          return (
+            <span className="text-center block font-semibold text-xs text-blue-700">
+              MXN
+            </span>
+          );
+        }
+        const value = info.getValue() as string | null;
         return (
-          <span className="text-center block text-sm font-semibold text-blue-700">
-            --
+          <span className="text-center block font-semibold text-xs">
+            {value && value.length > 0 ? value : "-"}
           </span>
         );
-      }
-      return (
-        <EditableEstadoSatCell
-          value={value}
-          onChange={(newValue) => updateEstadoSat(row.id, newValue)}
-        />
-      );
+      },
+      size: 70,
     },
-    size: 140,
-  },
-});
+    tipoCambio: {
+      header: "Tipo Cambio",
+      cell: (info: SpecialCellContext) => {
+        const row = info.row.original;
+        if (row.isSummary) {
+          return (
+            <span className="text-center block text-sm font-semibold text-blue-700">
+              -
+            </span>
+          );
+        }
+        const value = info.getValue() as number | null;
+        const isMonedaMXN = row.moneda === "MXN";
+        const isReadOnly = isComparisonActive;
+        const isDisabled = isMonedaMXN || isReadOnly;
+        return (
+          <EditableTipoCambioCell
+            value={value}
+            onChange={(newValue) => updateTipoCambio(row.id, newValue)}
+            disabled={isDisabled}
+            disabledReason={
+              isReadOnly
+                ? "Comparación activa: Tipo de cambio en solo lectura"
+                : undefined
+            }
+            moneda={row.moneda}
+          />
+        );
+      },
+      size: 140,
+    },
+    estadoSat: {
+      header: "Estado SAT",
+      cell: (info: SpecialCellContext) => {
+        const row = info.row.original;
+        const value = (info.getValue() as EstadoSat | null) ?? "Vigente";
+        if (row.isSummary) {
+          return (
+            <span className="text-center block text-sm font-semibold text-blue-700">
+              --
+            </span>
+          );
+        }
+        return (
+          <EditableEstadoSatCell
+            value={value}
+            onChange={(newValue) => updateEstadoSat(row.id, newValue)}
+          />
+        );
+      },
+      size: 140,
+    },
+  };
+};
 
 /**
  * Crea dinámicamente las columnas para la tabla.
@@ -189,13 +204,15 @@ const getSpecialColumnConfig = (
 export function createDynamicColumns(
   data: AuxiliarIngresosRow[],
   updateTipoCambio: (id: string, value: number) => void,
-  updateEstadoSat: (id: string, value: EstadoSat) => void
+  updateEstadoSat: (id: string, value: EstadoSat) => void,
+  options: { isComparisonActive?: boolean } = {}
 ) {
   if (!data || data.length === 0) return [];
 
   const specialColumnConfig = getSpecialColumnConfig(
     updateTipoCambio,
-    updateEstadoSat
+    updateEstadoSat,
+    options
   );
 
   const detectedKeys = detectDynamicColumns(data);

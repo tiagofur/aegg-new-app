@@ -287,8 +287,16 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
       aplicarTCSugerido,
     };
 
-    return createMiAdminDynamicColumns(dataWithTotals, callbacks);
-  }, [dataWithTotals, updateTipoCambio, updateEstadoSat, aplicarTCSugerido]);
+    return createMiAdminDynamicColumns(dataWithTotals, callbacks, {
+      isComparisonActive,
+    });
+  }, [
+    dataWithTotals,
+    updateTipoCambio,
+    updateEstadoSat,
+    aplicarTCSugerido,
+    isComparisonActive,
+  ]);
 
   // Configuración de TanStack Table
   const table = useReactTable({
