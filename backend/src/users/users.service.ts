@@ -5,6 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { User, UserRole } from '../auth/entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { resolveRoleForUser } from '../auth/utils/role.helpers';
 
 export interface UserResponse {
     id: string;
@@ -24,6 +25,20 @@ export class UsersService {
 
     async findAll(): Promise<UserResponse[]> {
         const users = await this.userRepository.find({ order: { createdAt: 'DESC' } });
+
+        const usersToUpdate: User[] = [];
+        for (const user of users) {
+            const resolvedRole = resolveRoleForUser(user.email, user.role);
+            if (resolvedRole !== user.role) {
+                user.role = resolvedRole;
+                usersToUpdate.push(user);
+            }
+        }
+
+        if (usersToUpdate.length > 0) {
+            await this.userRepository.save(usersToUpdate);
+        }
+
         return users.map((user) => this.toResponse(user));
     }
 
@@ -36,11 +51,13 @@ export class UsersService {
 
         const hashedPassword = await bcrypt.hash(dto.password, 10);
 
+        const targetRole = resolveRoleForUser(email, dto.role ?? undefined);
+
         const user = this.userRepository.create({
             name: dto.name.trim(),
             email,
             password: hashedPassword,
-            role: dto.role ?? UserRole.GESTOR,
+            role: targetRole,
         });
 
         const saved = await this.userRepository.save(user);
@@ -67,14 +84,20 @@ export class UsersService {
         }
 
         if (dto.role) {
-            if (id === currentUserId && dto.role !== user.role) {
+            const nextRole = resolveRoleForUser(user.email, dto.role);
+            if (id === currentUserId && nextRole !== user.role) {
                 throw new UnprocessableEntityException('No puedes cambiar tu propio rol mientras estás conectado');
             }
-            user.role = dto.role;
+            user.role = nextRole;
         }
 
         if (dto.password) {
             user.password = await bcrypt.hash(dto.password, 10);
+        }
+
+        const ensuredRole = resolveRoleForUser(user.email, user.role);
+        if (ensuredRole !== user.role) {
+            user.role = ensuredRole;
         }
 
         const updated = await this.userRepository.save(user);
@@ -93,11 +116,13 @@ export class UsersService {
     }
 
     private toResponse(user: User): UserResponse {
+        const role = resolveRoleForUser(user.email, user.role);
+
         return {
             id: user.id,
             name: user.name,
             email: user.email,
-            role: user.role,
+            role,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
         };

@@ -5,6 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole } from './entities/user.entity';
 import { RegisterDto, LoginDto } from './dto/auth.dto';
+import { resolveRoleForUser } from './utils/role.helpers';
 
 @Injectable()
 export class AuthService {
@@ -27,26 +28,22 @@ export class AuthService {
         // Hash de la contraseña
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        const resolvedRole = resolveRoleForUser(normalizedEmail, role);
+
         // Crear usuario
         const user = this.userRepository.create({
             email: normalizedEmail,
             password: hashedPassword,
             name: name.trim(),
-            role: role ?? UserRole.GESTOR,
+            role: resolvedRole,
         });
 
         await this.userRepository.save(user);
 
-        // Generar token
         const token = this.generateToken(user);
 
         return {
-            user: {
-                id: user.id,
-                email: user.email,
-                name: user.name,
-                role: user.role,
-            },
+            user: this.buildAuthUser(user),
             token,
         };
     }
@@ -67,16 +64,16 @@ export class AuthService {
             throw new UnauthorizedException('Credenciales incorrectas');
         }
 
-        // Generar token
+        const resolvedRole = resolveRoleForUser(user.email, user.role);
+        if (resolvedRole !== user.role) {
+            user.role = resolvedRole;
+            await this.userRepository.save(user);
+        }
+
         const token = this.generateToken(user);
 
         return {
-            user: {
-                id: user.id,
-                email: user.email,
-                name: user.name,
-                role: user.role,
-            },
+            user: this.buildAuthUser(user),
             token,
         };
     }
@@ -86,7 +83,27 @@ export class AuthService {
         return this.jwtService.sign(payload);
     }
 
+    private buildAuthUser(user: User) {
+        return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+        };
+    }
+
     async validateUser(userId: string): Promise<User> {
-        return this.userRepository.findOne({ where: { id: userId } });
+        const user = await this.userRepository.findOne({ where: { id: userId } });
+        if (!user) {
+            return null;
+        }
+
+        const resolvedRole = resolveRoleForUser(user.email, user.role);
+        if (resolvedRole !== user.role) {
+            user.role = resolvedRole;
+            return this.userRepository.save(user);
+        }
+
+        return user;
     }
 }
