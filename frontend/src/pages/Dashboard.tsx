@@ -168,15 +168,21 @@ const Dashboard = () => {
                     Centro operativo
                   </p>
                   <h2 className="mt-1 text-2xl font-semibold text-slate-900">
-                    Hola {user?.name?.split(" ")[0] || ""}, prioricemos el día
+                    Hola {user?.name?.split(" ")[0] || ""} ({user?.role}),
+                    prioricemos el día
                   </h2>
                   <p className="mt-2 text-sm text-slate-500">
                     Revisa comunicados, próximos hitos y tareas críticas antes
                     de ir a tus módulos.
                   </p>
                 </div>
-                <div className="grid h-16 w-16 place-content-center rounded-full bg-blue-50 text-2xl font-bold text-blue-600">
-                  {user?.name?.charAt(0).toUpperCase() || "A"}
+                <div className="grid h-16 w-16 place-content-center rounded-full bg-blue-50 text-center text-xs font-semibold text-blue-600">
+                  <span className="text-xl font-bold">
+                    {user?.name?.charAt(0).toUpperCase() || "A"}
+                  </span>
+                  <span className="uppercase tracking-wide">
+                    {user?.role?.[0] ?? ""}
+                  </span>
                 </div>
               </div>
               <div className="mt-6 grid gap-3 sm:grid-cols-3">

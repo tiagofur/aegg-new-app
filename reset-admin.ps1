@@ -19,8 +19,8 @@ $query = @"
 DELETE FROM users WHERE email = 'admin@aegg.com';
 
 -- Crear nuevo usuario admin con contraseña conocida
-INSERT INTO users (email, password, "createdAt", "updatedAt")
-VALUES ('admin@aegg.com', '`$2b`$10`$rQs5F8mC6GhD3aE2bW9jXO8F7Y3K4N5M6P7Q8R9S0T1U2V3W4X5Y6', NOW(), NOW());
+INSERT INTO users (email, password, name, role, "createdAt", "updatedAt")
+VALUES ('admin@aegg.com', '`$2b`$10`$rQs5F8mC6GhD3aE2bW9jXO8F7Y3K4N5M6P7Q8R9S0T1U2V3W4X5Y6', 'Administrador', 'Admin', NOW(), NOW());
 "@
 
 # Ejecutar query

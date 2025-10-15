@@ -11,7 +11,7 @@ interface AnnouncementDialogProps {
   onSubmit: (input: CreateAnnouncementInput) => void;
 }
 
-const roles: DashboardRole[] = ["Admin", "Gestor", "Ejecutor"];
+const roles: DashboardRole[] = ["Admin", "Gestor", "Miembro"];
 const categories: AnnouncementCategory[] = [
   "Urgente",
   "Operativo",

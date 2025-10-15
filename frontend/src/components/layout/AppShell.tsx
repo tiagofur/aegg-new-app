@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Home, LogOut, SquareKanban } from "lucide-react";
+import { Home, LogOut, SquareKanban, Users } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
 interface BreadcrumbItem {
@@ -17,10 +17,12 @@ interface AppShellProps {
   contentClassName?: string;
 }
 
-const navLinks = [
+const baseNavLinks = [
   { to: "/dashboard", label: "Inicio", icon: Home },
   { to: "/trabajos", label: "Trabajos", icon: SquareKanban },
 ];
+
+const adminNavLinks = [{ to: "/admin/users", label: "Usuarios", icon: Users }];
 
 const cn = (...classes: Array<string | false | null | undefined>) =>
   classes.filter(Boolean).join(" ");
@@ -56,7 +58,10 @@ export const AppShell = ({
                 Aegg
               </button>
               <nav className="hidden md:flex items-center gap-1">
-                {navLinks.map(({ to, label, icon: Icon }) => {
+                {(user?.role === "Admin"
+                  ? [...baseNavLinks, ...adminNavLinks]
+                  : baseNavLinks
+                ).map(({ to, label, icon: Icon }) => {
                   const active = location.pathname.startsWith(to);
                   return (
                     <NavLink
@@ -85,6 +90,9 @@ export const AppShell = ({
                     {user.name}
                   </span>
                   <span className="text-xs text-slate-500">{user.email}</span>
+                  <span className="text-xs font-medium text-blue-600">
+                    Rol: {user.role}
+                  </span>
                 </div>
               )}
               <button
@@ -99,7 +107,10 @@ export const AppShell = ({
         </div>
         <div className="md:hidden border-t border-slate-200 bg-white">
           <nav className="flex items-center justify-around px-2 py-2 text-sm">
-            {navLinks.map(({ to, label, icon: Icon }) => {
+            {(user?.role === "Admin"
+              ? [...baseNavLinks, ...adminNavLinks]
+              : baseNavLinks
+            ).map(({ to, label, icon: Icon }) => {
               const active = location.pathname.startsWith(to);
               return (
                 <NavLink

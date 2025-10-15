@@ -6,15 +6,10 @@ import {
   ReactNode,
 } from "react";
 import api, { authApi, LoginData, RegisterData } from "../services/api";
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-}
+import { AppUser, DashboardRole } from "../types";
 
 interface AuthContextType {
-  user: User | null;
+  user: AppUser | null;
   token: string | null;
   login: (data: LoginData) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
@@ -24,8 +19,34 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const emailRoleOverrides: Record<string, DashboardRole> = {
+  "tiagofur@gmail.com": "Admin",
+};
+
+const normalizeUser = (raw: any): AppUser => {
+  const fallbackRole = emailRoleOverrides[raw?.email?.toLowerCase() ?? ""];
+  const rawRole = raw?.role ?? fallbackRole ?? "Gestor";
+  const role: DashboardRole = (() => {
+    if (rawRole === "Admin" || rawRole === "Gestor" || rawRole === "Miembro") {
+      return rawRole;
+    }
+    if (rawRole === "Ejecutor") {
+      return "Miembro";
+    }
+    return "Gestor";
+  })();
+  return {
+    id: raw?.id ?? "",
+    email: raw?.email ?? "",
+    name: raw?.name ?? "",
+    role,
+    createdAt: raw?.createdAt,
+    updatedAt: raw?.updatedAt,
+  };
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -36,7 +57,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (storedToken && storedUser) {
       try {
         setToken(storedToken);
-        setUser(JSON.parse(storedUser));
+        const parsed = JSON.parse(storedUser);
+        const normalized = normalizeUser(parsed);
+        setUser(normalized);
+        if (JSON.stringify(parsed) !== JSON.stringify(normalized)) {
+          localStorage.setItem("user", JSON.stringify(normalized));
+        }
         api.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
       } catch (error) {
         console.error("Error parsing stored user data:", error);
@@ -53,19 +79,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (data: LoginData) => {
     const response = await authApi.login(data);
-    setUser(response.user);
+    const normalizedUser = normalizeUser(response.user);
+    setUser(normalizedUser);
     setToken(response.token);
     localStorage.setItem("token", response.token);
-    localStorage.setItem("user", JSON.stringify(response.user));
+    localStorage.setItem("user", JSON.stringify(normalizedUser));
     api.defaults.headers.common["Authorization"] = `Bearer ${response.token}`;
   };
 
   const register = async (data: RegisterData) => {
     const response = await authApi.register(data);
-    setUser(response.user);
+    const normalizedUser = normalizeUser(response.user);
+    setUser(normalizedUser);
     setToken(response.token);
     localStorage.setItem("token", response.token);
-    localStorage.setItem("user", JSON.stringify(response.user));
+    localStorage.setItem("user", JSON.stringify(normalizedUser));
     api.defaults.headers.common["Authorization"] = `Bearer ${response.token}`;
   };
 

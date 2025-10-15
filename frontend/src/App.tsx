@@ -8,6 +8,7 @@ import { AuthProvider } from "./context/AuthContext";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import AdminUsersPage from "./pages/AdminUsersPage";
 import { TrabajosPage } from "./pages/TrabajosPage";
 import { ReporteAnualPage } from "./pages/ReporteAnualPage";
 import { ReporteMensualPage } from "./pages/ReporteMensualPage";
@@ -62,6 +63,14 @@ function App() {
             element={
               <PrivateRoute>
                 <ReporteMensualPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <PrivateRoute allowedRoles={["Admin"]}>
+                <AdminUsersPage />
               </PrivateRoute>
             }
           />

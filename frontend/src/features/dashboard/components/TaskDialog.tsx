@@ -7,7 +7,7 @@ interface TaskDialogProps {
   onSubmit: (input: CreateTaskInput) => void;
 }
 
-const roles: DashboardRole[] = ["Admin", "Gestor", "Ejecutor"];
+const roles: DashboardRole[] = ["Admin", "Gestor", "Miembro"];
 const priorities: TaskPriority[] = ["Alta", "Media", "Baja"];
 
 export const TaskDialog = ({ open, onClose, onSubmit }: TaskDialogProps) => {

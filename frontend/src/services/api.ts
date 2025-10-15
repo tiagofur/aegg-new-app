@@ -1,4 +1,5 @@
 import axios, { AxiosHeaders } from 'axios';
+import { AppUser } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -64,11 +65,7 @@ export interface LoginData {
 }
 
 export interface AuthResponse {
-    user: {
-        id: string;
-        email: string;
-        name: string;
-    };
+    user: AppUser;
     token: string;
 }
 

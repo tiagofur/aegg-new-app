@@ -23,7 +23,7 @@ Entregar una home adaptable que sirva como punto de partida para todos los roles
 ### Conceptos clave
 
 - **Home como hub**: layout de tres columnas (comunicados, calendario, tareas) con widgets reordenables por rol para mostrar lo más relevante sin configuraciones complejas.
-- **Quick actions**: barra superior con acciones instantáneas según permisos (Admin: crear usuario/comunicado; Gestor: asignar tarea; Ejecutor: registrar avance) que refuerzan el uso operativo de la home.
+- **Quick actions**: barra superior con acciones instantáneas según permisos (Admin: crear usuario/comunicado; Gestor: asignar tarea; Miembro: registrar avance) que refuerzan el uso operativo de la home.
 - **Estado operativo**: componente de KPIs mínimos (tareas vencidas, comunicados no leídos, eventos de hoy) con semáforos visuales que guían el foco inmediato del usuario.
 - **Spotlight inteligente**: buscador global que ofrece navegación, plantillas rápidas (p. ej. “nuevo comunicado urgente”) y recuerda accesos frecuentes.
 - **Integraciones livianas**: placeholders para conectar con calendarios externos o notificaciones push, mostrando valor futuro sin bloquear el MVP.
@@ -32,7 +32,7 @@ Entregar una home adaptable que sirva como punto de partida para todos los roles
 ### 1. Centro de comunicados
 
 - **Panel principal** con comunicado destacado (texto, imagen o video corto) y botón de ver historial.
-- **Listado por prioridad** con filtros por categoría y rol (Admin, Gestor, Ejecutores).
+- **Listado por prioridad** con filtros por categoría y rol (Admin, Gestor, Miembros).
 - **Confirmación de lectura** para comunicados críticos, visible al Admin.
 - **Mini analítica**: porcentaje de usuarios que han leído cada comunicado.
 
@@ -46,7 +46,7 @@ Entregar una home adaptable que sirva como punto de partida para todos los roles
 ### 3. Gestor de tareas operativo
 
 - **Backlog personal y del equipo** con estados rápido (Pendiente, En progreso, Completada).
-- **Creación express** desde la home con asignación por rol (Admin → Gestor → Ejecutores).
+- **Creación express** desde la home con asignación por rol (Admin → Gestor → Miembros).
 - **Checklist por tarea** para adjuntar evidencia (texto, doc, imagen) según necesidad operativa.
 - **Indicadores básicos**: conteo de tareas pendientes, vencidas y completadas.
 
@@ -54,11 +54,11 @@ Entregar una home adaptable que sirva como punto de partida para todos los roles
 
 - **Admin**: crea/edita/elimina usuarios y roles, administra comunicados globales, configura widgets de la home.
 - **Gestor**: gestiona tareas del equipo, publica comunicados segmentados, consulta métricas de cumplimiento.
-- **Ejecutor**: recibe agenda diaria, marca avances y revisa comunicados obligatorios.
+- **Miembro**: recibe agenda diaria, marca avances y revisa comunicados obligatorios.
 
 ## Ruta inmediata
 
-1. **Mapear journeys por rol** (Admin, Gestor, Ejecutor) para definir métricas, acciones críticas y necesidades de información en la home.
+1. **Mapear journeys por rol** (Admin, Gestor, Miembro) para definir métricas, acciones críticas y necesidades de información en la home.
 2. **Bocetar wireframes** de la home modular (desktop y mobile) y validar con stakeholders clave.
 3. **Armar backlog técnico** del MVP, incluyendo endpoints, componentes front y ajustes de navegación.
 4. **Plan de iteraciones** posterior: métricas avanzadas, IA asistente, integraciones externas.
@@ -89,7 +89,7 @@ Entregar una home adaptable que sirva como punto de partida para todos los roles
 
 ### 2. Diseño de wireframes
 
-- **Scope**: layouts para versión desktop y mobile de la home, contemplando variaciones por rol (Admin, Gestor, Ejecutor).
+- **Scope**: layouts para versión desktop y mobile de la home, contemplando variaciones por rol (Admin, Gestor, Miembro).
 - **Herramientas**: Figma o herramienta aprobada; crear librería de componentes reutilizables para el dashboard.
 - **Entregables clave**: flujo de navegación desde login, estructura de módulos (comunicados, calendario, tareas), prototipo navegable ligero.
 - **Validación**: test rápido con 3-5 usuarios representativos; ajustar con feedback antes de pasar a UI final.

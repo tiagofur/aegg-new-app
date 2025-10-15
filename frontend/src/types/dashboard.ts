@@ -1,5 +1,5 @@
 export type AnnouncementCategory = "Urgente" | "Operativo" | "Actualización";
-export type DashboardRole = "Admin" | "Gestor" | "Ejecutor";
+export type DashboardRole = "Admin" | "Gestor" | "Miembro";
 
 export interface Announcement {
     id: string;

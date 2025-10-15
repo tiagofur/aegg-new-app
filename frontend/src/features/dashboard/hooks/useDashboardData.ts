@@ -3,6 +3,7 @@ import {
     CreateAnnouncementInput,
     CreateEventInput,
     CreateTaskInput,
+    DashboardRole,
     DashboardState,
     Task,
 } from "../../../types";
@@ -20,6 +21,17 @@ const generateId = () => {
     return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 };
 
+const normalizeRole = (role: string | undefined | null): DashboardRole => {
+    const value = role ?? "";
+    if (value === "Admin" || value === "Gestor" || value === "Miembro") {
+        return value;
+    }
+    if (value === "Ejecutor" || value === "EJECUTOR") {
+        return "Miembro";
+    }
+    return "Miembro";
+};
+
 const createEmptyState = (): DashboardState => ({
     announcements: [],
     events: [],
@@ -29,13 +41,21 @@ const createEmptyState = (): DashboardState => ({
 
 const sanitizeState = (state?: Partial<DashboardState> | null): DashboardState => {
     const base = createEmptyState();
-    const announcements = (state?.announcements ?? []).filter(
-        (announcement) => announcement && !LEGACY_ANNOUNCEMENT_IDS.has(announcement.id)
-    );
+    const announcements = (state?.announcements ?? [])
+        .filter((announcement) => announcement && !LEGACY_ANNOUNCEMENT_IDS.has(announcement.id))
+        .map((announcement) => ({
+            ...announcement,
+            audience: (announcement.audience ?? []).map((role) => normalizeRole(role)) as DashboardRole[],
+        }));
     const events = (state?.events ?? []).filter(
         (event) => event && !LEGACY_EVENT_IDS.has(event.id)
     );
-    const tasks = (state?.tasks ?? []).filter((task) => task && !LEGACY_TASK_IDS.has(task.id));
+    const tasks = (state?.tasks ?? [])
+        .filter((task) => task && !LEGACY_TASK_IDS.has(task.id))
+        .map((task) => ({
+            ...task,
+            ownerRole: normalizeRole(task.ownerRole),
+        }));
 
     const acknowledgements: Record<string, string[]> = {};
     const sourceAcknowledgements = state?.acknowledgements ?? {};
