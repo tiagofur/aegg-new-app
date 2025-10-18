@@ -19,6 +19,8 @@ export const ReporteBaseAnualPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  console.log("🔵 ReporteBaseAnualPage montado - trabajoId:", trabajoId);
+
   useEffect(() => {
     const cargarTrabajo = async () => {
       if (!trabajoId) {

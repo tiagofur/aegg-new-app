@@ -51,10 +51,11 @@ export const ReporteAnualHeader: React.FC<ReporteAnualHeaderProps> = ({
 
         {/* Botones a la derecha del título */}
         <div className="flex gap-2">
+          {/* Botón Ver Reporte Anual (Ventas mensuales) - Siempre visible */}
           <button
             onClick={onVerReporte}
             className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors text-sm font-medium"
-            title="Ver reporte anual completo"
+            title="Ver resumen anual de ventas (comparación Mi Admin vs Auxiliar)"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -69,26 +70,15 @@ export const ReporteAnualHeader: React.FC<ReporteAnualHeaderProps> = ({
                 clipRule="evenodd"
               />
             </svg>
-            Ver Reporte
+            Ver Reporte Anual
           </button>
 
-          {onVerReporteBase && (
+          {/* Botón Ver Base Importada - Solo visible cuando hay hojas */}
+          {tieneHojas && onVerReporteBase && (
             <button
               onClick={onVerReporteBase}
-              disabled={!tieneHojas}
-              className={`
-                px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors text-sm font-medium
-                ${
-                  tieneHojas
-                    ? "bg-indigo-600 hover:bg-indigo-700 text-white"
-                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                }
-              `}
-              title={
-                tieneHojas
-                  ? "Ver reporte base anual importado"
-                  : "Primero importa el reporte base"
-              }
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors text-sm font-medium"
+              title="Ver reporte base anual importado (todas las hojas del Excel)"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

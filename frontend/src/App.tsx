@@ -3,6 +3,7 @@ import {
   Routes,
   Route,
   Navigate,
+  Outlet,
 } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import Login from "./pages/Login";
@@ -39,42 +40,25 @@ function App() {
             path="/trabajos"
             element={
               <PrivateRoute>
-                <TrabajosPage />
+                <Outlet />
               </PrivateRoute>
             }
-          />
-          <Route
-            path="/trabajos/:trabajoId"
-            element={
-              <PrivateRoute>
-                <TrabajosPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/trabajos/:trabajoId/reporte-anual/:anio"
-            element={
-              <PrivateRoute>
-                <ReporteAnualPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/trabajos/:trabajoId/reporte-base-anual"
-            element={
-              <PrivateRoute>
-                <ReporteBaseAnualPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/trabajos/:trabajoId/reporte-mensual/:mesId/:reporteId/:tipo"
-            element={
-              <PrivateRoute>
-                <ReporteMensualPage />
-              </PrivateRoute>
-            }
-          />
+          >
+            <Route index element={<TrabajosPage />} />
+            <Route path=":trabajoId" element={<TrabajosPage />} />
+            <Route
+              path=":trabajoId/reporte-mensual/:mesId/:reporteId/:tipo"
+              element={<ReporteMensualPage />}
+            />
+            <Route
+              path=":trabajoId/reporte-base-anual"
+              element={<ReporteBaseAnualPage />}
+            />
+            <Route
+              path=":trabajoId/reporte-anual/:anio"
+              element={<ReporteAnualPage />}
+            />
+          </Route>
           <Route
             path="/admin/users"
             element={

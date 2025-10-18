@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   TrabajosList,
   TrabajoDetail,
@@ -14,6 +14,7 @@ import { AppShell } from "../components/layout/AppShell";
 export const TrabajosPage: React.FC = () => {
   const { trabajoId } = useParams<{ trabajoId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const [trabajos, setTrabajos] = useState<Trabajo[]>([]);
   const [selectedTrabajo, setSelectedTrabajo] = useState<Trabajo | null>(null);
@@ -21,19 +22,45 @@ export const TrabajosPage: React.FC = () => {
   const [createTrabajoOpen, setCreateTrabajoOpen] = useState(false);
   const [createMesOpen, setCreateMesOpen] = useState(false);
 
+  console.log(
+    "🟢 TrabajosPage montado - trabajoId:",
+    trabajoId,
+    "- path:",
+    location.pathname
+  );
+
   useEffect(() => {
     loadTrabajos();
   }, []);
 
   // Cargar el trabajo específico si viene trabajoId en la URL
   useEffect(() => {
-    if (trabajoId && trabajos.length > 0) {
-      const trabajo = trabajos.find((t) => t.id === trabajoId);
-      if (trabajo) {
-        handleSelectTrabajo(trabajo);
-      }
+    if (!trabajoId || trabajos.length === 0) {
+      return;
     }
-  }, [trabajoId, trabajos]);
+
+    const expectedPath = `/trabajos/${trabajoId}`;
+    if (location.pathname !== expectedPath) {
+      return;
+    }
+
+    const trabajo = trabajos.find((t) => t.id === trabajoId);
+    if (!trabajo) {
+      return;
+    }
+
+    const cargarDetalle = async () => {
+      try {
+        const detailed = await trabajosService.getOne(trabajo.id);
+        setSelectedTrabajo(detailed);
+      } catch (error) {
+        console.error("Error al cargar detalle:", error);
+        alert("Error al cargar el detalle del trabajo");
+      }
+    };
+
+    cargarDetalle();
+  }, [trabajoId, trabajos, location.pathname]);
 
   const loadTrabajos = async () => {
     try {
