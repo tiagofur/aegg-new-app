@@ -6,11 +6,14 @@
  * Fila del reporte Mi Admin Ingresos
  */
 export interface MiAdminIngresosRow {
-    /** ID único interno */
+    /** ID único interno - Usa FOLIO como identificador */
     id: string;
 
     /** FOLIO - Clave para comparación con Auxiliar Ingresos */
     folio: string;
+
+    /** UUID del SAT (opcional, si existe en el Excel) */
+    uuid?: string;
 
     /** Fecha de la factura */
     fecha: string | null;

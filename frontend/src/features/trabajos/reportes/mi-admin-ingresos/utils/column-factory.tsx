@@ -262,7 +262,7 @@ export function createMiAdminDynamicColumns(
   const specialKeys = new Set(Object.keys(specialColumnConfig));
 
   // Claves internas que nunca deben ser mostradas como columnas
-  const keysToIgnore = new Set(["id", "isSummary"]);
+  const keysToIgnore = new Set(["id", "isSummary", "uuid"]); // Ignorar id, isSummary y uuid
 
   // Obtener todas las claves únicas de todos los objetos de datos
   const allKeys = new Set<string>();

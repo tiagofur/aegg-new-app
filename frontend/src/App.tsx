@@ -12,6 +12,7 @@ import AdminUsersPage from "./pages/AdminUsersPage";
 import { TrabajosPage } from "./pages/TrabajosPage";
 import { ReporteAnualPage } from "./pages/ReporteAnualPage";
 import { ReporteMensualPage } from "./pages/ReporteMensualPage";
+import { ReporteBaseAnualPage } from "./pages/ReporteBaseAnualPage";
 import PrivateRoute from "./components/PrivateRoute";
 
 function App() {
@@ -55,6 +56,14 @@ function App() {
             element={
               <PrivateRoute>
                 <ReporteAnualPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/trabajos/:trabajoId/reporte-base-anual"
+            element={
+              <PrivateRoute>
+                <ReporteBaseAnualPage />
               </PrivateRoute>
             }
           />

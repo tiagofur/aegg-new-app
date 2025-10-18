@@ -202,8 +202,8 @@ export const parseExcelToMiAdminIngresos = (
 
         const folio = combinedFolio;
 
-        // UUID es opcional
-        const uuid = uuidIndex !== -1 ? row[uuidIndex]?.toString().trim() || folio : folio;
+        // UUID es opcional - pero siempre usamos el folio como ID único
+        const uuid = uuidIndex !== -1 ? row[uuidIndex]?.toString().trim() || '' : '';
 
         // Parsear valores básicos
         const moneda = parseMoneda(row[monedaIndex]);
@@ -301,8 +301,9 @@ export const parseExcelToMiAdminIngresos = (
         // --- FIN DE LOGS DE DEPURACIÓN ---
 
         rows.push({
-            id: uuid, // Mantener UUID como id para compatibilidad
+            id: folio, // ✅ CORREGIDO: Usar FOLIO como ID único (no UUID)
             folio: folio, // FOLIO es el campo clave
+            uuid: uuid || undefined, // Guardar UUID como campo adicional si existe
             fecha,
             rfc,
             razonSocial,
@@ -482,41 +483,83 @@ export const isValidTipoCambio = (value: number): boolean => {
 
 /**
  * Convertir array de filas tipadas a formato Excel para guardar
+ * VERSIÓN DINÁMICA: Exporta TODAS las columnas que existen en los datos
  * @param data - Array de filas tipadas
  * @returns Array bidimensional para Excel
  */
 export const convertToExcelFormat = (data: MiAdminIngresosRow[]): any[][] => {
-    const headers = [
-        'Folio',
-        'Fecha',
-        'RFC',
-        'Razón Social',
-        'Subtotal',
-        'IVA',
-        'Total',
-        'Moneda',
-        'Tipo de Cambio',
-        'Estado SAT',
-        'Subtotal AUX',
-        'Subtotal MXN',
-        'TC Sugerido',
+    if (!data || data.length === 0) {
+        return [];
+    }
+
+    // Obtener todas las claves únicas de todas las filas (excluyendo campos internos)
+    const keysToIgnore = new Set(['id', 'isSummary', 'uuid']); // uuid se guarda como columna separada si existe
+    const allKeys = new Set<string>();
+
+    data.forEach(row => {
+        Object.keys(row).forEach(key => {
+            if (!keysToIgnore.has(key)) {
+                allKeys.add(key);
+            }
+        });
+    });
+
+    // Definir orden de columnas principales
+    const mainColumns = [
+        'folio',
+        'fecha',
+        'rfc',
+        'razonSocial',
+        'subtotal',
+        'iva',
+        'total',
+        'moneda',
+        'tipoCambio',
+        'estadoSat',
     ];
 
-    const rows = data.map(row => [
-        row.folio,
-        row.fecha,
-        row.rfc,
-        row.razonSocial,
-        row.subtotal,
-        row.iva,
-        row.total,
-        row.moneda,
-        row.tipoCambio,
-        row.estadoSat,
-        row.subtotalAUX,
-        row.subtotalMXN,
-        row.tcSugerido,
-    ]);
+    // Columnas calculadas que siempre van al final
+    const calculatedColumns = ['subtotalAUX', 'subtotalMXN', 'tcSugerido'];
+
+    // Separar columnas dinámicas (las que no están en mainColumns ni calculatedColumns)
+    const dynamicColumns = Array.from(allKeys).filter(
+        key => !mainColumns.includes(key) && !calculatedColumns.includes(key)
+    );
+
+    // Orden final: principales + dinámicas + calculadas
+    const orderedColumns = [
+        ...mainColumns.filter(col => allKeys.has(col)),
+        ...dynamicColumns.sort(),
+        ...calculatedColumns.filter(col => allKeys.has(col)),
+    ];
+
+    // Crear headers con nombres formateados
+    const headers = orderedColumns.map(key => {
+        // Formatear nombres de columnas comunes
+        const commonNames: Record<string, string> = {
+            folio: 'Folio',
+            fecha: 'Fecha',
+            rfc: 'RFC',
+            razonSocial: 'Razón Social',
+            subtotal: 'Subtotal',
+            iva: 'IVA',
+            total: 'Total',
+            moneda: 'Moneda',
+            tipoCambio: 'Tipo de Cambio',
+            estadoSat: 'Estado SAT',
+            subtotalAUX: 'Subtotal AUX',
+            subtotalMXN: 'Subtotal MXN',
+            tcSugerido: 'TC Sugerido',
+        };
+        return commonNames[key] || key;
+    });
+
+    // Crear filas de datos
+    const rows = data
+        .filter(row => !row.isSummary) // Excluir filas de resumen
+        .map(row => orderedColumns.map(key => row[key] ?? null));
+
+    console.log(`📤 Exportando ${rows.length} filas con ${orderedColumns.length} columnas:`, orderedColumns);
 
     return [headers, ...rows];
 };

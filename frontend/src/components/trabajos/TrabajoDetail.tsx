@@ -271,6 +271,9 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
         onVerReporte={() =>
           navigate(`/trabajos/${trabajo.id}/reporte-anual/${trabajo.anio}`)
         }
+        onVerReporteBase={() =>
+          navigate(`/trabajos/${trabajo.id}/reporte-base-anual`)
+        }
         onImportarExcel={() => setMostrarImportDialog(true)}
         onDescargarExcel={() =>
           alert("Funcionalidad de descarga en desarrollo")
