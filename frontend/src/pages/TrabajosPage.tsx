@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import {
+  useParams,
+  useNavigate,
+  useLocation,
+  Outlet,
+  useOutlet,
+} from "react-router-dom";
 import {
   TrabajosList,
   TrabajoDetail,
@@ -15,6 +21,7 @@ export const TrabajosPage: React.FC = () => {
   const { trabajoId } = useParams<{ trabajoId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const outlet = useOutlet();
   const { user } = useAuth();
   const [trabajos, setTrabajos] = useState<Trabajo[]>([]);
   const [selectedTrabajo, setSelectedTrabajo] = useState<Trabajo | null>(null);
@@ -22,45 +29,42 @@ export const TrabajosPage: React.FC = () => {
   const [createTrabajoOpen, setCreateTrabajoOpen] = useState(false);
   const [createMesOpen, setCreateMesOpen] = useState(false);
 
-  console.log(
-    "🟢 TrabajosPage montado - trabajoId:",
-    trabajoId,
-    "- path:",
-    location.pathname
-  );
+  // Detectar si estamos en una ruta anidada (reporte-base-anual, reporte-anual, reporte-mensual)
+  // Esto asegura que el componente se re-renderice correctamente cuando la URL cambia
+  const isNestedRoute =
+    outlet !== null && location.pathname !== `/trabajos/${trabajoId}`;
 
   useEffect(() => {
     loadTrabajos();
   }, []);
 
-  // Cargar el trabajo específico si viene trabajoId en la URL
   useEffect(() => {
-    if (!trabajoId || trabajos.length === 0) {
-      return;
-    }
+    const loadSelectedTrabajo = async () => {
+      if (!trabajoId) {
+        setSelectedTrabajo(null);
+        return;
+      }
 
-    const expectedPath = `/trabajos/${trabajoId}`;
-    if (location.pathname !== expectedPath) {
-      return;
-    }
+      // Si ya tenemos el trabajo detallado correcto, no hacer nada.
+      if (selectedTrabajo && selectedTrabajo.id === trabajoId) {
+        return;
+      }
 
-    const trabajo = trabajos.find((t) => t.id === trabajoId);
-    if (!trabajo) {
-      return;
-    }
-
-    const cargarDetalle = async () => {
       try {
-        const detailed = await trabajosService.getOne(trabajo.id);
+        setLoading(true);
+        const detailed = await trabajosService.getOne(trabajoId);
         setSelectedTrabajo(detailed);
       } catch (error) {
         console.error("Error al cargar detalle:", error);
         alert("Error al cargar el detalle del trabajo");
+        navigate("/trabajos");
+      } finally {
+        setLoading(false);
       }
     };
 
-    cargarDetalle();
-  }, [trabajoId, trabajos, location.pathname]);
+    loadSelectedTrabajo();
+  }, [trabajoId, selectedTrabajo, navigate]);
 
   const loadTrabajos = async () => {
     try {
@@ -148,12 +152,16 @@ export const TrabajosPage: React.FC = () => {
     >
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         {selectedTrabajo ? (
-          <TrabajoDetail
-            trabajo={selectedTrabajo}
-            onAddMes={() => setCreateMesOpen(true)}
-            onBack={handleBackToList}
-            onReload={handleReloadTrabajo}
-          />
+          isNestedRoute ? (
+            <Outlet />
+          ) : (
+            <TrabajoDetail
+              trabajo={selectedTrabajo}
+              onAddMes={() => setCreateMesOpen(true)}
+              onBack={handleBackToList}
+              onReload={handleReloadTrabajo}
+            />
+          )
         ) : (
           <TrabajosList
             trabajos={trabajos}
