@@ -107,22 +107,15 @@ export const TrabajosPage: React.FC = () => {
     );
   }
 
-  const breadcrumbs = selectedTrabajo
-    ? [
-        { label: "Inicio", to: "/dashboard" },
-        { label: "Trabajos", to: "/trabajos" },
-        { label: selectedTrabajo.clienteNombre },
-      ]
-    : [{ label: "Inicio", to: "/dashboard" }, { label: "Trabajos" }];
+  const breadcrumbs = [
+    { label: "Inicio", to: "/dashboard" },
+    { label: "Trabajos" },
+  ];
 
   return (
     <AppShell
-      title={
-        selectedTrabajo
-          ? `${selectedTrabajo.clienteNombre} - ${selectedTrabajo.anio}`
-          : "Trabajos"
-      }
-      breadcrumbs={breadcrumbs}
+      title={selectedTrabajo ? "" : "Trabajos"}
+      breadcrumbs={selectedTrabajo ? [] : breadcrumbs}
       fullWidth={!!selectedTrabajo}
       contentClassName={selectedTrabajo ? "max-w-6xl" : undefined}
     >
