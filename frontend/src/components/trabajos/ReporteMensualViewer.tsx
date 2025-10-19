@@ -16,6 +16,7 @@ type ReporteMensualViewerProps = {
   onImportarReporte: () => void;
   onReimportarReporte: () => void;
   onLimpiarDatos?: () => void;
+  canManage: boolean;
 };
 
 type ComparacionResultado = {
@@ -28,9 +29,9 @@ type GuardarEnBaseContext = {
   anio: number;
   mes: number;
   totalMiAdmin: number;
-  totalAuxiliar: number;
+  totalAuxiliar: number | null;
+  hasAuxiliarData: boolean;
   isDirty: boolean;
-  isComparisonActive: boolean;
 };
 
 const getIconoReporte = (tipo: ReporteMensual["tipo"]): string => {
@@ -124,6 +125,16 @@ const formatFecha = (fecha?: string): string => {
   });
 };
 
+const currencyFormatter = new Intl.NumberFormat("es-MX", {
+  style: "currency",
+  currency: "MXN",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+const formatCurrency = (value: number): string =>
+  currencyFormatter.format(value);
+
 export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
   reporte,
   reportes,
@@ -135,6 +146,7 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
   onImportarReporte,
   onReimportarReporte,
   onLimpiarDatos,
+  canManage,
 }) => {
   const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
   const [comparacionActiva, setComparacionActiva] = useState(false);
@@ -332,53 +344,22 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
     }
   }, [comparacionDisponible, comparacionActiva]);
 
-  const comparacionStats = useMemo(() => {
-    if (!comparacionDisponible || !comparacionActiva) return null;
+  const resumenTotales = useMemo(() => {
+    if (!guardarEnBaseContext || guardarEnBaseContext.totalAuxiliar === null) {
+      return null;
+    }
 
-    const coincidencias = Array.from(resultadoComparacion.foliosCoinciden);
-    const coincidenciasOk = coincidencias.filter(([, match]) => match).length;
-    const coincidenciasDiferentes = coincidencias.length - coincidenciasOk;
+    const diferencia = Math.abs(
+      guardarEnBaseContext.totalMiAdmin - guardarEnBaseContext.totalAuxiliar
+    );
 
     return {
-      foliosUnicos: resultadoComparacion.foliosUnicos.size,
-      coincidenciasOk,
-      coincidenciasDiferentes,
+      totalMiAdmin: guardarEnBaseContext.totalMiAdmin,
+      totalAuxiliar: guardarEnBaseContext.totalAuxiliar,
+      diferencia,
+      coincide: diferencia < 0.1,
     };
-  }, [comparacionDisponible, comparacionActiva, resultadoComparacion]);
-
-  const accionesSugeridas = useMemo(() => {
-    const acciones: string[] = [];
-
-    if (!tieneDatos) {
-      acciones.push(
-        "Importa el archivo original para empezar a revisar los folios."
-      );
-    } else {
-      acciones.push(
-        "Revisa los totales y guarda cambios cuando estés conforme."
-      );
-    }
-
-    if (comparacionDisponible && !comparacionActiva) {
-      acciones.push(
-        "Activa la sincronización con el Auxiliar para detectar diferencias al instante."
-      );
-    }
-
-    if (comparacionDisponible && comparacionActiva) {
-      acciones.push(
-        "Valida los folios marcados antes de consolidar la información en base."
-      );
-    }
-
-    if (onLimpiarDatos) {
-      acciones.push(
-        "Usa la opción ‘Limpiar datos’ si necesitas reiniciar la importación."
-      );
-    }
-
-    return acciones.slice(0, 3);
-  }, [comparacionDisponible, comparacionActiva, tieneDatos, onLimpiarDatos]);
+  }, [guardarEnBaseContext]);
 
   const estadoChipClasses = `inline-flex items-center gap-1 rounded-full border bg-white/70 px-2.5 py-0.5 text-xs font-semibold ${
     estado.color
@@ -493,10 +474,10 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
                   : `Sincronizar con ${comparacionTargetNombre}`}
               </button>
             )}
-            {guardarEnBaseContext && (
+            {canManage && guardarEnBaseContext && (
               <GuardarEnBaseButton {...guardarEnBaseContext} />
             )}
-            {tablaSaveContext && (
+            {canManage && tablaSaveContext && (
               <button
                 onClick={handleGuardarTabla}
                 disabled={
@@ -517,50 +498,51 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
                 {tablaSaveContext.isSaving ? "Guardando..." : "Guardar cambios"}
               </button>
             )}
-            {tieneDatos ? (
-              <button
-                onClick={onReimportarReporte}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-green-600 bg-white px-3 py-1.5 text-sm font-semibold text-green-700 shadow-sm transition-colors hover:border-green-700 hover:text-green-800"
-                title="Actualizar el archivo importado"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  aria-hidden
+            {canManage &&
+              (tieneDatos ? (
+                <button
+                  onClick={onReimportarReporte}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-green-600 bg-white px-3 py-1.5 text-sm font-semibold text-green-700 shadow-sm transition-colors hover:border-green-700 hover:text-green-800"
+                  title="Actualizar el archivo importado"
                 >
-                  <path
-                    fillRule="evenodd"
-                    d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01-.61-1.276z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Actualizar archivo
-              </button>
-            ) : (
-              <button
-                onClick={onImportarReporte}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-green-600 bg-white px-3 py-1.5 text-sm font-semibold text-green-700 shadow-sm transition-colors hover:border-green-700 hover:text-green-800"
-                title="Importar el archivo Excel del reporte"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  aria-hidden
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    aria-hidden
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01-.61-1.276z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Actualizar archivo
+                </button>
+              ) : (
+                <button
+                  onClick={onImportarReporte}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-green-600 bg-white px-3 py-1.5 text-sm font-semibold text-green-700 shadow-sm transition-colors hover:border-green-700 hover:text-green-800"
+                  title="Importar el archivo Excel del reporte"
                 >
-                  <path
-                    fillRule="evenodd"
-                    d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Importar archivo
-              </button>
-            )}
-            {onLimpiarDatos && tieneDatos && (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    aria-hidden
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Importar archivo
+                </button>
+              ))}
+            {canManage && onLimpiarDatos && tieneDatos && (
               <button
                 onClick={() => setMostrarConfirmacion(true)}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-100"
@@ -645,95 +627,80 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
                 )}
               </div>
 
-              <div className="grid gap-3 text-xs sm:grid-cols-2 xl:grid-cols-3">
-                <div className="rounded-lg border border-gray-200 bg-white/80 p-3">
-                  <h3 className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                    Resumen rápido
-                  </h3>
-                  <dl className="mt-3 space-y-2 text-sm text-gray-700">
-                    <div className="flex items-center justify-between">
-                      <dt className="text-gray-500">Estado</dt>
-                      <dd className={estadoChipClasses}>
+              <div className="rounded-lg border border-gray-200 bg-white/80 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-gray-700">
+                  <div className="flex flex-wrap items-center gap-4">
+                    <span className="inline-flex items-center gap-2 text-xs text-gray-600">
+                      <span className="font-semibold uppercase tracking-wide text-gray-500">
+                        Estado
+                      </span>
+                      <span className={estadoChipClasses}>
                         <span aria-hidden>{estado.icon}</span>
                         {estado.label}
-                      </dd>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <dt className="text-gray-500">Registros</dt>
-                      <dd className="font-semibold">
+                      </span>
+                    </span>
+                    <span>
+                      Registros:
+                      <span className="ml-1 font-semibold text-gray-900">
                         {totalRegistros.toLocaleString("es-MX")}
-                      </dd>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <dt className="text-gray-500">Actualizado</dt>
-                      <dd className="font-semibold text-gray-800">
+                      </span>
+                    </span>
+                    <span>
+                      Actualizado:
+                      <span className="ml-1 font-semibold text-gray-900">
                         {ultimaActualizacion}
-                      </dd>
-                    </div>
+                      </span>
+                    </span>
                     {complementoNombre && (
-                      <div className="flex items-center justify-between">
-                        <dt className="text-gray-500">Complemento</dt>
-                        <dd className="text-right font-semibold text-gray-700">
+                      <span>
+                        Complemento:
+                        <span className="ml-1 font-semibold text-gray-900">
                           {complementoNombre}
-                        </dd>
-                      </div>
+                        </span>
+                      </span>
                     )}
-                  </dl>
-                </div>
-
-                <div className="rounded-lg border border-gray-200 bg-white/80 p-3">
-                  <h3 className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                    Sincronización
-                  </h3>
-                  {comparacionDisponible ? (
-                    comparacionActiva && comparacionStats ? (
-                      <dl className="mt-3 space-y-2 text-sm text-gray-700">
-                        <div className="flex items-center justify-between">
-                          <dt className="text-gray-500">Folios únicos</dt>
-                          <dd className="font-semibold text-yellow-700">
-                            {comparacionStats.foliosUnicos}
-                          </dd>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <dt className="text-gray-500">Totales iguales</dt>
-                          <dd className="font-semibold text-emerald-700">
-                            {comparacionStats.coincidenciasOk}
-                          </dd>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <dt className="text-gray-500">Diferencias</dt>
-                          <dd className="font-semibold text-red-600">
-                            {comparacionStats.coincidenciasDiferentes}
-                          </dd>
-                        </div>
-                      </dl>
-                    ) : (
-                      <p className="mt-3 text-sm text-gray-600">
-                        {comparacionActiva
-                          ? "Obteniendo resultados de la comparación..."
-                          : "Activa la sincronización para comparar con el Auxiliar."}
-                      </p>
-                    )
-                  ) : (
-                    <p className="mt-3 text-sm text-gray-600">
-                      Este reporte no cuenta con un archivo auxiliar
-                      complementario.
-                    </p>
+                  </div>
+                  {resumenTotales && (
+                    <div className="flex flex-wrap items-center gap-4 text-sm">
+                      <span>
+                        Subtotal Mi Admin:
+                        <span className="ml-1 font-semibold text-gray-900">
+                          {formatCurrency(resumenTotales.totalMiAdmin)}
+                        </span>
+                      </span>
+                      <span>
+                        Subtotal Auxiliar:
+                        <span className="ml-1 font-semibold text-gray-900">
+                          {formatCurrency(resumenTotales.totalAuxiliar)}
+                        </span>
+                      </span>
+                      <span
+                        className={`font-semibold ${
+                          resumenTotales.coincide
+                            ? "text-emerald-600"
+                            : "text-rose-600"
+                        }`}
+                      >
+                        Diferencia:
+                        <span className="ml-1">
+                          {formatCurrency(resumenTotales.diferencia)}
+                        </span>
+                      </span>
+                    </div>
                   )}
                 </div>
-
-                {accionesSugeridas.length > 0 && (
-                  <div className="rounded-lg border border-gray-200 bg-white/80 p-3">
-                    <h3 className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                      Acciones sugeridas
-                    </h3>
-                    <ul className="mt-3 space-y-1 text-sm text-gray-600">
-                      {accionesSugeridas.map((accion, index) => (
-                        <li key={index} className="leading-snug">
-                          {accion}
-                        </li>
-                      ))}
-                    </ul>
+                {resumenTotales && (
+                  <div className="mt-2 text-xs text-gray-500">
+                    {resumenTotales.coincide ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700">
+                        Totales coinciden, puedes guardar el valor en el reporte
+                        base anual.
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 font-semibold text-rose-700">
+                        Diferencia detectada, revisa antes de guardar en base.
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
@@ -938,25 +905,31 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
                   : "Importa un archivo Excel para comenzar a trabajar con este reporte."}
               </p>
 
-              <button
-                onClick={onImportarReporte}
-                className="mx-auto inline-flex items-center gap-2 rounded-lg bg-green-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-700"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  aria-hidden
+              {canManage ? (
+                <button
+                  onClick={onImportarReporte}
+                  className="mx-auto inline-flex items-center gap-2 rounded-lg bg-green-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-700"
                 >
-                  <path
-                    fillRule="evenodd"
-                    d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Importar archivo
-              </button>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    aria-hidden
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Importar archivo
+                </button>
+              ) : (
+                <p className="text-sm text-gray-600">
+                  Solicita a un gestor la importación del archivo para comenzar.
+                </p>
+              )}
 
               {reporte.estado === "ERROR" && (
                 <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">

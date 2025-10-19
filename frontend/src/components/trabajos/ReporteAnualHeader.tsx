@@ -1,6 +1,8 @@
 import React from "react";
+import { useReporteAnualResumen } from "../../features/trabajos/reportes/reporte-anual/hooks/useReporteAnualData";
 
 interface ReporteAnualHeaderProps {
+  trabajoId: string;
   anio: number;
   progreso: number; // 0-12
   onVerReporte: () => void;
@@ -8,9 +10,12 @@ interface ReporteAnualHeaderProps {
   onImportarExcel: () => void;
   onVerReporteBase?: () => void;
   tieneHojas: boolean;
+  canImport?: boolean;
+  ultimaActualizacion?: string;
 }
 
 export const ReporteAnualHeader: React.FC<ReporteAnualHeaderProps> = ({
+  trabajoId,
   anio,
   progreso,
   onVerReporte,
@@ -18,8 +23,72 @@ export const ReporteAnualHeader: React.FC<ReporteAnualHeaderProps> = ({
   onImportarExcel,
   onVerReporteBase,
   tieneHojas,
+  canImport = true,
+  ultimaActualizacion,
 }) => {
   const porcentaje = (progreso / 12) * 100;
+  const {
+    resumen,
+    isLoading: isResumenLoading,
+    error: resumenError,
+  } = useReporteAnualResumen({
+    trabajoId,
+    anio,
+    enabled: tieneHojas,
+  });
+
+  const formatCurrency = (value?: number | null) =>
+    value == null
+      ? "-"
+      : new Intl.NumberFormat("es-MX", {
+          style: "currency",
+          currency: "MXN",
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(value);
+
+  const formatFecha = (fecha?: string) => {
+    if (!fecha) return "Sin importar";
+
+    const date = new Date(fecha);
+    if (Number.isNaN(date.getTime())) {
+      return "Sin importar";
+    }
+
+    const diffMs = Date.now() - date.getTime();
+    const minutos = Math.floor(diffMs / 60000);
+    const horas = Math.floor(minutos / 60);
+    const dias = Math.floor(horas / 24);
+
+    if (minutos < 1) return "Hace segundos";
+    if (minutos < 60)
+      return `Hace ${minutos} minuto${minutos === 1 ? "" : "s"}`;
+    if (horas < 24) return `Hace ${horas} hora${horas === 1 ? "" : "s"}`;
+    if (dias < 7) return `Hace ${dias} día${dias === 1 ? "" : "s"}`;
+
+    return date.toLocaleDateString("es-MX", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
+  const diferenciaTotal = resumen?.totalDiferencia;
+  const totalesCoinciden =
+    !!resumen && !resumenError
+      ? Math.abs(resumen.totalDiferencia) < 0.1
+      : false;
+  const diferenciaClass = totalesCoinciden
+    ? "text-emerald-600"
+    : resumen && !resumenError
+    ? "text-rose-600"
+    : "text-slate-500";
+
+  const renderResumenValue = (value?: number | null) => {
+    if (resumenError) return "Sin datos";
+    if (isResumenLoading) return "Calculando...";
+    return formatCurrency(value);
+  };
 
   return (
     <div className="bg-white rounded-lg shadow-md px-4 py-3 mb-3 border border-gray-200">
@@ -99,8 +168,17 @@ export const ReporteAnualHeader: React.FC<ReporteAnualHeaderProps> = ({
 
           <button
             onClick={onImportarExcel}
-            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors text-sm font-medium"
-            title="Importar archivo Excel del reporte base anual"
+            disabled={!canImport}
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors text-sm font-medium ${
+              canImport
+                ? "bg-green-600 text-white hover:bg-green-700"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            }`}
+            title={
+              canImport
+                ? "Importar archivo Excel del reporte base anual"
+                : "Trabajo en modo solo lectura"
+            }
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -150,6 +228,68 @@ export const ReporteAnualHeader: React.FC<ReporteAnualHeaderProps> = ({
           </button>
         </div>
       </div>
+
+      {tieneHojas && (
+        <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <span>
+                Última importación:
+                <span className="ml-1 font-semibold text-slate-900">
+                  {formatFecha(ultimaActualizacion)}
+                </span>
+              </span>
+              <span>
+                Hojas confirmadas:
+                <span className="ml-1 font-semibold text-slate-900">
+                  {progreso}/12
+                </span>
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-4 font-semibold">
+              <span className="text-slate-800">
+                Total Mi Admin:
+                <span className="ml-1 text-slate-900">
+                  {renderResumenValue(resumen?.totalVentas)}
+                </span>
+              </span>
+              <span className="text-slate-800">
+                Total Auxiliar:
+                <span className="ml-1 text-slate-900">
+                  {renderResumenValue(resumen?.totalVentasAuxiliar)}
+                </span>
+              </span>
+              <span className={diferenciaClass}>
+                Diferencia:
+                <span className="ml-1">
+                  {renderResumenValue(
+                    diferenciaTotal != null ? Math.abs(diferenciaTotal) : null
+                  )}
+                </span>
+              </span>
+            </div>
+          </div>
+          {!isResumenLoading && !resumenError && resumen && (
+            <div className="mt-2 text-xs">
+              {totalesCoinciden ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700">
+                  Totales anuales listos para comparar con meses importados.
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 font-semibold text-rose-700">
+                  Diferencia detectada en el consolidado anual, revisa antes de
+                  aprobar.
+                </span>
+              )}
+            </div>
+          )}
+          {resumenError && (
+            <div className="mt-2 text-xs font-semibold text-rose-700">
+              No fue posible obtener el total anual.
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Mensaje de ayuda - Solo si no hay hojas */}
       {!tieneHojas && (

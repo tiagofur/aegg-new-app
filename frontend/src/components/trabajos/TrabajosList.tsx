@@ -1,17 +1,23 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { EstadoAprobacion, Trabajo } from "../../types/trabajo";
+import { useTrabajosFilters } from "../../features/trabajos/filters/useTrabajosFilters";
+import { TrabajosListFilters } from "./TrabajosListFilters";
 
 interface TrabajosListProps {
   trabajos: Trabajo[];
   onSelectTrabajo: (trabajo: Trabajo) => void;
   onCreateTrabajo: () => void;
+  canCreate: boolean;
 }
 
 export const TrabajosList: React.FC<TrabajosListProps> = ({
   trabajos,
   onSelectTrabajo,
   onCreateTrabajo,
+  canCreate,
 }) => {
+  const { filters, updateFilters, resetFilters } = useTrabajosFilters();
+
   const formatLabel = (value: string) =>
     value
       .toLowerCase()
@@ -45,43 +51,137 @@ export const TrabajosList: React.FC<TrabajosListProps> = ({
     }
   };
 
+  const clienteOptions = useMemo(() => {
+    // Build counts once so the selector stays deterministic across renders.
+    const clienteCounts = new Map<string, { label: string; count: number }>();
+
+    trabajos.forEach((trabajo) => {
+      if (!trabajo.clienteId) {
+        return;
+      }
+
+      const label =
+        trabajo.clienteNombre ?? trabajo.cliente?.nombre ?? "Sin nombre";
+      const current = clienteCounts.get(trabajo.clienteId);
+      if (current) {
+        clienteCounts.set(trabajo.clienteId, {
+          label: current.label,
+          count: current.count + 1,
+        });
+      } else {
+        clienteCounts.set(trabajo.clienteId, {
+          label,
+          count: 1,
+        });
+      }
+    });
+
+    return Array.from(clienteCounts.entries())
+      .map(([value, data]) => ({
+        value,
+        label: data.label,
+        count: data.count,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [trabajos]);
+
+  const filteredTrabajos = useMemo(() => {
+    return trabajos.filter((trabajo) => {
+      const matchesSearch = filters.search
+        ? [
+            trabajo.clienteNombre ?? "",
+            trabajo.clienteRfc ?? "",
+            trabajo.miembroAsignado?.nombre ??
+              trabajo.miembroAsignado?.name ??
+              "",
+          ]
+            .join(" ")
+            .toLowerCase()
+            .includes(filters.search.toLowerCase())
+        : true;
+
+      const matchesYear = filters.year ? trabajo.anio === filters.year : true;
+
+      const matchesEstado = filters.estado
+        ? trabajo.estadoAprobacion === filters.estado
+        : true;
+
+      const matchesCliente = filters.clienteId
+        ? trabajo.clienteId === filters.clienteId
+        : true;
+
+      return matchesSearch && matchesYear && matchesEstado && matchesCliente;
+    });
+  }, [trabajos, filters]);
+
+  const totalTrabajos = filteredTrabajos.length;
+
+  const estadoCounts = useMemo(() => {
+    return trabajos.reduce<Record<EstadoAprobacion, number>>(
+      (acc, trabajo) => {
+        acc[trabajo.estadoAprobacion] =
+          (acc[trabajo.estadoAprobacion] ?? 0) + 1;
+        return acc;
+      },
+      {
+        EN_PROGRESO: 0,
+        EN_REVISION: 0,
+        APROBADO: 0,
+        REABIERTO: 0,
+      }
+    );
+  }, [trabajos]);
+
   return (
     <div className="container mx-auto p-6">
+      <TrabajosListFilters
+        filters={filters}
+        onChange={updateFilters}
+        onReset={resetFilters}
+        clienteOptions={clienteOptions}
+        estadoCounts={estadoCounts}
+      />
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Mis Trabajos</h1>
-        <button
-          onClick={onCreateTrabajo}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Nuevo Trabajo
-        </button>
-      </div>
-
-      {trabajos.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">No hay trabajos creados aún</p>
+        {canCreate && (
           <button
             onClick={onCreateTrabajo}
-            className="mt-4 text-blue-600 hover:text-blue-800 underline"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
           >
-            Crear el primer trabajo
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Nuevo Trabajo
           </button>
+        )}
+      </div>
+
+      {totalTrabajos === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-500 text-lg">
+            No hay trabajos que coincidan con los filtros
+          </p>
+          {canCreate && (
+            <button
+              onClick={onCreateTrabajo}
+              className="mt-4 text-blue-600 hover:text-blue-800 underline"
+            >
+              Crear el primer trabajo
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {trabajos.map((trabajo) => {
+          {filteredTrabajos.map((trabajo) => {
             const estadoAprobacionLabel = formatLabel(trabajo.estadoAprobacion);
             const miembroAsignadoNombre =
               trabajo.miembroAsignado?.nombre ??

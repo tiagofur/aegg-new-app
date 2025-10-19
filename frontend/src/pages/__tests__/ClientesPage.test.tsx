@@ -74,6 +74,15 @@ vi.mock("../../components/layout/AppShell", () => ({
   ),
 }));
 
+vi.mock("../../context/AuthContext", () => ({
+  useAuth: () => ({
+    user: {
+      id: "tester",
+      role: "Gestor",
+    },
+  }),
+}));
+
 vi.mock("../../features/clientes", clientesModuleFactory);
 vi.mock("@/features/clientes", clientesModuleFactory);
 

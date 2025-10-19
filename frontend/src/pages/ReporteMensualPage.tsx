@@ -9,6 +9,7 @@ import { reportesMensualesService, trabajosService } from "../services";
 import { ReporteMensualViewer } from "../components/trabajos/ReporteMensualViewer";
 import { ImportReporteMensualDialog } from "../components/trabajos/ImportReporteMensualDialog";
 import { AppShell } from "../components/layout/AppShell";
+import { useAuth } from "../context/AuthContext";
 
 type ReporteMensualLocationState = {
   reporte?: ReporteMensual;
@@ -32,6 +33,8 @@ export const ReporteMensualPage: React.FC = () => {
   const location = useLocation();
   const locationState =
     (location.state as ReporteMensualLocationState | undefined) ?? undefined;
+  const { user } = useAuth();
+  const canManageReportes = user?.role === "Gestor" || user?.role === "Admin";
 
   const [reportes, setReportes] = useState<ReporteMensual[]>(
     () => locationState?.reportes ?? []
@@ -150,11 +153,14 @@ export const ReporteMensualPage: React.FC = () => {
   }, [cargarDetalle, prefetchedMatchesRoute]);
 
   const handleAbrirImportDialog = () => {
+    if (!canManageReportes) {
+      return;
+    }
     setMostrarImportDialog(true);
   };
 
   const handleLimpiarDatos = async () => {
-    if (!mesId || !reporteId) return;
+    if (!canManageReportes || !mesId || !reporteId) return;
 
     try {
       await reportesMensualesService.limpiarDatos(mesId, reporteId);
@@ -270,6 +276,7 @@ export const ReporteMensualPage: React.FC = () => {
             onImportarReporte={handleAbrirImportDialog}
             onReimportarReporte={handleAbrirImportDialog}
             onLimpiarDatos={handleLimpiarDatos}
+            canManage={canManageReportes}
           />
         ) : null}
 
@@ -282,7 +289,7 @@ export const ReporteMensualPage: React.FC = () => {
           )}
       </div>
 
-      {reporteActual && (
+      {reporteActual && canManageReportes && (
         <ImportReporteMensualDialog
           isOpen={mostrarImportDialog}
           onClose={() => setMostrarImportDialog(false)}

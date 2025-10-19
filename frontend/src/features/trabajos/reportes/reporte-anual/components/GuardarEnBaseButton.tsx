@@ -3,6 +3,7 @@
  * Componente: Botón "Guardar en Base"
  *
  * Guarda los totales mensuales en el Reporte Anual cuando:
+ * - Existe información del Auxiliar vigente
  * - Totales de Mi Admin y Auxiliar coinciden (diferencia < $0.10)
  * - Usuario confirma la acción
  */
@@ -20,12 +21,12 @@ interface GuardarEnBaseButtonProps {
   mes: number;
   /** Total Subtotal MXN de Mi Admin Ingresos */
   totalMiAdmin: number;
-  /** Total Subtotal MXN de Auxiliar Ingresos */
-  totalAuxiliar: number;
+  /** Total Subtotal MXN del Auxiliar Ingresos (vigentes) */
+  totalAuxiliar: number | null;
+  /** Indica si existe información auxiliar disponible */
+  hasAuxiliarData: boolean;
   /** Si hay cambios sin guardar en Mi Admin */
   isDirty: boolean;
-  /** Si está activa la comparación */
-  isComparisonActive: boolean;
   /** Callback opcional después de guardar exitosamente */
   onSaveSuccess?: () => void;
 }
@@ -40,15 +41,17 @@ export const GuardarEnBaseButton: React.FC<GuardarEnBaseButtonProps> = ({
   mes,
   totalMiAdmin,
   totalAuxiliar,
+  hasAuxiliarData,
   isDirty,
-  isComparisonActive,
   onSaveSuccess,
 }) => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-  // Calcular diferencia
-  const diferencia = Math.abs(totalMiAdmin - totalAuxiliar);
-  const isMatch = diferencia < 0.1;
+  const totalsAvailable = hasAuxiliarData && totalAuxiliar !== null;
+  const diferencia = totalsAvailable
+    ? Math.abs(totalMiAdmin - (totalAuxiliar ?? 0))
+    : null;
+  const isMatch = diferencia !== null && diferencia < 0.1;
 
   // Hook mutation para guardar
   const { actualizarVentas, isLoading, isSuccess, isError, error } =
@@ -66,18 +69,16 @@ export const GuardarEnBaseButton: React.FC<GuardarEnBaseButtonProps> = ({
     });
 
   // Determinar si el botón debe estar habilitado
-  const isDisabled =
-    !isComparisonActive || // Debe estar activa la comparación
-    !isMatch || // Totales deben coincidir
-    isDirty || // No debe haber cambios sin guardar
-    isLoading; // No debe estar guardando
+  const isDisabled = !totalsAvailable || !isMatch || isDirty || isLoading;
 
   // Determinar mensaje de tooltip
   const getTooltip = (): string => {
-    if (!isComparisonActive)
-      return "Activa la comparación para usar esta función";
+    if (!hasAuxiliarData)
+      return "Importa y procesa el Auxiliar para habilitar el guardado";
+    if (totalAuxiliar === null)
+      return "Calculando totales auxiliares, intenta de nuevo";
     if (isDirty) return "Guarda los cambios pendientes primero";
-    if (!isMatch)
+    if (diferencia !== null && !isMatch)
       return `Totales no coinciden. Diferencia: $${diferencia.toFixed(2)}`;
     if (isLoading) return "Guardando en base...";
     return "Guardar totales en Reporte Anual";
@@ -85,6 +86,9 @@ export const GuardarEnBaseButton: React.FC<GuardarEnBaseButtonProps> = ({
 
   // Handler para confirmar y guardar
   const handleConfirm = () => {
+    if (totalAuxiliar === null) {
+      return;
+    }
     actualizarVentas({
       anio,
       mes,
@@ -161,45 +165,51 @@ export const GuardarEnBaseButton: React.FC<GuardarEnBaseButtonProps> = ({
                   })}
                 </span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Total Auxiliar:</span>
-                <span className="font-medium text-gray-900">
-                  $
-                  {totalAuxiliar.toLocaleString("es-MX", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </span>
-              </div>
+              {totalsAvailable && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Total Auxiliar:</span>
+                  <span className="font-medium text-gray-900">
+                    $
+                    {(totalAuxiliar ?? 0).toLocaleString("es-MX", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
+                </div>
+              )}
               <div className="border-t border-gray-200 pt-2 mt-2"></div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Diferencia:</span>
-                <span
-                  className={`font-bold ${
-                    isMatch ? "text-green-600" : "text-yellow-600"
-                  }`}
-                >
-                  $
-                  {diferencia.toLocaleString("es-MX", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Estado:</span>
-                <span
-                  className={`font-bold ${
-                    isMatch ? "text-green-600" : "text-yellow-600"
-                  }`}
-                >
-                  {isMatch ? "✅ Confirmado" : "⚠️ Con diferencia"}
-                </span>
-              </div>
+              {diferencia !== null && (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Diferencia:</span>
+                    <span
+                      className={`font-bold ${
+                        isMatch ? "text-green-600" : "text-yellow-600"
+                      }`}
+                    >
+                      $
+                      {diferencia.toLocaleString("es-MX", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Estado:</span>
+                    <span
+                      className={`font-bold ${
+                        isMatch ? "text-green-600" : "text-yellow-600"
+                      }`}
+                    >
+                      {isMatch ? "✅ Confirmado" : "⚠️ Con diferencia"}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Advertencia si hay diferencia */}
-            {!isMatch && diferencia < 1 && (
+            {diferencia !== null && !isMatch && diferencia < 1 && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
                 <p className="text-sm text-yellow-800">
                   <strong>⚠️ Advertencia:</strong> Hay una pequeña diferencia

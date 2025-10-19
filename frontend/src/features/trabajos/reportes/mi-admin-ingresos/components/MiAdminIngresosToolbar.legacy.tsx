@@ -117,9 +117,9 @@ export const MiAdminIngresosToolbar: React.FC<MiAdminIngresosToolbarProps> = ({
                 anio={anio!}
                 mes={mes!}
                 totalMiAdmin={totales.totalSubtotalMXN}
-                totalAuxiliar={totalAuxiliar}
+                totalAuxiliar={totalAuxiliar ?? null}
+                hasAuxiliarData={hasAuxiliarData}
                 isDirty={isDirty}
-                isComparisonActive={isComparisonActive}
               />
             )}
           </div>

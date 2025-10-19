@@ -30,10 +30,12 @@
 1. [x] Construir módulo `features/clientes` con rutas, lista y formulario reutilizando componentes de forms existentes.
 2. [x] Crear hook `useClienteSearch` con debounce para autocompletar; exponer componente `ClienteSelector` reusable.
 3. [x] Actualizar flujo de creacion/edicion de trabajo para usar `ClienteSelector` y asignacion de miembro.
-4. [ ] Implementar permisos en UI: esconder acciones de crear/editar clientes y trabajos a usuarios sin rol Gestor.
-5. [ ] Generar dashboard de aprobaciones para Gestores (`features/trabajos/aprobaciones`), consumiendo endpoints backend.
-6. [ ] Añadir filtros por año/cliente/texto en listado de trabajos con persistencia de preferencias.
-7. [ ] Aplicar estados de solo lectura cuando el trabajo este `APROBADO` salvo accion de reapertura por Gestor.
+4. [x] Implementar permisos en UI: esconder acciones de crear/editar clientes y trabajos a usuarios sin rol Gestor.
+5. [x] Generar dashboard de aprobaciones para Gestores (`features/trabajos/aprobaciones`), consumiendo endpoints backend.
+6. [x] Añadir filtros por año/cliente/texto en listado de trabajos con persistencia de preferencias.
+7. [x] Aplicar estados de solo lectura cuando el trabajo este `APROBADO` salvo accion de reapertura por Gestor.
+8. [x] Simplificar encabezado del Reporte Mensual y habilitar «Guardar en Base» solo cuando el Subtotal MXN coincida con el Auxiliar.
+9. [x] Exponer totales consolidados del reporte base anual (Mi Admin, Auxiliar y diferencia) en el encabezado del trabajo.
 
 ## Fase 3 · QA y Migracion
 

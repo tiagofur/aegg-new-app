@@ -85,9 +85,9 @@ interface MiAdminIngresosTableProps {
       anio: number;
       mes: number;
       totalMiAdmin: number;
-      totalAuxiliar: number;
+      totalAuxiliar: number | null;
+      hasAuxiliarData: boolean;
       isDirty: boolean;
-      isComparisonActive: boolean;
     } | null
   ) => void;
   /** Estado controlado de la comparación */
@@ -193,7 +193,15 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
   });
 
   const hasAuxiliarData = Boolean(auxiliarData && auxiliarData.length > 0);
-  const totalAuxiliar = totalesComparison?.auxiliarTotal ?? 0;
+  const totalAuxiliar = useMemo(() => {
+    if (!hasAuxiliarData || !auxiliarData) {
+      return null;
+    }
+
+    return auxiliarData
+      .filter((row) => row.estadoSat === "Vigente")
+      .reduce((sum, row) => sum + Number(row.subtotal ?? 0), 0);
+  }, [auxiliarData, hasAuxiliarData]);
 
   useEffect(() => {
     if (!onGuardarEnBaseContextChange) {
@@ -211,8 +219,8 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
       mes,
       totalMiAdmin: totales.totalSubtotalMXN,
       totalAuxiliar,
+      hasAuxiliarData,
       isDirty: hasUnsavedChanges,
-      isComparisonActive,
     });
 
     return () => {
@@ -227,7 +235,6 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
     totales.totalSubtotalMXN,
     totalAuxiliar,
     hasUnsavedChanges,
-    isComparisonActive,
   ]);
 
   useEffect(() => {

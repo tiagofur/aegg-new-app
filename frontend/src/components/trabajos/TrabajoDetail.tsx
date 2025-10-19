@@ -17,6 +17,7 @@ interface TrabajoDetailProps {
   onAddMes: () => void;
   onBack: () => void;
   onReload: () => void;
+  canManage: boolean;
 }
 
 export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
@@ -24,6 +25,7 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
   onAddMes,
   onBack,
   onReload,
+  canManage,
 }) => {
   const navigate = useNavigate();
   const [mesSeleccionado, setMesSeleccionado] = useState<string | undefined>(
@@ -39,7 +41,12 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
   ] = useState(false);
   const [mostrarEditDialog, setMostrarEditDialog] = useState(false);
   const [eliminando, setEliminando] = useState(false);
+  const [reabriendo, setReabriendo] = useState(false);
   const [mostrarSelectorMeses, setMostrarSelectorMeses] = useState(false);
+
+  const isAprobado = trabajo.estadoAprobacion === "APROBADO";
+  const canEdit = canManage && !isAprobado;
+  const canReabrir = canManage && isAprobado;
 
   const progreso = trabajo.reporteBaseAnual?.mesesCompletados.length || 0;
 
@@ -90,6 +97,9 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
     trabajo.aprobadoPor?.nombre ?? trabajo.aprobadoPor?.name ?? "";
 
   const handleEliminarProyecto = async () => {
+    if (!canEdit) {
+      return;
+    }
     const confirmar = window.confirm(
       `⚠️ ADVERTENCIA: ¿Está seguro que desea eliminar el proyecto "${trabajo.clienteNombre} - ${trabajo.anio}"?\n\n` +
         `Esta acción eliminará:\n` +
@@ -125,14 +135,23 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
   };
 
   const handleImportarReporte = () => {
+    if (!canEdit) {
+      return;
+    }
     setMostrarImportReporteMensualDialog(true);
   };
 
   const handleReimportarReporte = () => {
+    if (!canEdit) {
+      return;
+    }
     setMostrarImportReporteMensualDialog(true);
   };
 
   const handleLimpiarDatos = async () => {
+    if (!canEdit) {
+      return;
+    }
     if (!reporteActual || !mesActual) return;
 
     try {
@@ -149,6 +168,35 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
         error.response?.data?.message ||
           "Error al limpiar los datos del reporte"
       );
+    }
+  };
+
+  const handleReabrirTrabajo = async () => {
+    if (!canReabrir) {
+      return;
+    }
+
+    const confirmar = window.confirm(
+      "Este trabajo está aprobado. ¿Desea reabrirlo para continuar editando?"
+    );
+
+    if (!confirmar) {
+      return;
+    }
+
+    setReabriendo(true);
+    try {
+      await trabajosService.update(trabajo.id, {
+        estadoAprobacion: "REABIERTO",
+        aprobadoPorId: null,
+      });
+      alert("Trabajo reabierto correctamente");
+      onReload();
+    } catch (error: any) {
+      console.error("Error al reabrir trabajo:", error);
+      alert(error.response?.data?.message || "Error al reabrir el trabajo");
+    } finally {
+      setReabriendo(false);
     }
   };
 
@@ -176,6 +224,15 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
             {trabajo.clienteNombre}
           </span>
         </nav>
+
+        {isAprobado && (
+          <div className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            Trabajo aprobado.{" "}
+            {canReabrir
+              ? "Puedes reabrirlo para retomar las ediciones."
+              : "Contacta a un gestor si necesitas reabrirlo."}
+          </div>
+        )}
 
         {/* Título y controles */}
         <div className="flex items-start justify-between gap-4">
@@ -217,76 +274,129 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
               )}
             </div>
           </div>
-
-          <div className="flex gap-2">
-            <button
-              onClick={() => setMostrarEditDialog(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors text-sm"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-              </svg>
-              Editar
-            </button>
-
-            <button
-              onClick={handleEliminarProyecto}
-              disabled={eliminando}
-              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
-            >
-              {eliminando ? (
+          {(canEdit || canReabrir) && (
+            <div className="flex gap-2">
+              {canEdit && (
                 <>
-                  <svg
-                    className="animate-spin h-4 w-4 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
+                  <button
+                    onClick={() => setMostrarEditDialog(true)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors text-sm"
                   >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      viewBox="0 0 20 20"
                       fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Eliminando...
-                </>
-              ) : (
-                <>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
+                    >
+                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                    </svg>
+                    Editar
+                  </button>
+
+                  <button
+                    onClick={handleEliminarProyecto}
+                    disabled={eliminando}
+                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
                   >
-                    <path
-                      fillRule="evenodd"
-                      d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Eliminar
+                    {eliminando ? (
+                      <>
+                        <svg
+                          className="animate-spin h-4 w-4 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Eliminando...
+                      </>
+                    ) : (
+                      <>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        Eliminar
+                      </>
+                    )}
+                  </button>
                 </>
               )}
-            </button>
-          </div>
+
+              {canReabrir && (
+                <button
+                  onClick={handleReabrirTrabajo}
+                  disabled={reabriendo}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
+                >
+                  {reabriendo ? (
+                    <>
+                      <svg
+                        className="animate-spin h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Reabriendo...
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path d="M4 3a1 1 0 011-1h6a1 1 0 01.8.4l3 4a1 1 0 010 1.2l-3 4a1 1 0 01-.8.4H5a1 1 0 01-1-1V3z" />
+                        <path d="M4 13a1 1 0 011-1h11a1 1 0 110 2H5a1 1 0 01-1-1z" />
+                      </svg>
+                      Reabrir trabajo
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
       {/* Reporte Base Anual Header */}
       <ReporteAnualHeader
+        trabajoId={trabajo.id}
         anio={trabajo.anio}
         progreso={progreso}
         onVerReporte={() =>
@@ -295,11 +405,18 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
         onVerReporteBase={() =>
           navigate(`/trabajos/${trabajo.id}/reporte-base-anual`)
         }
-        onImportarExcel={() => setMostrarImportDialog(true)}
+        onImportarExcel={() => {
+          if (!canEdit) {
+            return;
+          }
+          setMostrarImportDialog(true);
+        }}
         onDescargarExcel={() =>
           alert("Funcionalidad de descarga en desarrollo")
         }
         tieneHojas={tieneHojas}
+        canImport={canEdit}
+        ultimaActualizacion={trabajo.reporteBaseAnual?.ultimaActualizacion}
       />
 
       {/* Reportes Mensuales del mes seleccionado */}
@@ -327,6 +444,7 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
                   onImportarReporte={handleImportarReporte}
                   onReimportarReporte={handleReimportarReporte}
                   onLimpiarDatos={handleLimpiarDatos}
+                  canManage={canEdit}
                 />
               )}
             </>
@@ -349,7 +467,7 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
           <p className="text-yellow-700 mt-1 text-xs">
             Selecciona un mes arriba para ver sus reportes
           </p>
-          {trabajo.meses.length === 0 && (
+          {trabajo.meses.length === 0 && canEdit && (
             <button
               onClick={onAddMes}
               className="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm"
@@ -368,12 +486,14 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
         onSuccess={onReload}
       />
 
-      <EditTrabajoDialog
-        trabajo={trabajo}
-        isOpen={mostrarEditDialog}
-        onClose={() => setMostrarEditDialog(false)}
-        onSuccess={onReload}
-      />
+      {canEdit && (
+        <EditTrabajoDialog
+          trabajo={trabajo}
+          isOpen={mostrarEditDialog}
+          onClose={() => setMostrarEditDialog(false)}
+          onSuccess={onReload}
+        />
+      )}
 
       {/* Diálogo de importación de reportes mensuales */}
       {mesActual && reporteActual && (
@@ -396,7 +516,7 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
           setMesSeleccionado(mesId);
           setMostrarSelectorMeses(false);
         }}
-        onAddMesRequest={onAddMes}
+        onAddMesRequest={canEdit ? onAddMes : undefined}
       />
     </div>
   );

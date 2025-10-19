@@ -7,6 +7,7 @@ interface ClientesTableProps {
   onRequestCreate: () => void;
   onRequestEdit: (cliente: Cliente) => void;
   refreshToken: number;
+  canManage: boolean;
 }
 
 const DEFAULT_LIMIT = 10;
@@ -15,6 +16,7 @@ export const ClientesTable: React.FC<ClientesTableProps> = ({
   onRequestCreate,
   onRequestEdit,
   refreshToken,
+  canManage,
 }) => {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -71,6 +73,9 @@ export const ClientesTable: React.FC<ClientesTableProps> = ({
   };
 
   const handleDelete = async (cliente: Cliente) => {
+    if (!canManage) {
+      return;
+    }
     const confirmed = window.confirm(
       `¿Deseas eliminar al cliente "${cliente.nombre}"?`
     );
@@ -123,14 +128,16 @@ export const ClientesTable: React.FC<ClientesTableProps> = ({
             <RefreshCcw className="h-4 w-4" />
             Restablecer
           </button>
-          <button
-            type="button"
-            onClick={onRequestCreate}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-          >
-            <UserPlus2 className="h-4 w-4" />
-            Nuevo cliente
-          </button>
+          {canManage && (
+            <button
+              type="button"
+              onClick={onRequestCreate}
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+            >
+              <UserPlus2 className="h-4 w-4" />
+              Nuevo cliente
+            </button>
+          )}
         </div>
       </div>
 
@@ -176,14 +183,16 @@ export const ClientesTable: React.FC<ClientesTableProps> = ({
         ) : clientes.length === 0 ? (
           <div className="flex h-48 flex-col items-center justify-center gap-2 text-center text-sm text-slate-500">
             <p>No hay clientes registrados con los filtros actuales.</p>
-            <button
-              type="button"
-              onClick={onRequestCreate}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-            >
-              <UserPlus2 className="h-4 w-4" />
-              Crear cliente
-            </button>
+            {canManage && (
+              <button
+                type="button"
+                onClick={onRequestCreate}
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+              >
+                <UserPlus2 className="h-4 w-4" />
+                Crear cliente
+              </button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -194,7 +203,9 @@ export const ClientesTable: React.FC<ClientesTableProps> = ({
                   <th className="px-4 py-3">RFC</th>
                   <th className="px-4 py-3">Razón social</th>
                   <th className="px-4 py-3">Actualizado</th>
-                  <th className="px-4 py-3 text-right">Acciones</th>
+                  {canManage && (
+                    <th className="px-4 py-3 text-right">Acciones</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 bg-white">
@@ -212,26 +223,28 @@ export const ClientesTable: React.FC<ClientesTableProps> = ({
                         ? new Date(cliente.updatedAt).toLocaleDateString()
                         : "—"}
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => onRequestEdit(cliente)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
-                        >
-                          <Edit3 className="h-4 w-4" />
-                          Editar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(cliente)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          Eliminar
-                        </button>
-                      </div>
-                    </td>
+                    {canManage && (
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => onRequestEdit(cliente)}
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(cliente)}
+                            className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Eliminar
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

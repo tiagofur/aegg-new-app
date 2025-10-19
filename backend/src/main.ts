@@ -1,9 +1,13 @@
 import { NestFactory } from '@nestjs/core';
+import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
+
+    app.use(json({ limit: '25mb' }));
+    app.use(urlencoded({ limit: '25mb', extended: true }));
 
     app.enableCors({
         origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176', 'http://localhost:3000'],

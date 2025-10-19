@@ -15,6 +15,7 @@ import { ReporteAnualPage } from "./pages/ReporteAnualPage";
 import { ReporteMensualPage } from "./pages/ReporteMensualPage";
 import { ReporteBaseAnualPage } from "./pages/ReporteBaseAnualPage";
 import { ClientesPage } from "./pages/ClientesPage";
+import { AprobacionesPage } from "./pages/AprobacionesPage";
 import PrivateRoute from "./components/PrivateRoute";
 
 function App() {
@@ -46,6 +47,14 @@ function App() {
             }
           >
             <Route index element={<TrabajosPage />} />
+            <Route
+              path="aprobaciones"
+              element={
+                <PrivateRoute allowedRoles={["Gestor", "Admin"]}>
+                  <AprobacionesPage />
+                </PrivateRoute>
+              }
+            />
             <Route path=":trabajoId" element={<TrabajosPage />} />
             <Route
               path=":trabajoId/reporte-mensual/:mesId/:reporteId/:tipo"

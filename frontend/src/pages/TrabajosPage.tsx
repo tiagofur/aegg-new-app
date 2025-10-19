@@ -1,21 +1,21 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  useParams,
-  useNavigate,
-  useLocation,
   Outlet,
+  useLocation,
+  useNavigate,
   useOutlet,
+  useParams,
 } from "react-router-dom";
+import { AppShell } from "../components/layout/AppShell";
 import {
-  TrabajosList,
-  TrabajoDetail,
-  CreateTrabajoDialog,
   CreateMesDialog,
+  CreateTrabajoDialog,
+  TrabajoDetail,
+  TrabajosList,
 } from "../components/trabajos";
+import { useAuth } from "../context/AuthContext";
 import { trabajosService } from "../services";
 import { Trabajo } from "../types/trabajo";
-import { useAuth } from "../context/AuthContext";
-import { AppShell } from "../components/layout/AppShell";
 
 export const TrabajosPage: React.FC = () => {
   const { trabajoId } = useParams<{ trabajoId: string }>();
@@ -28,6 +28,7 @@ export const TrabajosPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [createTrabajoOpen, setCreateTrabajoOpen] = useState(false);
   const [createMesOpen, setCreateMesOpen] = useState(false);
+  const canManageTrabajos = user?.role === "Gestor" || user?.role === "Admin";
 
   // Detectar si estamos en una ruta anidada (reporte-base-anual, reporte-anual, reporte-mensual)
   // Esto asegura que el componente se re-renderice correctamente cuando la URL cambia
@@ -35,7 +36,7 @@ export const TrabajosPage: React.FC = () => {
     outlet !== null && location.pathname !== `/trabajos/${trabajoId}`;
 
   useEffect(() => {
-    loadTrabajos();
+    void loadTrabajos();
   }, []);
 
   useEffect(() => {
@@ -63,7 +64,7 @@ export const TrabajosPage: React.FC = () => {
       }
     };
 
-    loadSelectedTrabajo();
+    void loadSelectedTrabajo();
   }, [trabajoId, selectedTrabajo, navigate]);
 
   const loadTrabajos = async () => {
@@ -93,18 +94,20 @@ export const TrabajosPage: React.FC = () => {
   const handleBackToList = () => {
     setSelectedTrabajo(null);
     navigate("/trabajos");
-    loadTrabajos();
+    void loadTrabajos();
   };
 
   const handleReloadTrabajo = async () => {
-    if (selectedTrabajo) {
-      try {
-        const detailed = await trabajosService.getOne(selectedTrabajo.id);
-        setSelectedTrabajo(detailed);
-      } catch (error) {
-        console.error("Error al recargar detalle:", error);
-        alert("Error al recargar el detalle del trabajo");
-      }
+    if (!selectedTrabajo) {
+      return;
+    }
+
+    try {
+      const detailed = await trabajosService.getOne(selectedTrabajo.id);
+      setSelectedTrabajo(detailed);
+    } catch (error) {
+      console.error("Error al recargar detalle:", error);
+      alert("Error al recargar el detalle del trabajo");
     }
   };
 
@@ -157,21 +160,33 @@ export const TrabajosPage: React.FC = () => {
           ) : (
             <TrabajoDetail
               trabajo={selectedTrabajo}
-              onAddMes={() => setCreateMesOpen(true)}
+              onAddMes={() => {
+                if (!canManageTrabajos) {
+                  return;
+                }
+                setCreateMesOpen(true);
+              }}
               onBack={handleBackToList}
               onReload={handleReloadTrabajo}
+              canManage={canManageTrabajos}
             />
           )
         ) : (
           <TrabajosList
             trabajos={trabajos}
             onSelectTrabajo={handleSelectTrabajo}
-            onCreateTrabajo={() => setCreateTrabajoOpen(true)}
+            onCreateTrabajo={() => {
+              if (!canManageTrabajos) {
+                return;
+              }
+              setCreateTrabajoOpen(true);
+            }}
+            canCreate={canManageTrabajos}
           />
         )}
       </div>
 
-      {user && (
+      {user && canManageTrabajos && (
         <CreateTrabajoDialog
           open={createTrabajoOpen}
           onClose={() => setCreateTrabajoOpen(false)}
@@ -180,13 +195,18 @@ export const TrabajosPage: React.FC = () => {
         />
       )}
 
-      {selectedTrabajo && (
+      {selectedTrabajo && canManageTrabajos && (
         <CreateMesDialog
           open={createMesOpen}
           trabajoId={selectedTrabajo.id}
           onClose={() => setCreateMesOpen(false)}
-          onCreated={() => handleSelectTrabajo(selectedTrabajo)}
-          existingMeses={selectedTrabajo.meses.map((m) => m.mes)}
+          onCreated={() => {
+            if (!selectedTrabajo) {
+              return;
+            }
+            void handleSelectTrabajo(selectedTrabajo);
+          }}
+          existingMeses={selectedTrabajo.meses.map((mes) => mes.mes)}
         />
       )}
     </AppShell>

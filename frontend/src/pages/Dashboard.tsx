@@ -9,6 +9,7 @@ import {
   ClipboardPlus,
   Inbox,
   Megaphone,
+  ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { AppShell } from "../components/layout/AppShell";
@@ -18,6 +19,7 @@ import {
   TaskDialog,
   useDashboardData,
 } from "../features/dashboard";
+import { useNavigate } from "react-router-dom";
 
 const announcementCategoryStyles: Record<string, string> = {
   Urgente: "border border-red-200 bg-red-100 text-red-600",
@@ -64,6 +66,7 @@ const Dashboard = () => {
   const [announcementDialogOpen, setAnnouncementDialogOpen] = useState(false);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [eventDialogOpen, setEventDialogOpen] = useState(false);
+  const navigate = useNavigate();
 
   const stats = useMemo(() => {
     const total = tasks.length;
@@ -94,29 +97,47 @@ const Dashboard = () => {
     };
   }, [tasks, announcements, acknowledgedIds]);
 
-  const quickActions = [
-    {
-      id: "qa1",
-      label: "Crear comunicado",
-      description: "Publica un aviso para todo el equipo",
-      icon: Megaphone,
-      onClick: () => setAnnouncementDialogOpen(true),
-    },
-    {
-      id: "qa2",
-      label: "Programar evento",
-      description: "Agenda hitos clave y recordatorios",
-      icon: CalendarPlus,
-      onClick: () => setEventDialogOpen(true),
-    },
-    {
-      id: "qa3",
-      label: "Nueva tarea",
-      description: "Asigna actividades puntuales",
-      icon: ClipboardPlus,
-      onClick: () => setTaskDialogOpen(true),
-    },
-  ];
+  const quickActions = useMemo(() => {
+    const handleAnnouncement = () => setAnnouncementDialogOpen(true);
+    const handleEvent = () => setEventDialogOpen(true);
+    const handleTask = () => setTaskDialogOpen(true);
+
+    const actions = [
+      {
+        id: "qa1",
+        label: "Crear comunicado",
+        description: "Publica un aviso para todo el equipo",
+        icon: Megaphone,
+        onClick: handleAnnouncement,
+      },
+      {
+        id: "qa2",
+        label: "Programar evento",
+        description: "Agenda hitos clave y recordatorios",
+        icon: CalendarPlus,
+        onClick: handleEvent,
+      },
+      {
+        id: "qa3",
+        label: "Nueva tarea",
+        description: "Asigna actividades puntuales",
+        icon: ClipboardPlus,
+        onClick: handleTask,
+      },
+    ];
+
+    if (user?.role === "Gestor") {
+      actions.push({
+        id: "qa4",
+        label: "Revisar aprobaciones",
+        description: "Controla los pendientes críticos",
+        icon: ShieldCheck,
+        onClick: () => navigate("/trabajos/aprobaciones"),
+      });
+    }
+
+    return actions;
+  }, [navigate, user?.role]);
 
   const sortedEvents = useMemo(
     () =>

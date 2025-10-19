@@ -5,6 +5,10 @@ import {
     UpdateTrabajoDto,
     ReporteBaseAnual,
 } from '../types/trabajo';
+import {
+    AprobacionesDashboardData,
+    AprobacionesFilters,
+} from '../types';
 
 export const trabajosService = {
     async getAll(miembroId?: string): Promise<Trabajo[]> {
@@ -40,6 +44,13 @@ export const trabajosService = {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
+        });
+        return data;
+    },
+
+    async getAprobacionesDashboard(filters?: AprobacionesFilters): Promise<AprobacionesDashboardData> {
+        const { data } = await api.get('/trabajos/aprobaciones/dashboard', {
+            params: filters,
         });
         return data;
     },
