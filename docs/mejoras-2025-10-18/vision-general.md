@@ -10,6 +10,13 @@
 - Ampliar el modelo de usuarios para soportar equipos gestionados por Gestores y un Admin con privilegios completos.
 - Mejorar la usabilidad del modulo de trabajos con filtros por año, cliente y texto libre.
 
+## Avances recientes (2025-10-18)
+
+- Primer versión del módulo de clientes en frontend utiliza `ClientesTable`, `ClienteFormModal` y `ClienteSelector`, integrados en `ClientesPage` con `AppShell` y estrategias de refresco posteriores al guardado.
+- Los diálogos de trabajos (`CreateTrabajoDialog`, `EditTrabajoDialog`) comparten el modal de clientes y exponen callbacks consistentes, habilitando crear/editar clientes sin salir del flujo.
+- Se configuró Vitest + Testing Library como base de QA en frontend, con pruebas que validan la apertura del modal, la selección de clientes mock y el refresco de datos luego de guardar.
+- Se mantiene pendiente la ampliación de permisos fine-grained y los dashboards de aprobaciones/equipos, programados para iteraciones siguientes.
+
 ## Principios de Diseño
 
 - **Componentizacion**: cada nueva vista (registro de clientes, seleccion de cliente en trabajos, dashboard de aprobaciones) se construye con componentes reutilizables en `frontend/src/components`, evitando logica duplicada.

@@ -159,6 +159,13 @@
 
 ## Frontend (React + Vite)
 
+### Avance al 2025-10-18 (iteración actual)
+
+- `ClienteFormModal` ahora es un componente compartido reutilizado tanto por el diálogo de creación como el de edición de trabajos, con callbacks normalizados (`onSaved`, `onClose`) y refresco del selector.
+- Se consolidó `ClienteSelector` detrás de una referencia (`ClienteSelectorHandle`) que expone `refresh`/`loadCliente`, permitiendo a los diálogos sincronizar la lista tras crear o editar clientes.
+- Se introdujo infraestructura de pruebas con Vitest + Testing Library (`vite.config.ts` migrado a `vitest/config`, `setupTests.ts` con jest-dom) y se agregaron suites unitarias que validan el flujo de apertura/guardado del modal en `CreateTrabajoDialog` y `EditTrabajoDialog`.
+- Se añadió una prueba de página (`ClientesPage.test.tsx`) que asegura la integración tabla ↔ modal y el refresco del listado tras guardar, utilizando mocks ligeros de `AppShell` y del módulo de clientes.
+
 ### Estructura Propuesta
 
 ```

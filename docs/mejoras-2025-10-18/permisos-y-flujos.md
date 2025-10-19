@@ -33,9 +33,11 @@
 **Frontend – componentes/páginas en uso**
 
 - Páginas: `pages/TrabajosPage.tsx`, `pages/TrabajoDetail.tsx`, `pages/ReporteAnualPage.tsx`, `pages/ReporteMensualPage.tsx`, `pages/ReporteBaseAnualPage.tsx`, `pages/AdminUsersPage.tsx`, `pages/Dashboard.tsx`, `pages/Login.tsx`, `pages/Register.tsx`.
+- Módulo clientes en curso: `features/clientes/components` expone `ClienteSelector`, `ClienteFormModal` y `ClientesTable`; `pages/ClientesPage.tsx` los integra con `AppShell` y maneja permisos básicos en frontend.
 - Servicios API: `services/trabajos.service.ts`, `meses.service.ts`, `reportes-mensuales.service.ts`, `reporte-anual.service.ts`, `users.ts`, `services/api.ts` (axios + interceptores).
 - Hooks/contexto: `context/AuthContext.tsx` gestiona JWT sin claims de rol/equipo; `features/dashboard` consume trabajos agregados.
-- UI existente para trabajos se ubica en `pages` y `features/trabajos/reportes` (reportes anual/mensual). No existe módulo dedicado a clientes ni componentes reutilizables para selector/autocomplete.
+- UI de trabajos reutiliza ahora `ClienteFormModal` compartido en los diálogos de crear/editar, garantizando una única superficie para crear o actualizar clientes desde flujos de trabajo.
+- Suite de pruebas con Vitest cubre los diálogos de trabajos (`CreateTrabajoDialog.test.tsx`, `EditTrabajoDialog.test.tsx`) y la página de clientes (`ClientesPage.test.tsx`), validando permisos básicos de apertura/cierre del modal y refresco de datos mockeados.
 - Scripts de soporte (PowerShell/JS en raíz) interactúan con endpoints actuales para debugging (`debug-auth.html`, `debug-jwt.js`). Evaluar actualización tras cambios de claims.
 
 **Impactos clave detectados**
