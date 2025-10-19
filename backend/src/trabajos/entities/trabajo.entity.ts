@@ -11,6 +11,7 @@ import {
     Index,
 } from 'typeorm';
 import { User } from '../../auth/entities/user.entity';
+import { Cliente } from '../../clientes/entities';
 import { ReporteBaseAnual } from './reporte-base-anual.entity';
 import { Mes } from './mes.entity';
 import { ReporteAnual } from './reporte-anual.entity';
@@ -21,16 +22,21 @@ export enum EstadoTrabajo {
     COMPLETADO = 'COMPLETADO',
 }
 
+export enum EstadoAprobacion {
+    EN_PROGRESO = 'EN_PROGRESO',
+    EN_REVISION = 'EN_REVISION',
+    APROBADO = 'APROBADO',
+    REABIERTO = 'REABIERTO',
+}
+
 @Entity('trabajos')
-// Unique constraint: un trabajo por cliente-año
-@Index('IDX_165096a68be634ca21347c5651', ['clienteNombre', 'anio'], {
-    unique: true,
-})
+// Unique constraint: un trabajo por cliente-año (nueva relación)
+@Index('IDX_trabajos_cliente_anio', ['clienteId', 'anio'], { unique: true })
 export class Trabajo {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column()
+    @Column({ nullable: true })
     clienteNombre: string;
 
     @Column({ length: 50, nullable: true })
@@ -39,8 +45,11 @@ export class Trabajo {
     @Column('int')
     anio: number;
 
-    @Column()
-    usuarioAsignadoId: string;
+    @Column({ name: 'clienteId', type: 'uuid', nullable: true })
+    clienteId: string | null;
+
+    @Column({ name: 'miembroAsignadoId', type: 'uuid', nullable: true })
+    miembroAsignadoId: string | null;
 
     @Column({
         type: 'enum',
@@ -49,6 +58,23 @@ export class Trabajo {
     })
     estado: EstadoTrabajo;
 
+    @Column({
+        type: 'enum',
+        enum: EstadoAprobacion,
+        name: 'estado_aprobacion',
+        default: EstadoAprobacion.EN_PROGRESO,
+    })
+    estadoAprobacion: EstadoAprobacion;
+
+    @Column({ name: 'fecha_aprobacion', type: 'timestamp', nullable: true })
+    fechaAprobacion?: Date | null;
+
+    @Column({ name: 'aprobado_por_id', type: 'uuid', nullable: true })
+    aprobadoPorId?: string | null;
+
+    @Column({ name: 'visibilidad_equipo', type: 'boolean', default: true })
+    visibilidadEquipo: boolean;
+
     @CreateDateColumn()
     fechaCreacion: Date;
 
@@ -56,9 +82,17 @@ export class Trabajo {
     fechaActualizacion: Date;
 
     // Relaciones
+    @ManyToOne(() => Cliente, { eager: false })
+    @JoinColumn({ name: 'clienteId' })
+    cliente?: Cliente | null;
+
     @ManyToOne(() => User, { eager: false })
-    @JoinColumn({ name: 'usuarioAsignadoId' })
-    usuarioAsignado: User;
+    @JoinColumn({ name: 'miembroAsignadoId' })
+    miembroAsignado?: User | null;
+
+    @ManyToOne(() => User, { eager: false })
+    @JoinColumn({ name: 'aprobado_por_id' })
+    aprobadoPor?: User | null;
 
     @OneToOne(() => ReporteBaseAnual, (reporte) => reporte.trabajo, {
         cascade: true,

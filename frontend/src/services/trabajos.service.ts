@@ -1,9 +1,14 @@
 import api from './api';
-import { Trabajo, CreateTrabajoDto, UpdateTrabajoDto, ReporteBaseAnual } from '../types/trabajo';
+import {
+    Trabajo,
+    CreateTrabajoDto,
+    UpdateTrabajoDto,
+    ReporteBaseAnual,
+} from '../types/trabajo';
 
 export const trabajosService = {
-    async getAll(usuarioId?: string): Promise<Trabajo[]> {
-        const params = usuarioId ? { usuarioId } : {};
+    async getAll(miembroId?: string): Promise<Trabajo[]> {
+        const params = miembroId ? { miembroId } : undefined;
         const { data } = await api.get('/trabajos', { params });
         return data;
     },
@@ -13,8 +18,8 @@ export const trabajosService = {
         return data;
     },
 
-    async create(trabajo: CreateTrabajoDto): Promise<Trabajo> {
-        const { data } = await api.post('/trabajos', trabajo);
+    async create(payload: CreateTrabajoDto): Promise<Trabajo> {
+        const { data } = await api.post('/trabajos', payload);
         return data;
     },
 

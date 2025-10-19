@@ -1,20 +1,34 @@
+import { Cliente } from './cliente';
+
+export type EstadoTrabajo = 'ACTIVO' | 'INACTIVO' | 'COMPLETADO';
+export type EstadoAprobacion = 'EN_PROGRESO' | 'EN_REVISION' | 'APROBADO' | 'REABIERTO';
+
+export interface TrabajoUserSummary {
+    id: string;
+    email: string;
+    name?: string;
+    nombre?: string;
+}
+
 export interface Trabajo {
     id: string;
-    clienteNombre: string;
-    clienteRfc?: string;
+    clienteId: string | null;
+    clienteNombre?: string | null;
+    clienteRfc?: string | null;
     anio: number;
-    usuarioAsignadoId: string;
-    estado: 'ACTIVO' | 'INACTIVO' | 'COMPLETADO';
+    estado: EstadoTrabajo;
+    estadoAprobacion: EstadoAprobacion;
+    fechaAprobacion?: string | null;
+    aprobadoPorId?: string | null;
+    visibilidadEquipo: boolean;
+    miembroAsignadoId?: string | null;
     fechaCreacion: string;
     fechaActualizacion: string;
-
+    cliente?: Cliente | null;
+    miembroAsignado?: TrabajoUserSummary | null;
+    aprobadoPor?: TrabajoUserSummary | null;
     reporteBaseAnual?: ReporteBaseAnual;
     meses: Mes[];
-    usuarioAsignado?: {
-        id: string;
-        email: string;
-        nombre: string;
-    };
 }
 
 export interface ReporteBaseAnual {
@@ -54,18 +68,27 @@ export interface ReporteMensual {
 }
 
 export interface CreateTrabajoDto {
-    clienteNombre: string;
-    clienteRfc?: string;
+    clienteId: string;
     anio: number;
-    usuarioAsignadoId: string;
+    miembroAsignadoId?: string | null;
+    usuarioAsignadoId?: string | null;
+    estadoAprobacion?: EstadoAprobacion;
+    visibilidadEquipo?: boolean;
+    clienteNombre?: string;
+    clienteRfc?: string;
 }
 
 export interface UpdateTrabajoDto {
+    clienteId?: string | null;
     clienteNombre?: string;
     clienteRfc?: string;
     anio?: number;
-    usuarioAsignadoId?: string;
-    estado?: 'ACTIVO' | 'INACTIVO' | 'COMPLETADO';
+    miembroAsignadoId?: string | null;
+    usuarioAsignadoId?: string | null;
+    estado?: EstadoTrabajo;
+    estadoAprobacion?: EstadoAprobacion;
+    visibilidadEquipo?: boolean;
+    aprobadoPorId?: string | null;
 }
 
 export interface CreateMesDto {

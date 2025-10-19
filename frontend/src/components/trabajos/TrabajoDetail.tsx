@@ -76,6 +76,19 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
     (r) => r.id === reporteSeleccionado
   );
 
+  const formatLabel = (value: string) =>
+    value
+      .toLowerCase()
+      .split("_")
+      .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+      .join(" ");
+
+  const estadoAprobacionLabel = formatLabel(trabajo.estadoAprobacion);
+  const miembroAsignadoNombre =
+    trabajo.miembroAsignado?.nombre ?? trabajo.miembroAsignado?.name ?? "";
+  const aprobadorNombre =
+    trabajo.aprobadoPor?.nombre ?? trabajo.aprobadoPor?.name ?? "";
+
   const handleEliminarProyecto = async () => {
     const confirmar = window.confirm(
       `⚠️ ADVERTENCIA: ¿Está seguro que desea eliminar el proyecto "${trabajo.clienteNombre} - ${trabajo.anio}"?\n\n` +
@@ -191,6 +204,14 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
             </div>
             <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
               {trabajo.clienteRfc && <span>RFC: {trabajo.clienteRfc}</span>}
+              <span>Estado aprobación: {estadoAprobacionLabel}</span>
+              {miembroAsignadoNombre && (
+                <span>Asignado a: {miembroAsignadoNombre}</span>
+              )}
+              {aprobadorNombre && <span>Aprobado por: {aprobadorNombre}</span>}
+              <span>
+                Visibilidad: {trabajo.visibilidadEquipo ? "Equipo" : "Privado"}
+              </span>
               {trabajo.meses.length > 0 && (
                 <span>{progreso}/12 meses completados</span>
               )}

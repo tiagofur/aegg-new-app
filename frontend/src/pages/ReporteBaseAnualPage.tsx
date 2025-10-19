@@ -173,7 +173,10 @@ export const ReporteBaseAnualPage: React.FC = () => {
       breadcrumbs={[
         { label: "Inicio", to: "/dashboard" },
         { label: "Trabajos", to: "/trabajos" },
-        { label: trabajo.clienteNombre, to: `/trabajos/${trabajoId}` },
+        {
+          label: trabajo.clienteNombre || "Trabajo",
+          to: `/trabajos/${trabajoId}`,
+        },
         { label: "Reporte Base Anual" },
       ]}
       fullWidth

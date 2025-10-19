@@ -1,9 +1,23 @@
-import { IsString, IsInt, IsNotEmpty, Min, Max, IsOptional } from 'class-validator';
+import {
+    IsString,
+    IsInt,
+    Min,
+    Max,
+    IsOptional,
+    IsUUID,
+    IsEnum,
+    IsBoolean,
+} from 'class-validator';
+import { EstadoAprobacion } from '../entities';
 
 export class CreateTrabajoDto {
+    @IsUUID('4')
+    @IsOptional()
+    clienteId?: string;
+
     @IsString()
-    @IsNotEmpty()
-    clienteNombre: string;
+    @IsOptional()
+    clienteNombre?: string;
 
     @IsString()
     @IsOptional()
@@ -14,7 +28,19 @@ export class CreateTrabajoDto {
     @Max(2100)
     anio: number;
 
-    @IsString()
-    @IsNotEmpty()
-    usuarioAsignadoId: string;
+    @IsUUID('4')
+    @IsOptional()
+    miembroAsignadoId?: string;
+
+    @IsUUID('4')
+    @IsOptional()
+    usuarioAsignadoId?: string;
+
+    @IsEnum(EstadoAprobacion)
+    @IsOptional()
+    estadoAprobacion?: EstadoAprobacion;
+
+    @IsBoolean()
+    @IsOptional()
+    visibilidadEquipo?: boolean;
 }

@@ -1,5 +1,5 @@
 import React from "react";
-import { Trabajo } from "../../types/trabajo";
+import { EstadoAprobacion, Trabajo } from "../../types/trabajo";
 
 interface TrabajosListProps {
   trabajos: Trabajo[];
@@ -12,6 +12,13 @@ export const TrabajosList: React.FC<TrabajosListProps> = ({
   onSelectTrabajo,
   onCreateTrabajo,
 }) => {
+  const formatLabel = (value: string) =>
+    value
+      .toLowerCase()
+      .split("_")
+      .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+      .join(" ");
+
   const getEstadoColor = (estado: string) => {
     switch (estado) {
       case "ACTIVO":
@@ -22,6 +29,19 @@ export const TrabajosList: React.FC<TrabajosListProps> = ({
         return "bg-gray-100 text-gray-800";
       default:
         return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getEstadoAprobacionColor = (estado: EstadoAprobacion) => {
+    switch (estado) {
+      case "APROBADO":
+        return "bg-emerald-100 text-emerald-800";
+      case "EN_REVISION":
+        return "bg-amber-100 text-amber-800";
+      case "REABIERTO":
+        return "bg-rose-100 text-rose-800";
+      default:
+        return "bg-blue-100 text-blue-800";
     }
   };
 
@@ -61,51 +81,79 @@ export const TrabajosList: React.FC<TrabajosListProps> = ({
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {trabajos.map((trabajo) => (
-            <div
-              key={trabajo.id}
-              onClick={() => onSelectTrabajo(trabajo)}
-              className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow cursor-pointer p-6 border border-gray-200"
-            >
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                {trabajo.clienteNombre}
-              </h3>
-              {trabajo.clienteRfc && (
-                <p className="text-sm text-gray-600 mb-1">
-                  RFC: {trabajo.clienteRfc}
+          {trabajos.map((trabajo) => {
+            const estadoAprobacionLabel = formatLabel(trabajo.estadoAprobacion);
+            const miembroAsignadoNombre =
+              trabajo.miembroAsignado?.nombre ??
+              trabajo.miembroAsignado?.name ??
+              "";
+
+            return (
+              <div
+                key={trabajo.id}
+                onClick={() => onSelectTrabajo(trabajo)}
+                className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow cursor-pointer p-6 border border-gray-200"
+              >
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                  {trabajo.clienteNombre || "Sin cliente"}
+                </h3>
+                {trabajo.clienteRfc && (
+                  <p className="text-sm text-gray-600 mb-1">
+                    RFC: {trabajo.clienteRfc}
+                  </p>
+                )}
+                <p className="text-sm text-gray-600 mb-4">
+                  Año: {trabajo.anio}
                 </p>
-              )}
-              <p className="text-sm text-gray-600 mb-4">Año: {trabajo.anio}</p>
 
-              <div className="flex items-center gap-2 flex-wrap">
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${getEstadoColor(
-                    trabajo.estado
-                  )}`}
-                >
-                  {trabajo.estado}
-                </span>
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
-                  {trabajo.reporteBaseAnual?.mesesCompletados.length || 0}/12
-                  meses
-                </span>
-              </div>
+                <p className="text-xs text-gray-500 mb-4">
+                  {miembroAsignadoNombre
+                    ? `Asignado a: ${miembroAsignadoNombre}`
+                    : "Sin miembro asignado"}
+                </p>
 
-              <div className="mt-4 h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-blue-600 transition-all"
-                  style={{
-                    width: `${
-                      ((trabajo.reporteBaseAnual?.mesesCompletados.length ||
-                        0) /
-                        12) *
-                      100
-                    }%`,
-                  }}
-                />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-semibold ${getEstadoColor(
+                      trabajo.estado
+                    )}`}
+                  >
+                    {trabajo.estado}
+                  </span>
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-semibold ${getEstadoAprobacionColor(
+                      trabajo.estadoAprobacion
+                    )}`}
+                  >
+                    {estadoAprobacionLabel}
+                  </span>
+                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
+                    {trabajo.reporteBaseAnual?.mesesCompletados.length || 0}/12
+                    meses
+                  </span>
+                  {!trabajo.visibilidadEquipo && (
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">
+                      Privado
+                    </span>
+                  )}
+                </div>
+
+                <div className="mt-4 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-600 transition-all"
+                    style={{
+                      width: `${
+                        ((trabajo.reporteBaseAnual?.mesesCompletados.length ||
+                          0) /
+                          12) *
+                        100
+                      }%`,
+                    }}
+                  />
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

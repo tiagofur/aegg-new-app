@@ -6,15 +6,25 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import { Trabajo, ReporteBaseAnual, Mes, ReporteMensual, TipoReporteMensual } from '../entities';
+import {
+    Trabajo,
+    ReporteBaseAnual,
+    Mes,
+    ReporteMensual,
+    TipoReporteMensual,
+    EstadoAprobacion,
+} from '../entities';
 import { CreateTrabajoDto, UpdateTrabajoDto } from '../dto';
 import * as XLSX from 'xlsx';
+import { Cliente } from '../../clientes/entities';
 
 @Injectable()
 export class TrabajosService {
     constructor(
         @InjectRepository(Trabajo)
         private trabajoRepository: Repository<Trabajo>,
+        @InjectRepository(Cliente)
+        private clienteRepository: Repository<Cliente>,
         @InjectRepository(ReporteBaseAnual)
         private reporteBaseRepository: Repository<ReporteBaseAnual>,
         @InjectRepository(Mes)
@@ -27,17 +37,36 @@ export class TrabajosService {
     async create(createTrabajoDto: CreateTrabajoDto): Promise<Trabajo> {
         console.log('[TrabajosService] Iniciando creación de trabajo:', createTrabajoDto);
 
+        if (!createTrabajoDto.clienteId) {
+            throw new BadRequestException('clienteId es requerido para crear un trabajo.');
+        }
+
+        const cliente = await this.clienteRepository.findOne({
+            where: { id: createTrabajoDto.clienteId },
+        });
+
+        if (!cliente) {
+            throw new NotFoundException(
+                `Cliente con id ${createTrabajoDto.clienteId} no encontrado`,
+            );
+        }
+
+        const miembroAsignadoId =
+            createTrabajoDto.miembroAsignadoId ??
+            createTrabajoDto.usuarioAsignadoId ??
+            null;
+
         // Verificar que no exista un trabajo para ese cliente y año
         const existe = await this.trabajoRepository.findOne({
             where: {
-                clienteNombre: createTrabajoDto.clienteNombre,
+                clienteId: createTrabajoDto.clienteId,
                 anio: createTrabajoDto.anio,
             },
         });
 
         if (existe) {
             throw new ConflictException(
-                `Ya existe un trabajo para el cliente ${createTrabajoDto.clienteNombre} en el año ${createTrabajoDto.anio}`,
+                `Ya existe un trabajo para el cliente ${cliente.nombre} en el año ${createTrabajoDto.anio}`,
             );
         }
 
@@ -48,7 +77,14 @@ export class TrabajosService {
 
         try {
             // Crear trabajo
-            const trabajo = this.trabajoRepository.create(createTrabajoDto);
+            const trabajo = this.trabajoRepository.create({
+                ...createTrabajoDto,
+                clienteNombre: cliente.nombre,
+                clienteRfc: cliente.rfc,
+                estadoAprobacion:
+                    createTrabajoDto.estadoAprobacion ?? EstadoAprobacion.EN_PROGRESO,
+                miembroAsignadoId,
+            });
             const trabajoGuardado = await queryRunner.manager.save(trabajo);
             console.log('[TrabajosService] Trabajo guardado:', trabajoGuardado.id);
 
@@ -90,12 +126,19 @@ export class TrabajosService {
 
     async findAll(usuarioId?: string): Promise<Trabajo[]> {
         const whereCondition = usuarioId
-            ? { usuarioAsignadoId: usuarioId }
+            ? { miembroAsignadoId: usuarioId }
             : {};
 
         return this.trabajoRepository.find({
             where: whereCondition,
-            relations: ['reporteBaseAnual', 'meses', 'meses.reportes', 'usuarioAsignado'],
+            relations: [
+                'reporteBaseAnual',
+                'meses',
+                'meses.reportes',
+                'miembroAsignado',
+                'cliente',
+                'aprobadoPor',
+            ],
             order: {
                 fechaCreacion: 'DESC',
             },
@@ -105,7 +148,14 @@ export class TrabajosService {
     async findOne(id: string): Promise<Trabajo> {
         const trabajo = await this.trabajoRepository.findOne({
             where: { id },
-            relations: ['reporteBaseAnual', 'meses', 'meses.reportes', 'usuarioAsignado'],
+            relations: [
+                'reporteBaseAnual',
+                'meses',
+                'meses.reportes',
+                'miembroAsignado',
+                'cliente',
+                'aprobadoPor',
+            ],
         });
 
         if (!trabajo) {
@@ -118,7 +168,36 @@ export class TrabajosService {
     async update(id: string, updateTrabajoDto: UpdateTrabajoDto): Promise<Trabajo> {
         const trabajo = await this.findOne(id);
 
-        Object.assign(trabajo, updateTrabajoDto);
+        if (updateTrabajoDto.clienteId && updateTrabajoDto.clienteId !== trabajo.clienteId) {
+            const nuevoCliente = await this.clienteRepository.findOne({
+                where: { id: updateTrabajoDto.clienteId },
+            });
+
+            if (!nuevoCliente) {
+                throw new NotFoundException(
+                    `Cliente con id ${updateTrabajoDto.clienteId} no encontrado`,
+                );
+            }
+
+            trabajo.cliente = nuevoCliente;
+            trabajo.clienteId = nuevoCliente.id;
+            trabajo.clienteNombre = nuevoCliente.nombre;
+            trabajo.clienteRfc = nuevoCliente.rfc;
+        }
+
+        const payload: UpdateTrabajoDto = { ...updateTrabajoDto };
+
+        if (payload.usuarioAsignadoId && !payload.miembroAsignadoId) {
+            payload.miembroAsignadoId = payload.usuarioAsignadoId;
+        }
+
+        Object.assign(trabajo, payload);
+
+        if (trabajo.cliente) {
+            trabajo.clienteNombre = trabajo.cliente.nombre;
+            trabajo.clienteRfc = trabajo.cliente.rfc;
+        }
+
         await this.trabajoRepository.save(trabajo);
 
         return this.findOne(id);

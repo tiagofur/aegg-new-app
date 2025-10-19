@@ -14,6 +14,7 @@ import { TrabajosPage } from "./pages/TrabajosPage";
 import { ReporteAnualPage } from "./pages/ReporteAnualPage";
 import { ReporteMensualPage } from "./pages/ReporteMensualPage";
 import { ReporteBaseAnualPage } from "./pages/ReporteBaseAnualPage";
+import { ClientesPage } from "./pages/ClientesPage";
 import PrivateRoute from "./components/PrivateRoute";
 
 function App() {
@@ -59,6 +60,14 @@ function App() {
               element={<ReporteAnualPage />}
             />
           </Route>
+          <Route
+            path="/clientes"
+            element={
+              <PrivateRoute allowedRoles={["Admin", "Gestor"]}>
+                <ClientesPage />
+              </PrivateRoute>
+            }
+          />
           <Route
             path="/admin/users"
             element={

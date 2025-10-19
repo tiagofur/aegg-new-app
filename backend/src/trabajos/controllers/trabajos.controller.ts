@@ -28,8 +28,12 @@ export class TrabajosController {
     }
 
     @Get()
-    findAll(@Query('usuarioId') usuarioId?: string) {
-        return this.trabajosService.findAll(usuarioId);
+    findAll(
+        @Query('miembroId') miembroId?: string,
+        @Query('usuarioId') usuarioIdLegacy?: string,
+    ) {
+        const filtro = miembroId ?? usuarioIdLegacy;
+        return this.trabajosService.findAll(filtro);
     }
 
     @Get(':id')

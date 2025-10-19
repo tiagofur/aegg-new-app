@@ -19,6 +19,14 @@
 - **Seguridad y Roles**: centralizar logica de autorizacion en guards del backend (`backend/src/auth/guards`) y hooks del frontend (`useAuthorization`) asegurando consistencia entre cliente y servidor.
 - **Observabilidad**: incluir eventos de auditoria para altas/ediciones de clientes y cambios de estado en trabajos, integrando con la infraestructura de logging ya disponible.
 
+## Mockups y acuerdos UX preliminares (2025-10-18)
+
+- **Gestión de clientes**: listado tipo tabla con buscador global, paginación y botones "Crear cliente"/"Editar" visibles sólo a Gestores/Admin; formulario en panel lateral reutilizable.
+- **Selector de cliente en trabajos**: campo de autocompletado con resultados resaltando coincidencias por nombre/RFC, accesible vía teclado; fallback “Crear nuevo cliente” cuando el usuario tiene permisos.
+- **Dashboard de aprobaciones**: vista en tarjetas o tabla compacta con filtros por mes/año, badges de estado y acciones “Aprobar”/“Reabrir” disponibles únicamente para Gestores.
+- Estados de solo lectura deben sombrear inputs y mostrar mensaje contextual (“Trabajo aprobado – solo lectura. Solicita reapertura al Gestor.”).
+- Se acordó documentar componentes clave en Storybook o guía de estilo ligera una vez definidos los diseños finales.
+
 ## Alcance Funcional
 
 1. **Registro Basico de Cliente**

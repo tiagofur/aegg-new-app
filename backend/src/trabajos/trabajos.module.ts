@@ -7,6 +7,7 @@ import {
     ReporteMensual,
 } from './entities';
 import { ReporteAnual } from './entities/reporte-anual.entity';
+import { Cliente } from '../clientes/entities';
 import {
     TrabajosService,
     MesesService,
@@ -30,6 +31,7 @@ import { ReporteAnualController } from './controllers/reporte-anual.controller';
             Mes,
             ReporteMensual,
             ReporteAnual,
+            Cliente,
         ]),
     ],
     controllers: [

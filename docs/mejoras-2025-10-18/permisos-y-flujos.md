@@ -17,6 +17,33 @@
 | Gestionar equipos              | ✔️    | ✔️ (solo su equipo)                  | ❌                            |
 | Crear miembros                 | ✔️    | ✔️ (dentro de su equipo)             | ❌                            |
 
+## Inventario actual (2025-10-18)
+
+**Backend – endpoints NestJS**
+
+- `POST /auth/register`, `POST /auth/login` (sin guards, devuelven JWT básico con `userId`).
+- `GET|POST|PATCH|DELETE /users` (protegidos por `JwtAuthGuard` + `RolesGuard`; solo `Admin`).
+- `POST /trabajos`, `GET /trabajos?usuarioId=`, `GET /trabajos/:id`, `PATCH /trabajos/:id`, `DELETE /trabajos/:id` (solo `JwtAuthGuard`).
+- `POST /trabajos/:id/reporte-base/importar` (subida de archivo usando `FileInterceptor`).
+- `GET /trabajos/:trabajoId/reporte-anual/:anio`, `/resumen`, `/mes/:mes`, `POST /trabajos/:trabajoId/reporte-anual/actualizar-ventas`.
+- `POST /meses`, `GET /meses/trabajo/:trabajoId`, `GET /meses/:id`, `PATCH /meses/:id/reabrir`, `DELETE /meses/:id`.
+- `POST /reportes-mensuales/importar`, `POST /reportes-mensuales/:mesId/procesar`, `GET|PUT|DELETE /reportes-mensuales/:mesId/:reporteId/datos`, `POST /reportes-mensuales/:mesId/:reporteId/reprocesar-estado-sat`.
+- Endpoints “old” (`reporte.controller.old.ts`, `trabajo.controller.old.ts`) permanecen en código pero no se referenced desde rutas actuales; confirmar si pueden retirarse durante refactor.
+
+**Frontend – componentes/páginas en uso**
+
+- Páginas: `pages/TrabajosPage.tsx`, `pages/TrabajoDetail.tsx`, `pages/ReporteAnualPage.tsx`, `pages/ReporteMensualPage.tsx`, `pages/ReporteBaseAnualPage.tsx`, `pages/AdminUsersPage.tsx`, `pages/Dashboard.tsx`, `pages/Login.tsx`, `pages/Register.tsx`.
+- Servicios API: `services/trabajos.service.ts`, `meses.service.ts`, `reportes-mensuales.service.ts`, `reporte-anual.service.ts`, `users.ts`, `services/api.ts` (axios + interceptores).
+- Hooks/contexto: `context/AuthContext.tsx` gestiona JWT sin claims de rol/equipo; `features/dashboard` consume trabajos agregados.
+- UI existente para trabajos se ubica en `pages` y `features/trabajos/reportes` (reportes anual/mensual). No existe módulo dedicado a clientes ni componentes reutilizables para selector/autocomplete.
+- Scripts de soporte (PowerShell/JS en raíz) interactúan con endpoints actuales para debugging (`debug-auth.html`, `debug-jwt.js`). Evaluar actualización tras cambios de claims.
+
+**Impactos clave detectados**
+
+- Todos los endpoints expuestos bajo `JwtAuthGuard` carecen de granularidad por rol, por lo que los guards y DTO deberán revisarse antes de introducir visibilidad por cliente/equipo.
+- Los servicios frontend asumen campos `clienteNombre`/`clienteRfc`; el backlog de la Fase 1 exige sincronizar nuevos DTO (`clienteId`, `miembroAsignadoId`).
+- La UI usa `usuarioId` como filtro en `/trabajos`; este query se deberá reemplazar por reglas de visibilidad basadas en rol y equipo.
+
 ## Flujos Clave
 
 ### 1. Creacion de Cliente
