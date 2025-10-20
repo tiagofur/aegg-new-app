@@ -11,6 +11,7 @@ import {
     TotalesComparison,
     AUXILIAR_INGRESOS_CONFIG,
 } from '../types';
+import { normalizeFolio } from '../../shared/utils/folio';
 
 interface UseAuxiliarIngresosComparisonProps {
     /** Datos del Auxiliar de Ingresos */
@@ -110,13 +111,17 @@ export const useAuxiliarIngresosComparison = ({
         const miadminLookup = new Map(
             miadminData!
                 .filter((row) => row.estadoSat === 'Vigente' && !row.isSummary)
-                .map((row) => [
-                    row.folio,
-                    {
-                        subtotalMXN: row.subtotalMXN ?? 0,
-                        id: row.id,
-                    },
-                ])
+                .map((row) => {
+                    const normalizedFolio = normalizeFolio(row.folio);
+                    return [
+                        normalizedFolio,
+                        {
+                            subtotalMXN: row.subtotalMXN ?? 0,
+                            id: row.id,
+                            rawFolio: row.folio,
+                        },
+                    ];
+                })
         );
 
         // Comparar cada fila del Auxiliar
@@ -138,7 +143,8 @@ export const useAuxiliarIngresosComparison = ({
                 return;
             }
 
-            const miadminRow = miadminLookup.get(auxRow.folio);
+            const normalizedFolio = normalizeFolio(auxRow.folio);
+            const miadminRow = miadminLookup.get(normalizedFolio);
 
             // Caso 1: FOLIO solo existe en Auxiliar
             if (!miadminRow) {
@@ -183,7 +189,7 @@ export const useAuxiliarIngresosComparison = ({
             }
 
             // Marcar como procesado
-            miadminLookup.delete(auxRow.folio);
+            miadminLookup.delete(normalizedFolio);
         });
 
         // Caso 4: FOLIOs que solo existen en Mi Admin
@@ -192,7 +198,7 @@ export const useAuxiliarIngresosComparison = ({
                 uuid: rowData.id,
                 status: 'only-miadmin',
                 miadminSubtotal: rowData.subtotalMXN,
-                tooltip: `🟣 Solo en Mi Admin - Folio: ${folio} - Subtotal MXN: $${rowData.subtotalMXN.toFixed(2)}`,
+                tooltip: `🟣 Solo en Mi Admin - Folio: ${rowData.rawFolio ?? folio} - Subtotal MXN: $${rowData.subtotalMXN.toFixed(2)}`,
             };
             // Usamos el UUID de Mi Admin como key ya que no existe en Auxiliar
             map.set(rowData.id, result);
