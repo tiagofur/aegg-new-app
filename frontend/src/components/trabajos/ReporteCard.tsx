@@ -28,6 +28,10 @@ export const ReporteCard: React.FC<ReporteCardProps> = ({
   const [localReporte, setLocalReporte] = useState(reporte);
   const [verDatos, setVerDatos] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const localReporteVersion =
+    localReporte.fechaImportacion ??
+    localReporte.fechaProcesado ??
+    localReporte.fechaCreacion;
 
   // **CRÍTICO**: Cuando mostramos Mi Admin, necesitamos cargar el Auxiliar del mismo mes
   // para poder hacer las integraciones (subtotalAUX, TC sugerido, comparación)
@@ -305,6 +309,7 @@ export const ReporteCard: React.FC<ReporteCardProps> = ({
               <AuxiliarIngresosTable
                 mesId={mesId}
                 reporteId={localReporte.id}
+                reporteVersion={localReporteVersion}
               />
             </div>
           ) : reporte.tipo === "INGRESOS_MI_ADMIN" ||
@@ -313,6 +318,7 @@ export const ReporteCard: React.FC<ReporteCardProps> = ({
               <MiAdminIngresosTable
                 mesId={mesId}
                 reporteId={localReporte.id}
+                reporteVersion={localReporteVersion}
                 auxiliarData={auxiliarData}
                 trabajoId={trabajoId}
                 anio={trabajoYear}

@@ -46,12 +46,18 @@ interface MiAdminIngresosTableProps {
 
   reporteId: string | undefined;
 
+  /** Marca de tiempo del reporte para invalidar cache */
+  reporteVersion?: string | number | null;
+
   /** Datos de Auxiliar Ingresos para integración */
 
   auxiliarData: AuxiliarIngresosRow[] | undefined;
 
   /** ID del reporte Auxiliar (para cargar datos si no se proporcionan) */
   auxiliarReporteId?: string;
+
+  /** Versión del reporte Auxiliar (fecha importación/actualización) */
+  auxiliarReporteVersion?: string | number | null;
 
   /** ID del trabajo (para Guardar en Base) */
 
@@ -107,9 +113,13 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
 
   reporteId,
 
+  reporteVersion,
+
   auxiliarData: providedAuxiliarData,
 
   auxiliarReporteId,
+
+  auxiliarReporteVersion,
 
   trabajoId,
 
@@ -132,6 +142,8 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
 
     reporteId: auxiliarReporteId || "",
 
+    version: auxiliarReporteVersion,
+
     enabled: !providedAuxiliarData && !!mesId && !!auxiliarReporteId,
   });
 
@@ -148,6 +160,8 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
       reporteId,
 
       auxiliarData,
+
+      version: reporteVersion,
     });
 
   const {
@@ -325,11 +339,19 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
     latestEditedDataRef.current = editedData;
   }, [editedData]);
 
+  const saveHandlerRef = useRef<() => Promise<void>>(async () => {});
+
+  useEffect(() => {
+    saveHandlerRef.current = async () => {
+      await handleSave(latestEditedDataRef.current);
+      resetChanges();
+    };
+  }, [handleSave, resetChanges]);
+
   // Handler para guardar
   const handleSaveClick = useCallback(async () => {
-    await handleSave(latestEditedDataRef.current);
-    resetChanges();
-  }, [handleSave, resetChanges]);
+    await saveHandlerRef.current();
+  }, []);
 
   useEffect(() => {
     if (onSaveContextChange) {

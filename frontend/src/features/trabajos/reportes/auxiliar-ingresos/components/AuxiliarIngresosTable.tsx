@@ -32,8 +32,12 @@ interface AuxiliarIngresosTableProps {
   mesId: string;
   /** ID del reporte */
   reporteId: string;
+  /** Marca de tiempo para invalidar cache al importar */
+  reporteVersion?: string | number | null;
   /** ID del reporte Mi Admin (para comparación) */
   miAdminReporteId?: string;
+  /** Marca de tiempo del reporte Mi Admin */
+  miAdminReporteVersion?: string | number | null;
   /** Datos de Mi Admin precargados (opcional) */
   miAdminData?: MiAdminIngresosRow[];
   /** Permite portalizar el botón de guardar fuera del toolbar */
@@ -62,7 +66,9 @@ const columnHelper = createColumnHelper<AuxiliarIngresosRow>();
 export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
   mesId,
   reporteId,
+  reporteVersion,
   miAdminReporteId,
+  miAdminReporteVersion,
   miAdminData: providedMiAdminData,
   onSaveContextChange,
   showSaveButtonInToolbar = true,
@@ -75,6 +81,7 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
     useAuxiliarIngresosData({
       mesId,
       reporteId,
+      version: reporteVersion,
       enabled: true,
     });
 
@@ -82,6 +89,7 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
     mesId,
     reporteId: miAdminReporteId,
     auxiliarData: undefined,
+    version: miAdminReporteVersion,
     enabled: !providedMiAdminData && !!miAdminReporteId,
   });
 
@@ -117,32 +125,7 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
 
   const hasMiAdminData = !!miAdminData && miAdminData.length > 0;
 
-  const latestEditedDataRef = useRef(editedData);
-  useEffect(() => {
-    latestEditedDataRef.current = editedData;
-  }, [editedData]);
-
-  const handleSaveClick = useCallback(async () => {
-    await saveChanges(latestEditedDataRef.current);
-    resetEdits();
-  }, [saveChanges, resetEdits]);
-
-  useEffect(() => {
-    if (onSaveContextChange) {
-      onSaveContextChange({
-        save: handleSaveClick,
-        isDirty,
-        isSaving,
-      });
-    }
-  }, [handleSaveClick, isDirty, isSaving, onSaveContextChange]);
-
-  useEffect(() => {
-    return () => {
-      onSaveContextChange?.(null);
-    };
-  }, [onSaveContextChange]);
-
+  // Auto-guardado simple (patrón Mi Admin)
   useEffect(() => {
     if (!isDirty || isSaving || !mesId || !reporteId) {
       return;
@@ -165,13 +148,49 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
     };
   }, [
     editedData,
+    saveChanges,
     isDirty,
     isSaving,
     mesId,
     reporteId,
     resetEdits,
-    saveChanges,
   ]);
+
+  // Ref para handler de guardado
+  const latestEditedDataRef = useRef(editedData);
+  useEffect(() => {
+    latestEditedDataRef.current = editedData;
+  }, [editedData]);
+
+  const saveHandlerRef = useRef<() => Promise<void>>(async () => {});
+
+  useEffect(() => {
+    saveHandlerRef.current = async () => {
+      await saveChanges(latestEditedDataRef.current);
+      resetEdits();
+    };
+  }, [saveChanges, resetEdits]);
+
+  const handleSaveClick = useCallback(async () => {
+    await saveHandlerRef.current();
+  }, []);
+
+  // Context para botón de guardar externo
+  useEffect(() => {
+    if (onSaveContextChange) {
+      onSaveContextChange({
+        save: handleSaveClick,
+        isDirty,
+        isSaving,
+      });
+    }
+  }, [onSaveContextChange, handleSaveClick, isDirty, isSaving]);
+
+  useEffect(() => {
+    return () => {
+      onSaveContextChange?.(null);
+    };
+  }, [onSaveContextChange]);
 
   // State local para sorting y filtering
   const [sorting, setSorting] = useState<SortingState>([]);

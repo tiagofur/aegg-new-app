@@ -3,7 +3,7 @@
  * Integra con React Query y datos de Auxiliar Ingresos
  */
 
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reportesMensualesService } from '@/services';
 import { parseExcelToMiAdminIngresos, convertToExcelFormat } from '../utils';
@@ -14,6 +14,7 @@ interface UseMiAdminIngresosDataProps {
     mesId: string | undefined;
     reporteId: string | undefined;
     auxiliarData: AuxiliarIngresosRow[] | undefined;
+    version?: string | number | null;
     enabled?: boolean;
 }
 
@@ -21,10 +22,11 @@ export const useMiAdminIngresosData = ({
     mesId,
     reporteId,
     auxiliarData,
+    version,
     enabled = true,
 }: UseMiAdminIngresosDataProps) => {
     const queryClient = useQueryClient();
-    const queryKey = ['reporte-mi-admin-ingresos', mesId, reporteId];
+    const queryKey = ['reporte-mi-admin-ingresos', mesId, reporteId, version ?? null];
 
     // Query para cargar datos
     const {
@@ -88,9 +90,13 @@ export const useMiAdminIngresosData = ({
         },
     });
 
-    const handleSave = async (data: MiAdminIngresosRow[]) => {
-        await saveMutation.mutateAsync(data);
-    };
+    // Memoizar handleSave para evitar re-renders infinitos
+    const handleSave = useCallback(
+        async (data: MiAdminIngresosRow[]) => {
+            await saveMutation.mutateAsync(data);
+        },
+        [saveMutation]
+    );
 
     return {
         data: miAdminData,

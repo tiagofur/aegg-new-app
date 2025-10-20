@@ -163,6 +163,8 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
   const nombre = TIPOS_REPORTE_NOMBRES[reporte.tipo];
   const tieneDatos = Boolean(reporte.datos && reporte.datos.length > 1);
   const progresoPorcentaje = Math.min(100, Math.max(0, estado.progreso));
+  const reporteVersion =
+    reporte.fechaImportacion ?? reporte.fechaProcesado ?? reporte.fechaCreacion;
 
   const esReporteComparable =
     reporte.tipo === "INGRESOS_AUXILIAR" ||
@@ -191,6 +193,18 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
     () => reportes.find((r) => r.tipo === "INGRESOS_MI_ADMIN"),
     [reportes]
   );
+
+  const auxiliarReporteVersion = auxiliarReporte
+    ? auxiliarReporte.fechaImportacion ??
+      auxiliarReporte.fechaProcesado ??
+      auxiliarReporte.fechaCreacion
+    : undefined;
+
+  const miAdminReporteVersion = miAdminReporte
+    ? miAdminReporte.fechaImportacion ??
+      miAdminReporte.fechaProcesado ??
+      miAdminReporte.fechaCreacion
+    : undefined;
 
   const reporteComplementario = useMemo(() => {
     if (!esReporteComparable) return null;
@@ -368,17 +382,42 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
     ? TIPOS_REPORTE_NOMBRES[reporteComplementario.tipo]
     : null;
 
-  const toggleComparacion = () => {
+  const toggleComparacion = useCallback(() => {
     if (!comparacionDisponible) {
       return;
     }
     setComparacionActiva((prev) => !prev);
-  };
+  }, [comparacionDisponible]);
 
   const handleGuardarTabla = useCallback(async () => {
     if (!tablaSaveContext) return;
     await tablaSaveContext.save();
   }, [tablaSaveContext]);
+
+  // Memoizar callbacks para evitar re-renders infinitos en las tablas hijas
+  const handleSaveContextChange = useCallback(
+    (
+      context: {
+        save: () => Promise<void>;
+        isDirty: boolean;
+        isSaving: boolean;
+      } | null
+    ) => {
+      setTablaSaveContext(context);
+    },
+    []
+  );
+
+  const handleComparacionActiveChange = useCallback((active: boolean) => {
+    setComparacionActiva(active);
+  }, []);
+
+  const handleGuardarEnBaseContextChange = useCallback(
+    (context: GuardarEnBaseContext | null) => {
+      setGuardarEnBaseContext(context);
+    },
+    []
+  );
 
   const getRowClassName = (fila: Record<string, unknown>): string => {
     if (!comparacionActiva) return "hover:bg-gray-50";
@@ -732,12 +771,14 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
                   <AuxiliarIngresosTable
                     mesId={mesId}
                     reporteId={reporte.id}
+                    reporteVersion={reporteVersion}
                     miAdminReporteId={miAdminReporte?.id}
+                    miAdminReporteVersion={miAdminReporteVersion}
                     showSaveButtonInToolbar={false}
                     showComparisonButtonInToolbar={false}
-                    onSaveContextChange={setTablaSaveContext}
+                    onSaveContextChange={handleSaveContextChange}
                     comparisonActive={comparacionActiva}
-                    onComparisonActiveChange={setComparacionActiva}
+                    onComparisonActiveChange={handleComparacionActiveChange}
                   />
                 </div>
               ) : reporte.tipo === "INGRESOS_MI_ADMIN" ||
@@ -746,8 +787,10 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
                   <MiAdminIngresosTable
                     mesId={mesId}
                     reporteId={reporte.id}
+                    reporteVersion={reporteVersion}
                     auxiliarData={undefined}
                     auxiliarReporteId={auxiliarReporte?.id}
+                    auxiliarReporteVersion={auxiliarReporteVersion}
                     trabajoId={trabajoId}
                     anio={trabajoYear}
                     mes={mesNumber}
@@ -755,13 +798,17 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
                     showComparisonButtonInToolbar={
                       esReporteComparable ? false : true
                     }
-                    onSaveContextChange={setTablaSaveContext}
-                    onGuardarEnBaseContextChange={setGuardarEnBaseContext}
+                    onSaveContextChange={handleSaveContextChange}
+                    onGuardarEnBaseContextChange={
+                      handleGuardarEnBaseContextChange
+                    }
                     comparisonActive={
                       esReporteComparable ? comparacionActiva : undefined
                     }
                     onComparisonActiveChange={
-                      esReporteComparable ? setComparacionActiva : undefined
+                      esReporteComparable
+                        ? handleComparacionActiveChange
+                        : undefined
                     }
                   />
                 </div>

@@ -144,27 +144,32 @@ export const useAuxiliarIngresosEdit = ({
             let hasChanges = false;
             const newMap = new Map(prev);
 
-            mergedData.forEach((row) => {
+            // Usar initialData en lugar de mergedData para evitar dependencia circular
+            initialData.forEach((row) => {
                 if (row.isSummary || row.estadoSat === 'Cancelada') {
                     return;
                 }
 
-                if (!miAdminFolios.has(row.folio)) {
-                    const edits = newMap.get(row.id) || {};
+                // Aplicar ediciones previas si existen
+                const edits = prev.get(row.id) || {};
+                const currentEstadoSat = edits.estadoSat ?? row.estadoSat;
 
-                    if (edits.estadoSat !== 'Cancelada') {
-                        newMap.set(row.id, {
-                            ...edits,
-                            estadoSat: 'Cancelada',
-                        });
-                        hasChanges = true;
-                    }
+                if (currentEstadoSat === 'Cancelada') {
+                    return; // Ya está cancelada
+                }
+
+                if (!miAdminFolios.has(row.folio)) {
+                    newMap.set(row.id, {
+                        ...edits,
+                        estadoSat: 'Cancelada',
+                    });
+                    hasChanges = true;
                 }
             });
 
             return hasChanges ? newMap : prev;
         });
-    }, [miAdminData, mergedData]);
+    }, [miAdminData, initialData]);
 
     /**
      * Determina si hay cambios sin guardar

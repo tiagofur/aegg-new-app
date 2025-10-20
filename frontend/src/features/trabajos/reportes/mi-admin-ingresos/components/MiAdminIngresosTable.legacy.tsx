@@ -42,12 +42,18 @@ interface MiAdminIngresosTableProps {
 
   reporteId: string | undefined;
 
+  /** Marca de tiempo del reporte para invalidar cache */
+  reporteVersion?: string | number | null;
+
   /** Datos de Auxiliar Ingresos para integración */
 
   auxiliarData: AuxiliarIngresosRow[] | undefined;
 
   /** ID del reporte Auxiliar (para cargar datos si no se proporcionan) */
   auxiliarReporteId?: string;
+
+  /** Versión del reporte Auxiliar */
+  auxiliarReporteVersion?: string | number | null;
 
   /** ID del trabajo (para Guardar en Base) */
 
@@ -73,9 +79,13 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
 
   reporteId,
 
+  reporteVersion,
+
   auxiliarData: providedAuxiliarData,
 
   auxiliarReporteId,
+
+  auxiliarReporteVersion,
 
   trabajoId,
 
@@ -89,6 +99,8 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
     mesId: mesId || "",
 
     reporteId: auxiliarReporteId || "",
+
+    version: auxiliarReporteVersion,
 
     enabled: !providedAuxiliarData && !!mesId && !!auxiliarReporteId,
   });
@@ -106,6 +118,8 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
       reporteId,
 
       auxiliarData,
+
+      version: reporteVersion,
     });
 
   const {

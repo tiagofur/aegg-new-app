@@ -3,6 +3,7 @@
  * Maneja fetch, guardado y sincronización con la API
  */
 
+import { useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reportesMensualesService } from '@/services';
 import { parseExcelToAuxiliarIngresos } from '../utils';
@@ -13,6 +14,8 @@ interface UseAuxiliarIngresosDataProps {
     mesId: string;
     /** ID del reporte */
     reporteId: string;
+    /** Versionado del reporte (fecha de importación/actualización) */
+    version?: string | number | null;
     /** Si debe hacer fetch automáticamente */
     enabled?: boolean;
 }
@@ -40,6 +43,7 @@ interface UseAuxiliarIngresosDataReturn {
 export const useAuxiliarIngresosData = ({
     mesId,
     reporteId,
+    version,
     enabled = true,
 }: UseAuxiliarIngresosDataProps): UseAuxiliarIngresosDataReturn => {
     const queryClient = useQueryClient();
@@ -51,7 +55,7 @@ export const useAuxiliarIngresosData = ({
         error,
         refetch,
     } = useQuery({
-        queryKey: ['reporte-auxiliar-ingresos', mesId, reporteId],
+        queryKey: ['reporte-auxiliar-ingresos', mesId, reporteId, version ?? null],
         queryFn: async () => {
             const response = await reportesMensualesService.obtenerDatos(mesId, reporteId);
             return response;
@@ -91,13 +95,19 @@ export const useAuxiliarIngresosData = ({
         },
     });
 
+    // Memoizar saveChanges para evitar re-renders infinitos
+    const saveChanges = useCallback(
+        async (updatedData: AuxiliarIngresosRow[]) => {
+            await saveChangesMutation.mutateAsync(updatedData);
+        },
+        [saveChangesMutation]
+    );
+
     return {
         data: rawData || [],
         isLoading,
         error: error as Error | null,
-        saveChanges: async (updatedData: AuxiliarIngresosRow[]) => {
-            await saveChangesMutation.mutateAsync(updatedData);
-        },
+        saveChanges,
         isSaving: saveChangesMutation.isPending,
         saveError: saveChangesMutation.error as Error | null,
         refetch,
