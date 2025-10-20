@@ -6,78 +6,82 @@
 
 **Tabla `users`**
 
-- Campos: `id` (uuid), `email` (único), `password`, `name`, `role` (`Admin`|`Gestor`|`Miembro`), `createdAt`, `updatedAt`.
-- Restricciones: índice único sobre `email`; enum de roles definido en `auth/entities/user.entity.ts`; sin referencia a equipos ni claims adicionales.
+- Columnas: `id` (uuid), `email` (único), `password`, `name`, `role` (`Admin`|`Gestor`|`Miembro`), `equipo_id` (uuid, nullable), `createdAt`, `updatedAt`.
+- Restricciones: índice único sobre `email`; enum de roles en `auth/entities/user.entity.ts`; FK opcional `equipo_id → equipos.id` con `ON DELETE SET NULL`.
+- Observaciones: JWT retorna `equipoId`; el servicio de usuarios valida existencia/estado del equipo antes de asignar.
+
+**Tabla `equipos`**
+
+- Columnas: `id` (uuid), `nombre`, `activo` (bool), `gestor_id` (uuid nullable), `created_at`, `updated_at`.
+- Restricciones: PK en `id`; `gestor_id` referencial (pendiente de FK explícita si se requiere enforcement adicional).
+- Observaciones: sirve como catálogo para visibilidad; resta construir servicios/UI de administración y asignación masiva de miembros.
+
+**Tabla `clientes`**
+
+- Columnas: `id`, `nombre`, `rfc`, `razon_social`, `direccion` (jsonb), `contacto_principal` (jsonb), `metadata` (jsonb, default `{}`), `created_by`, `created_at`, `updated_at`.
+- Restricciones: índice por `nombre` y `rfc` único (`IDX_clientes_rfc`).
+- Observaciones: los campos JSON permiten extensiones sin migraciones adicionales.
 
 **Tabla `trabajos`**
 
-- Campos: `id` (uuid), `clienteNombre`, `clienteRfc?`, `anio`, `usuarioAsignadoId`, `estado` (`ACTIVO`|`INACTIVO`|`COMPLETADO`), `fechaCreacion`, `fechaActualizacion`.
-- Restricciones: índice único `IDX_165096a68be634ca21347c5651` en (`clienteNombre`, `anio`); FK implícita `usuarioAsignadoId → users.id` sin `onDelete` específico.
-- Observaciones: la información de cliente reside como texto (sin entidad dedicada); el usuario asignado es obligatorio desde la creación.
+- Columnas: `id`, `clienteNombre`, `clienteRfc`, `anio`, `clienteId` (uuid), `miembroAsignadoId` (uuid), `estado` (`ACTIVO`|`INACTIVO`|`COMPLETADO`), `estado_aprobacion` (`EN_PROGRESO`|`EN_REVISION`|`APROBADO`|`REABIERTO`), `fecha_aprobacion`, `aprobado_por_id`, `visibilidad_equipo` (bool), `fechaCreacion`, `fechaActualizacion`.
+- Restricciones: índice único `IDX_trabajos_cliente_anio` sobre (`clienteId`, `anio`); FKs nuevas hacia `clientes.id` y `users.id` (`miembroAsignadoId`, `aprobado_por_id`) con `ON DELETE SET NULL`.
+- Observaciones: `usuarioAsignadoId` fue reemplazado por `miembroAsignadoId`; la migración sólo copia valores, no introduce filtros por rol.
 
 **Tabla `meses`**
 
-- Campos: `id`, `trabajoId`, `mes`, `estado` (`PENDIENTE`|`EN_PROCESO`|`COMPLETADO`), `fechaCreacion`, `fechaActualizacion`.
-- Restricciones: índice único (`trabajoId`, `mes`); FK `trabajoId → trabajos.id` con `onDelete: CASCADE`.
+- Columnas actuales: `id`, `trabajoId`, `mes`, `estado` (`PENDIENTE`|`EN_PROCESO`|`COMPLETADO`), `fechaCreacion`, `fechaActualizacion`.
+- Extensiones planificadas: `estado_revision` (`EN_PROCESO`|`EN_REVISION`|`APROBADO`|`REABIERTO`), `fecha_envio_revision`, `fecha_aprobacion`, `aprobado_por_id`, `comentario_gestor` y bandera derivada `bloqueado`.
+- Restricciones: índice único (`trabajoId`, `mes`); FK `trabajoId → trabajos.id` con `onDelete: CASCADE`; nueva FK `aprobado_por_id → users.id` con `SET NULL`.
+- Observaciones: `estado_revision` controlará permisos de edición por periodo y permitirá calcular el estado global del trabajo.
 
 **Tabla `reportes_base_anual`**
 
-- Campos: `id`, `trabajoId` (único), `archivoUrl?`, `mesesCompletados` (array int), `hojas` (jsonb), timestamps.
+- Columnas: `id`, `trabajoId` (único), `archivoUrl?`, `mesesCompletados` (array int), `hojas` (jsonb), timestamps.
 - Restricciones: FK `trabajoId → trabajos.id` con `onDelete: CASCADE`.
 
 **Tabla `reportes_mensuales`**
 
-- Campos: `id`, `mesId`, `tipo`, `archivoOriginal?`, `datos` (jsonb), `estado`, fechas de importación/procesado, `fechaCreacion`.
+- Columnas: `id`, `mesId`, `tipo`, `archivoOriginal?`, `datos` (jsonb), `estado`, fechas de importación/procesado, `fechaCreacion`.
 - Restricciones: índice único (`mesId`, `tipo`); FK `mesId → meses.id` con `onDelete: CASCADE`.
 
 **Tabla `reportes_anuales`**
 
-- Campos: `id`, `trabajoId`, `anio`, `mes`, `ventas?`, `ventasAuxiliar?`, `diferencia?`, `confirmado`, timestamps.
+- Columnas: `id`, `trabajoId`, `anio`, `mes`, `ventas?`, `ventasAuxiliar?`, `diferencia?`, `confirmado`, timestamps.
 - Restricciones: índices en (`trabajoId`, `anio`, `mes`); FK `trabajoId → trabajos.id` con `onDelete: CASCADE`.
 
 **Brechas identificadas para el roadmap**
 
-- No existe entidad `clientes`; los campos actuales deben migrarse de `trabajos` y normalizar RFCs.
-- No hay tabla `equipos` ni columna `equipoId` en `users`; será necesaria para visibilidad basada en equipo.
-- Los estados de trabajos no contemplan aprobaciones (`EN_REVISION`, `APROBADO`, `REABIERTO`) ni se maneja historial.
-- `usuarioAsignadoId` es obligatorio y único campo de relación; se tendrá que revisar nullable/renombrado a `miembroAsignadoId` para permitir configuraciones posteriores.
-- Auditoría y eventos dependen de extensiones futuras; actualmente solo timestamps automáticos.
+- Falta migrar datos históricos de `trabajos` para poblar `clienteId` y eliminar dependencias en `clienteNombre`/`clienteRfc` libres.
+- Aún no existe historial de aprobaciones/asignaciones; los estados se sobrescriben sin auditoría dedicada.
+- Faltan endpoints para transicionar estados (aprobar, reabrir, comentar) y emitir eventos/notificaciones asociadas.
+- No hay estado de aprobación a nivel de mes; edición y bloqueo siguen dependiendo del estado global del trabajo.
+- Resta exponer servicios y UI para gestionar equipos (creación, activación, asignación masiva) y amarrar miembros a gestores.
 
 ### Nuevas Entidades y Relaciones
 
-- `clientes`
-  - `id` (uuid)
-  - `nombre` (string, required)
-  - `rfc` (string, required, unique, normalizado en mayusculas)
-  - `razon_social` (string, opcional)
-  - `direccion` (jsonb o campos compuestos opcionales)
-  - `contacto_principal` (jsonb opcional con nombre, correo, telefono)
-  - `metadata` (jsonb para extensiones futuras)
-  - `created_at`, `updated_at`, `created_by`
-- `equipos`
-  - `id` (uuid)
-  - `nombre` (string)
-  - `gestor_id` (fk usuarios)
-  - `activo` (bool)
-  - `created_at`, `updated_at`
-- `usuarios`
-  - Agregar `equipo_id` (fk equipos, nullable para Admin)
-  - Campo `rol` normalizado (enum: `ADMIN`, `GESTOR`, `MIEMBRO`)
-- `trabajos`
-  - Agregar `cliente_id` (fk clientes, not null tras migracion)
-  - Agregar `miembro_asignado_id` (fk usuarios, nullable hasta asignacion inicial)
-  - Agregar `estado_aprobacion` (enum: `EN_PROGRESO`, `EN_REVISION`, `APROBADO`, `REABIERTO`)
-  - Agregar `fecha_aprobacion` y `aprobado_por`
-  - Agregar `visibilidad_equipo` (bool) si se requiere futuras expansiones
-- `trabajo_historial_estados`
-  - Mantener tracking de asignaciones y cambios de estado (gestor, miembro, timestamp, comentario)
+- `clientes` ✅
+  - Ya disponible con índices por `nombre` y `rfc`; resta poblar `created_by` al integrar auditoría real.
+- `trabajos` ✅ (actualización aplicada)
+  - Incluye `clienteId`, `miembroAsignadoId`, `estado_aprobacion`, `aprobado_por_id` y `visibilidad_equipo`.
+- `usuarios` ✅ (extensión aplicada)
+  - `equipo_id` disponible con FK a `equipos`; JWT propaga el claim y `UsersService` permite asignarlo/quitarlo.
+- `equipos` ✅ (estructura base lista)
+  - Catálogo simple con `activo` y `gestor_id`; falta servicio/UI especializada para administrarlo.
+- `trabajo_historial_estados` (nueva entidad pendiente)
+  - Registrar cambios de estado/asignación con `usuario_id`, `comentario` y `timestamp`.
+- `mes_historial_estados` (nueva entidad planificada)
+  - Registrar transiciones de revisión mensual (envío, aprobación, reapertura) con comentario y usuario responsable.
 
 ### Migraciones
 
-1. Crear tabla `clientes` y migrar datos iniciales desde trabajos existentes (agrupacion por RFC/nombre para evitar duplicados).
-2. Agregar columnas a `trabajos`, poblar `cliente_id` con los nuevos registros y `miembro_asignado_id` (valor por defecto null).
-3. Crear tabla `equipos` y asociar Gestores actuales; actualizar usuarios miembros con su equipo.
-4. Generar tabla `trabajo_historial_estados` para trazabilidad.
+- ✅ `1760745600000-CreateClientes.ts`: tabla `clientes` con índices por `nombre` y `rfc`.
+- ✅ `1760745602000-UpdateTrabajosAddClienteRelation.ts`: columnas `clienteId`, `miembroAsignadoId`, `estado_aprobacion`, `aprobado_por_id`, `visibilidad_equipo` y migración de `usuarioAsignadoId`.
+- ✅ `1761264000000-CreateEquiposAndAssignUsers.ts`: crea tabla `equipos`, agrega `users.equipo_id` y FK opcional.
+- ⏳ Script de datos para poblar `clienteId` en trabajos históricos y depurar registros duplicados/ambiguos.
+- ⏳ Crear tabla `equipos` + FK `users.equipo_id`.
+- ⏳ Crear tabla `trabajo_historial_estados` para auditoría de aprobaciones y asignaciones.
+- ⏳ Migración para extender `meses` con columnas de aprobación y crear `mes_historial_estados` (con retrocarga de estados actuales).
 
 ### Plan de migracion historica y rollback (borrador 2025-10-18)
 
@@ -89,20 +93,20 @@
 
 **Pasos propuestos**
 
-1. Crear staging table `clientes_tmp` con columnas `nombre_normalizado`, `rfc_normalizado`, `cliente_id` para agrupar candidatos.
+1. Crear staging table `clientes_tmp` con columnas `nombre_normalizado`, `rfc_normalizado`, `cliente_id` para agrupar candidatos (la tabla `clientes` final ya existe).
 2. Poblar `clientes_tmp` a partir de `trabajos` aplicando reglas:
 
 - Si `clienteRfc` no es nulo → usar RFC normalizado (trim, mayusculas).
 - Si `clienteRfc` es nulo → agrupar por `clienteNombre` normalizado; marcar registros ambiguos para revision manual.
 
-3. Insertar en `clientes` desde `clientes_tmp`, generando nuevos UUID y guardando referencia a `cliente_id` temporal.
+3. Insertar en `clientes` desde `clientes_tmp`, generando nuevos UUID y guardando referencia a `cliente_id` temporal (solo para registros nuevos; respetar clientes ya creados manualmente).
 4. Actualizar `trabajos`:
 
 - Setear `cliente_id` usando mapping `clientes_tmp`.
 - Renombrar `usuarioAsignadoId` → `miembro_asignado_id` (mantener valores existentes).
 - Inicializar `estado_aprobacion` en `EN_PROGRESO` para trabajos activos; `COMPLETADO` → `APROBADO`.
 
-5. Generar registros en `trabajo_historial_estados` con entrada inicial por trabajo (`estado_previo = null`, `estado_nuevo` igual al actual, `registrado_por = usuarioAsignadoId` cuando aplique).
+5. Generar registros en `trabajo_historial_estados` con entrada inicial por trabajo (`estado_previo = null`, `estado_nuevo` igual al actual, `registrado_por = usuarioAsignadoId` cuando aplique) una vez exista la tabla.
 6. Migrar equipos:
 
 - Crear equipo por Gestor existente (`equipos`: `nombre` derivado del usuario, `gestor_id` = id).
@@ -128,92 +132,71 @@
 
 ### Endpoints Nuevos
 
-- `POST /clientes`
-- `GET /clientes` (paginacion, filtros `search`, `rfc`, `page`, `limit`)
-- `GET /clientes/:id`
-- `PUT /clientes/:id`
-- `DELETE /clientes/:id` (soft delete recomendado)
-- `POST /equipos`
-- `PUT /equipos/:id/miembros`
-- `GET /trabajos/aprobaciones?mes=YYYY-MM`
+- ✅ `POST /clientes`, `GET /clientes`, `GET /clientes/:id`, `PUT /clientes/:id`, `DELETE /clientes/:id` (Gestor/Admin).
+- ⏳ `POST /equipos`, `PUT /equipos/:id/miembros` (no implementado).
+- ✅ `GET /trabajos/aprobaciones/dashboard` (agregaciones por estado con filtros opcionales; se extenderá con métricas por mes y vínculos a acciones de transición).
+- ⏳ `PATCH /meses/:id/aprobar`, `PATCH /meses/:id/reabrir` (comentario obligatorio, recalculo de estado global, publicación de evento `mes.aprobado`).
+- ⏳ `GET /meses/pendientes` (consumido por dashboard para obtener backlog mensual por equipo/cliente).
 
 ### Endpoints Ajustados
 
-- `POST /trabajos`: requiere `clienteId`, `miembroAsignadoId`, valida rol Gestor.
-- `PUT /trabajos/:id`: valida visibilidad y rol. Solo Gestor puede reabrir o cambiar estado a `EN_REVISION`/`APROBADO`.
-- `GET /trabajos`: filtros `anio`, `clienteId`, `search`. Limitar resultados a gestor creador o miembro asignado.
-- `PATCH /trabajos/:id/completar`: accesible al miembro asignado.
-- `PATCH /trabajos/:id/aprobar`: accesible al gestor creador.
+- `POST /trabajos`: `TrabajosService` exige `clienteId`, valida duplicados y ahora solo permite crear a Admin/Gestor, verificando que el miembro asignado pertenezca al equipo del Gestor.
+- `PATCH /trabajos/:id`: restringido a Admin/Gestor; valida reasignaciones dentro del equipo y mantiene sincronía de cliente/miembro asignado.
+- `GET /trabajos`: aplica filtros por equipo/ownership para Gestores y miembros; soporta el query legacy `miembroId` pero se filtra según visibilidad.
+- `POST /trabajos/:id/reporte-base/importar`: limitado a Admin/Gestor; reutiliza FileInterceptor con validación previa.
 
 ### Autorizacion y Guards
 
-- Crear `RolesGuard` extendido para manejar permisos combinados (rol + ownership/assignment).
-- Introducir `VisibilityPolicy` reutilizable para trabajos, invocada en cada servicio.
-- Ajustar decoradores personalizados (`@Roles('GESTOR')`) y aplicarlos en controladores afectados.
+- `RolesGuard` se aplica en `/clientes`, `/trabajos`, `/trabajos/aprobaciones` y `/users`; `CurrentUser` propaga `equipoId` para los checks.
+- `TrabajosService` implementa restricciones por rol, equipo y miembro asignado; falta extraer la política a un helper reutilizable y cubrirla con pruebas.
+- Restan decorar/implementar endpoints de transición (aprobar, reabrir) y extender guards a módulos complementarios (`meses`, `reportes`) con validación de comentario requerido.
 
 ### Servicios y Casos de Uso
 
-- `ClientesService`: validaciones centralizadas (RFC, duplicados, auditoria).
-- `TrabajosService`: metodos `asignarMiembro`, `marcarCompletado`, `aprobar`, `reabrir` con transacciones.
-- `EquiposService`: manejo de miembros y notificaciones.
+- `ClientesService`: concentra validaciones de RFC, duplicados y prepara el terreno para auditoría.
+- `TrabajosService`: hoy expone `create`, `findAll`, `findOne`, `update`, `remove` e importación del reporte base; aún no implementa casos de uso específicos de aprobación ni reasignación dedicados.
+- `EquiposService`: pendiente de creación junto con la entidad `equipos`.
+- `AprobacionesService`: agrega datos del dashboard de aprobaciones respetando restricciones por equipo y estado.
+- `MesesService` (plan): manejará `aprobar`, `reabrir`, persistir comentarios y sincronizar el estado global del trabajo con base en los periodos aprobados.
 
 ## Frontend (React + Vite)
 
 ### Avance al 2025-10-18 (iteración actual)
 
-- `ClienteFormModal` ahora es un componente compartido reutilizado tanto por el diálogo de creación como el de edición de trabajos, con callbacks normalizados (`onSaved`, `onClose`) y refresco del selector.
-- Se consolidó `ClienteSelector` detrás de una referencia (`ClienteSelectorHandle`) que expone `refresh`/`loadCliente`, permitiendo a los diálogos sincronizar la lista tras crear o editar clientes.
-- Se introdujo infraestructura de pruebas con Vitest + Testing Library (`vite.config.ts` migrado a `vitest/config`, `setupTests.ts` con jest-dom) y se agregaron suites unitarias que validan el flujo de apertura/guardado del modal en `CreateTrabajoDialog` y `EditTrabajoDialog`.
-- Se añadió una prueba de página (`ClientesPage.test.tsx`) que asegura la integración tabla ↔ modal y el refresco del listado tras guardar, utilizando mocks ligeros de `AppShell` y del módulo de clientes.
+- `ClienteFormModal` se reutiliza en los diálogos de crear/editar trabajos con callbacks consistentes (`onSaved`, `onClose`) y refresco inmediato del selector compartido.
+- `ClienteSelector` expone métodos `refresh`/`loadCliente` mediante `forwardRef`, habilitando búsquedas con debounce (`useClienteSearch`) y carga diferida de clientes.
+- `TrabajosList` integra filtros persistentes (`useTrabajosFilters`), badges de estado y contadores por cliente; `TrabajoDetail` bloquea acciones en modo solo lectura cuando el trabajo está aprobado.
+- `AprobacionesPage` y `AprobacionesDashboard` ya ofrecen UI interactiva con estados, pendientes y línea de tiempo; consumen el endpoint real y mantienen mocks en pruebas unitarias.
+- Vitest + Testing Library cubren módulos clave: `ClientesTable`, `ClienteFormModal` embebido en diálogos de trabajo, `ClientesPage` y el hook `useAprobacionesDashboard`.
 
-### Estructura Propuesta
+### Estructura actual (resumen)
 
 ```
 frontend/src/features/
   clientes/
     components/
-      ClienteForm.tsx
-      ClienteList.tsx
-      ClienteSelector.tsx
     hooks/
-      useClienteSearch.ts
-      useClienteForm.ts
-    pages/
-      ClientesDashboard.tsx
   trabajos/
-    components/
-      TrabajoForm.tsx
-      TrabajoFilters.tsx
-      TrabajoApprovalCard.tsx
-    hooks/
-      useTrabajoFilters.ts
-      useTrabajoPermissions.ts
-    pages/
-      TrabajosList.tsx
-      TrabajoAprobaciones.tsx
-  equipos/
-    components/
-      EquipoMembersForm.tsx
-    hooks/
-      useEquipo.ts
-common/
-  hooks/
-    useDebouncedValue.ts
-    useAuthorization.ts
-  utils/
-    rfc.ts
-    formValidators.ts
-  context/
-    AuthContext.tsx (extender para rol/equipo)
+    aprobaciones/
+      components/
+      __tests__/
+    filters/
+      __tests__/
+    reportes/
+  dashboard/
+context/
+components/trabajos/
+pages/
+  __tests__/
 ```
 
 ### Flujo de UI
 
 1. Gestor ingresa a "Clientes" → crea cliente con Nombre/RFC.
 2. Gestor crea trabajo → busca cliente por nombre/RFC → asigna miembro → trabajo visible solo para ambos.
-3. Miembro actualiza progreso y marca completado.
-4. Gestor ve en dashboard de aprobaciones los trabajos `EN_REVISION` del mes → revisa → aprueba → trabajo pasa a modo lectura.
-5. Si requiere cambios, Gestor reabre trabajo → vuelve a estado editable.
+3. Miembro actualiza progreso y envía el mes a revisión; el periodo queda bloqueado mientras espera respuesta.
+4. Gestor ve en dashboard de aprobaciones los meses `EN_REVISION` → aprueba (mes pasa a solo lectura) o reabre con comentario → periodo vuelve a edición.
+5. Cuando todos los meses están aprobados, el trabajo se marca como cerrado; reabrir un mes vuelve a habilitar las pantallas asociadas.
 
 ### Estado Global y Cache
 
@@ -222,7 +205,7 @@ common/
 
 ## Seguridad y Auditoria
 
-- Registrar acciones clave en tabla de auditoria existente (`userId`, `accion`, `entidad`, `payload`).
+- Registrar acciones clave en tabla de auditoria existente (`userId`, `accion`, `entidad`, `payload`) y reflejar aprobaciones mensuales (comentario, timestamp, usuario).
 - Emitir eventos para integracion futura con notificaciones (email/slack).
 - Revisar politicas de CORS/permisos para asegurar que solo roles autorizados puedan acceder a endpoints nuevos.
 
@@ -235,7 +218,7 @@ common/
 
 - `ff_clientes_module`: controla visibilidad del modulo de clientes en frontend.
 - `ff_trabajos_visibility`: habilita nuevo esquema de permisos y visibilidad por equipo.
-- `ff_trabajos_aprobacion`: activa flujo de aprobacion mensual.
+- `ff_trabajos_aprobacion`: activa flujo de aprobación mensual (endpoints `meses/*`, UI jerárquica y bloqueo por periodo).
 
 ## Telemetria y Monitoreo
 

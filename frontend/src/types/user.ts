@@ -7,6 +7,7 @@ export interface AppUser {
     role: DashboardRole;
     createdAt?: string;
     updatedAt?: string;
+    equipoId?: string | null;
 }
 
 export interface CreateUserPayload {
@@ -14,6 +15,7 @@ export interface CreateUserPayload {
     email: string;
     password: string;
     role: DashboardRole;
+    equipoId?: string | null;
 }
 
 export interface UpdateUserPayload {
@@ -21,4 +23,5 @@ export interface UpdateUserPayload {
     email?: string;
     password?: string;
     role?: DashboardRole;
+    equipoId?: string | null;
 }

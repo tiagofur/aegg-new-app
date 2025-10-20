@@ -1,4 +1,4 @@
-import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
 import { UserRole } from '../../auth/entities/user.entity';
 
 export class UpdateUserDto {
@@ -18,4 +18,8 @@ export class UpdateUserDto {
     @IsOptional()
     @IsEnum(UserRole)
     role?: UserRole;
+
+    @IsOptional()
+    @IsUUID('4')
+    equipoId?: string | null;
 }

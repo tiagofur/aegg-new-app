@@ -52,6 +52,7 @@ export interface RegisterData {
     email: string;
     password: string;
     name: string;
+    equipoId?: string | null;
 }
 
 export interface LoginData {

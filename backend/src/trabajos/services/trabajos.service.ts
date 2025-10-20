@@ -3,9 +3,10 @@ import {
     NotFoundException,
     ConflictException,
     BadRequestException,
+    ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, FindOptionsWhere } from 'typeorm';
 import {
     Trabajo,
     ReporteBaseAnual,
@@ -17,6 +18,8 @@ import {
 import { CreateTrabajoDto, UpdateTrabajoDto } from '../dto';
 import * as XLSX from 'xlsx';
 import { Cliente } from '../../clientes/entities';
+import { CurrentUserPayload } from '../../auth/decorators/current-user.decorator';
+import { UserRole, User } from '../../auth/entities/user.entity';
 
 @Injectable()
 export class TrabajosService {
@@ -31,10 +34,16 @@ export class TrabajosService {
         private mesRepository: Repository<Mes>,
         @InjectRepository(ReporteMensual)
         private reporteMensualRepository: Repository<ReporteMensual>,
+        @InjectRepository(User)
+        private readonly userRepository: Repository<User>,
         private dataSource: DataSource,
     ) { }
 
-    async create(createTrabajoDto: CreateTrabajoDto): Promise<Trabajo> {
+    async create(
+        createTrabajoDto: CreateTrabajoDto,
+        currentUser: CurrentUserPayload,
+    ): Promise<Trabajo> {
+        this.assertCanManage(currentUser);
         console.log('[TrabajosService] Iniciando creación de trabajo:', createTrabajoDto);
 
         if (!createTrabajoDto.clienteId) {
@@ -55,6 +64,24 @@ export class TrabajosService {
             createTrabajoDto.miembroAsignadoId ??
             createTrabajoDto.usuarioAsignadoId ??
             null;
+
+        if (miembroAsignadoId) {
+            const miembroAsignado = await this.userRepository.findOne({ where: { id: miembroAsignadoId } });
+
+            if (!miembroAsignado) {
+                throw new NotFoundException(
+                    `Usuario con id ${miembroAsignadoId} no encontrado para asignar al trabajo`,
+                );
+            }
+
+            if (
+                currentUser.role === UserRole.GESTOR &&
+                currentUser.equipoId &&
+                miembroAsignado.equipoId !== currentUser.equipoId
+            ) {
+                throw new ForbiddenException('Solo puedes asignar miembros de tu equipo.');
+            }
+        }
 
         // Verificar que no exista un trabajo para ese cliente y año
         const existe = await this.trabajoRepository.findOne({
@@ -107,7 +134,7 @@ export class TrabajosService {
             console.log('[TrabajosService] Transacción confirmada');
 
             // Retornar trabajo con reporte base y meses
-            const trabajoCompleto = await this.findOne(trabajoGuardado.id);
+            const trabajoCompleto = await this.findOne(trabajoGuardado.id, currentUser);
             console.log('[TrabajosService] Trabajo completo con meses:', {
                 id: trabajoCompleto.id,
                 cantidadMeses: trabajoCompleto.meses?.length || 0,
@@ -124,12 +151,13 @@ export class TrabajosService {
         }
     }
 
-    async findAll(usuarioId?: string): Promise<Trabajo[]> {
-        const whereCondition = usuarioId
-            ? { miembroAsignadoId: usuarioId }
-            : {};
+    async findAll(
+        currentUser: CurrentUserPayload,
+        usuarioId?: string,
+    ): Promise<Trabajo[]> {
+        const whereCondition = this.buildListadoWhere(currentUser, usuarioId);
 
-        return this.trabajoRepository.find({
+        const trabajos = await this.trabajoRepository.find({
             where: whereCondition,
             relations: [
                 'reporteBaseAnual',
@@ -143,30 +171,24 @@ export class TrabajosService {
                 fechaCreacion: 'DESC',
             },
         });
+
+        return this.applyEquipoVisibility(trabajos, currentUser);
     }
 
-    async findOne(id: string): Promise<Trabajo> {
-        const trabajo = await this.trabajoRepository.findOne({
-            where: { id },
-            relations: [
-                'reporteBaseAnual',
-                'meses',
-                'meses.reportes',
-                'miembroAsignado',
-                'cliente',
-                'aprobadoPor',
-            ],
-        });
-
-        if (!trabajo) {
-            throw new NotFoundException(`Trabajo con id ${id} no encontrado`);
-        }
-
+    async findOne(id: string, currentUser: CurrentUserPayload): Promise<Trabajo> {
+        const trabajo = await this.getTrabajoOrThrow(id);
+        this.assertCanAccess(trabajo, currentUser);
         return trabajo;
     }
 
-    async update(id: string, updateTrabajoDto: UpdateTrabajoDto): Promise<Trabajo> {
-        const trabajo = await this.findOne(id);
+    async update(
+        id: string,
+        updateTrabajoDto: UpdateTrabajoDto,
+        currentUser: CurrentUserPayload,
+    ): Promise<Trabajo> {
+        this.assertCanManage(currentUser);
+        const trabajo = await this.getTrabajoOrThrow(id);
+        this.assertCanAccess(trabajo, currentUser);
 
         if (updateTrabajoDto.clienteId && updateTrabajoDto.clienteId !== trabajo.clienteId) {
             const nuevoCliente = await this.clienteRepository.findOne({
@@ -191,6 +213,35 @@ export class TrabajosService {
             payload.miembroAsignadoId = payload.usuarioAsignadoId;
         }
 
+        if (
+            payload.miembroAsignadoId &&
+            payload.miembroAsignadoId !== trabajo.miembroAsignadoId
+        ) {
+            const nuevoMiembro = await this.userRepository.findOne({
+                where: { id: payload.miembroAsignadoId },
+            });
+
+            if (!nuevoMiembro) {
+                throw new NotFoundException(
+                    `Usuario con id ${payload.miembroAsignadoId} no encontrado para asignar al trabajo`,
+                );
+            }
+
+            if (
+                currentUser.role === UserRole.GESTOR &&
+                currentUser.equipoId &&
+                nuevoMiembro.equipoId !== currentUser.equipoId
+            ) {
+                throw new ForbiddenException('Solo puedes asignar miembros de tu equipo.');
+            }
+
+            trabajo.miembroAsignado = nuevoMiembro;
+            trabajo.miembroAsignadoId = nuevoMiembro.id;
+        } else if (payload.miembroAsignadoId === null) {
+            trabajo.miembroAsignado = null;
+            trabajo.miembroAsignadoId = null;
+        }
+
         Object.assign(trabajo, payload);
 
         if (trabajo.cliente) {
@@ -200,16 +251,23 @@ export class TrabajosService {
 
         await this.trabajoRepository.save(trabajo);
 
-        return this.findOne(id);
+        return this.findOne(id, currentUser);
     }
 
-    async remove(id: string): Promise<void> {
-        const trabajo = await this.findOne(id);
+    async remove(id: string, currentUser: CurrentUserPayload): Promise<void> {
+        this.assertCanManage(currentUser);
+        const trabajo = await this.getTrabajoOrThrow(id);
+        this.assertCanAccess(trabajo, currentUser);
         await this.trabajoRepository.remove(trabajo);
     }
 
-    async importarReporteBase(trabajoId: string, fileBuffer: Buffer): Promise<ReporteBaseAnual> {
-        const trabajo = await this.findOne(trabajoId);
+    async importarReporteBase(
+        trabajoId: string,
+        fileBuffer: Buffer,
+        currentUser: CurrentUserPayload,
+    ): Promise<ReporteBaseAnual> {
+        this.assertCanManage(currentUser);
+        const trabajo = await this.findOne(trabajoId, currentUser);
 
         if (!trabajo.reporteBaseAnual) {
             const nuevoReporteBase = this.reporteBaseRepository.create({
@@ -391,5 +449,122 @@ export class TrabajosService {
         // Guardar todos los reportes usando el queryRunner
         await queryRunner.manager.save(reportes);
         console.log(`[TrabajosService] Reportes mensuales guardados en BD`);
+    }
+
+    private buildListadoWhere(
+        currentUser: CurrentUserPayload,
+        miembroFiltro?: string,
+    ): FindOptionsWhere<Trabajo> {
+        if (currentUser.role === UserRole.MIEMBRO) {
+            return { miembroAsignadoId: currentUser.userId };
+        }
+
+        if (miembroFiltro) {
+            return { miembroAsignadoId: miembroFiltro };
+        }
+
+        return {};
+    }
+
+    private assertCanManage(currentUser: CurrentUserPayload) {
+        if (currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.GESTOR) {
+            return;
+        }
+        throw new ForbiddenException('No tienes permisos para modificar trabajos.');
+    }
+
+    private assertCanAccess(trabajo: Trabajo, currentUser: CurrentUserPayload) {
+        if (currentUser.role === UserRole.ADMIN) {
+            return;
+        }
+
+        if (currentUser.role === UserRole.GESTOR) {
+            if (!trabajo.visibilidadEquipo) {
+                return;
+            }
+
+            if (!currentUser.equipoId) {
+                return;
+            }
+
+            if (trabajo.miembroAsignadoId === currentUser.userId) {
+                return;
+            }
+
+            const miembroEquipoId = trabajo.miembroAsignado?.equipoId ?? null;
+            if (miembroEquipoId === currentUser.equipoId) {
+                return;
+            }
+
+            if (trabajo.aprobadoPorId === currentUser.userId) {
+                return;
+            }
+
+            if (!trabajo.miembroAsignadoId) {
+                return;
+            }
+
+            throw new ForbiddenException('No tienes permisos para ver este trabajo.');
+        }
+
+        if (trabajo.miembroAsignadoId === currentUser.userId) {
+            return;
+        }
+
+        throw new ForbiddenException('No tienes permisos para ver este trabajo.');
+    }
+
+    private async getTrabajoOrThrow(id: string): Promise<Trabajo> {
+        const trabajo = await this.trabajoRepository.findOne({
+            where: { id },
+            relations: [
+                'reporteBaseAnual',
+                'meses',
+                'meses.reportes',
+                'miembroAsignado',
+                'cliente',
+                'aprobadoPor',
+            ],
+        });
+
+        if (!trabajo) {
+            throw new NotFoundException(`Trabajo con id ${id} no encontrado`);
+        }
+
+        return trabajo;
+    }
+
+    private applyEquipoVisibility(
+        trabajos: Trabajo[],
+        currentUser: CurrentUserPayload,
+    ): Trabajo[] {
+        if (currentUser.role !== UserRole.GESTOR || !currentUser.equipoId) {
+            return trabajos;
+        }
+
+        return trabajos.filter((trabajo) => {
+            if (!trabajo.visibilidadEquipo) {
+                return true;
+            }
+
+            if (!trabajo.miembroAsignadoId) {
+                return true;
+            }
+
+            if (trabajo.miembroAsignadoId === currentUser.userId) {
+                return true;
+            }
+
+            const miembroEquipoId = trabajo.miembroAsignado?.equipoId ?? null;
+            if (miembroEquipoId === currentUser.equipoId) {
+                return true;
+            }
+
+            if (trabajo.aprobadoPorId === currentUser.userId) {
+                return true;
+            }
+
+            return false;
+        });
     }
 }

@@ -1,4 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+    Entity,
+    PrimaryGeneratedColumn,
+    Column,
+    CreateDateColumn,
+    UpdateDateColumn,
+    ManyToOne,
+    JoinColumn,
+} from 'typeorm';
+import { Equipo } from './equipo.entity';
 
 export enum UserRole {
     ADMIN = 'Admin',
@@ -26,6 +35,13 @@ export class User {
         default: UserRole.GESTOR,
     })
     role: UserRole;
+
+    @Column({ name: 'equipo_id', type: 'uuid', nullable: true })
+    equipoId?: string | null;
+
+    @ManyToOne(() => Equipo, (equipo) => equipo.miembros, { nullable: true })
+    @JoinColumn({ name: 'equipo_id' })
+    equipo?: Equipo | null;
 
     @CreateDateColumn()
     createdAt: Date;

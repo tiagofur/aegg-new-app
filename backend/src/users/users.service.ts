@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole } from '../auth/entities/user.entity';
+import { Equipo } from '../auth/entities/equipo.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { resolveRoleForUser } from '../auth/utils/role.helpers';
@@ -14,6 +15,7 @@ export interface UserResponse {
     role: UserRole;
     createdAt: Date;
     updatedAt: Date;
+    equipoId: string | null;
 }
 
 @Injectable()
@@ -21,6 +23,8 @@ export class UsersService {
     constructor(
         @InjectRepository(User)
         private readonly userRepository: Repository<User>,
+        @InjectRepository(Equipo)
+        private readonly equipoRepository: Repository<Equipo>,
     ) { }
 
     async findAll(): Promise<UserResponse[]> {
@@ -60,6 +64,11 @@ export class UsersService {
             role: targetRole,
         });
 
+        if (dto.equipoId) {
+            const equipo = await this.findEquipoOrFail(dto.equipoId);
+            user.equipoId = equipo.id;
+        }
+
         const saved = await this.userRepository.save(user);
         return this.toResponse(saved);
     }
@@ -89,6 +98,15 @@ export class UsersService {
                 throw new UnprocessableEntityException('No puedes cambiar tu propio rol mientras estás conectado');
             }
             user.role = nextRole;
+        }
+
+        if (dto.equipoId !== undefined) {
+            if (dto.equipoId === null) {
+                user.equipoId = null;
+            } else {
+                const equipo = await this.findEquipoOrFail(dto.equipoId);
+                user.equipoId = equipo.id;
+            }
         }
 
         if (dto.password) {
@@ -125,6 +143,16 @@ export class UsersService {
             role,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
+            equipoId: user.equipoId ?? null,
         };
+    }
+
+    private async findEquipoOrFail(equipoId: string): Promise<Equipo> {
+        const equipo = await this.equipoRepository.findOne({ where: { id: equipoId, activo: true } });
+        if (!equipo) {
+            throw new NotFoundException('Equipo no encontrado o inactivo');
+        }
+
+        return equipo;
     }
 }

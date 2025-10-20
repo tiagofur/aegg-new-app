@@ -2,20 +2,24 @@
 
 ## Matriz de Roles
 
-| Accion                         | Admin | Gestor                               | Miembro                       |
-| ------------------------------ | ----- | ------------------------------------ | ----------------------------- |
-| Crear/editar clientes          | ✔️    | ✔️                                   | ❌                            |
-| Eliminar clientes              | ✔️    | ✔️ (solo propios)                    | ❌                            |
-| Ver todos los clientes         | ✔️    | ✔️ (equipo)                          | ❌                            |
-| Crear trabajos                 | ✔️    | ✔️                                   | ❌                            |
-| Editar trabajos                | ✔️    | ✔️ (si creador)                      | ✔️ (solo campos de ejecucion) |
-| Reabrir trabajos               | ✔️    | ✔️ (si creador)                      | ❌                            |
-| Asignar miembro a trabajo      | ✔️    | ✔️ (si creador)                      | ❌                            |
-| Ver trabajos del equipo        | ✔️    | ✔️ (propios y asignados a su equipo) | ✔️ (solo asignados)           |
-| Marcar trabajo como completado | ✔️    | ✔️ (si asignado)                     | ✔️ (si asignado)              |
-| Aprobar trabajo                | ✔️    | ✔️ (si creador)                      | ❌                            |
-| Gestionar equipos              | ✔️    | ✔️ (solo su equipo)                  | ❌                            |
-| Crear miembros                 | ✔️    | ✔️ (dentro de su equipo)             | ❌                            |
+| Accion                         | Admin                       | Gestor                                                                             | Miembro                       |
+| ------------------------------ | --------------------------- | ---------------------------------------------------------------------------------- | ----------------------------- |
+| Crear/editar clientes          | ✔️                          | ✔️                                                                                 | ❌                            |
+| Eliminar clientes              | ✔️ (si no tiene trabajos)   | ✔️ (si no tiene trabajos)                                                          | ❌                            |
+| Ver todos los clientes         | ✔️                          | ✔️ (sin limitar por equipo)                                                        | ❌                            |
+| Crear trabajos                 | ✔️                          | ✔️                                                                                 | ❌                            |
+| Editar trabajos                | ✔️                          | ✔️ (UI restringe por creador)                                                      | ✔️ (solo campos de ejecución) |
+| Reabrir trabajos               | ✔️                          | ✔️ (UI restringe por creador)                                                      | ❌                            |
+| Asignar miembro a trabajo      | ✔️                          | ✔️ (UI restringe por creador)                                                      | ❌                            |
+| Ver trabajos del equipo        | ✔️ (todos)                  | ✔️ (su equipo cuando `visibilidadEquipo` es true; global si el trabajo es público) | ✔️ (solo asignados)           |
+| Marcar trabajo como completado | ✔️                          | ✔️ (si asignado)                                                                   | ✔️ (si asignado)              |
+| Aprobar trabajo                | ✔️                          | ✔️ (UI restringe por creador)                                                      | ❌                            |
+| Aprobar mes (plan)             | ✔️ (cuando se active flujo) | ✔️ (cuando se active flujo; limitado por equipo)                                   | ❌                            |
+| Reabrir mes (plan)             | ✔️ (cuando se active flujo) | ✔️ (cuando se active flujo; requiere comentario)                                   | ❌                            |
+| Gestionar equipos              | ❌ (pendiente implementar)  | ❌ (pendiente implementar)                                                         | ❌                            |
+| Crear miembros                 | ✔️                          | ❌                                                                                 | ❌                            |
+
+> **Nota:** `TrabajosController` ya aplica `RolesGuard` y las verificaciones en `TrabajosService`; sigue pendiente instrumentar auditoría y endpoints específicos para aprobar/reabrir trabajos. El nuevo flujo mensual añadirá endpoints `PATCH /meses/:id/aprobar` y `PATCH /meses/:id/reabrir` con historial y comentarios obligatorios.
 
 ## Inventario actual (2025-10-18)
 
@@ -23,28 +27,31 @@
 
 - `POST /auth/register`, `POST /auth/login` (sin guards, devuelven JWT básico con `userId`).
 - `GET|POST|PATCH|DELETE /users` (protegidos por `JwtAuthGuard` + `RolesGuard`; solo `Admin`).
-- `POST /trabajos`, `GET /trabajos?usuarioId=`, `GET /trabajos/:id`, `PATCH /trabajos/:id`, `DELETE /trabajos/:id` (solo `JwtAuthGuard`).
-- `POST /trabajos/:id/reporte-base/importar` (subida de archivo usando `FileInterceptor`).
-- `GET /trabajos/:trabajoId/reporte-anual/:anio`, `/resumen`, `/mes/:mes`, `POST /trabajos/:trabajoId/reporte-anual/actualizar-ventas`.
-- `POST /meses`, `GET /meses/trabajo/:trabajoId`, `GET /meses/:id`, `PATCH /meses/:id/reabrir`, `DELETE /meses/:id`.
+- `GET|POST|PUT|DELETE /clientes` (`JwtAuthGuard` + `RolesGuard`, roles `Admin`/`Gestor`), con validaciones de RFC y bloqueo de eliminación si existen trabajos vinculados.
+- `POST /trabajos`, `GET /trabajos`, `GET /trabajos/:id`, `PATCH /trabajos/:id`, `DELETE /trabajos/:id` (`JwtAuthGuard` + `RolesGuard`; `TrabajosService` restringe accesos según rol, equipo y miembro asignado, además de exigir `clienteId`).
+- `POST /trabajos/:id/reporte-base/importar` (subida de archivo usando `FileInterceptor`; disponible solo para Admin/Gestor).
+- `GET /trabajos/:trabajoId/reporte-anual/:anio`, `/resumen`, `/mes/:mes`, `POST /trabajos/:trabajoId/reporte-anual/actualizar-ventas` (operativos con nuevo esquema).
+- `POST /meses`, `GET /meses/trabajo/:trabajoId`, `GET /meses/:id`, `PATCH /meses/:id/reabrir`, `DELETE /meses/:id` (se ampliará con `PATCH /meses/:id/aprobar` y bloqueo automático cuando `estadoRevision === "APROBADO"`).
 - `POST /reportes-mensuales/importar`, `POST /reportes-mensuales/:mesId/procesar`, `GET|PUT|DELETE /reportes-mensuales/:mesId/:reporteId/datos`, `POST /reportes-mensuales/:mesId/:reporteId/reprocesar-estado-sat`.
-- Endpoints “old” (`reporte.controller.old.ts`, `trabajo.controller.old.ts`) permanecen en código pero no se referenced desde rutas actuales; confirmar si pueden retirarse durante refactor.
+- Endpoints “legacy” (`reporte.controller.old.ts`, `trabajo.controller.old.ts`) siguen en el repo pero no se exponen; conviene limpiar durante la siguiente refactorización.
+- `GET /trabajos/aprobaciones/dashboard` (agregaciones de estados, pendientes y actividad con filtros por equipo/estado; se extenderá para listar periodos pendientes y disparar aprobaciones/reaperturas por mes).
 
 **Frontend – componentes/páginas en uso**
 
-- Páginas: `pages/TrabajosPage.tsx`, `pages/TrabajoDetail.tsx`, `pages/ReporteAnualPage.tsx`, `pages/ReporteMensualPage.tsx`, `pages/ReporteBaseAnualPage.tsx`, `pages/AdminUsersPage.tsx`, `pages/Dashboard.tsx`, `pages/Login.tsx`, `pages/Register.tsx`.
-- Módulo clientes en curso: `features/clientes/components` expone `ClienteSelector`, `ClienteFormModal` y `ClientesTable`; `pages/ClientesPage.tsx` los integra con `AppShell` y maneja permisos básicos en frontend.
-- Servicios API: `services/trabajos.service.ts`, `meses.service.ts`, `reportes-mensuales.service.ts`, `reporte-anual.service.ts`, `users.ts`, `services/api.ts` (axios + interceptores).
-- Hooks/contexto: `context/AuthContext.tsx` gestiona JWT sin claims de rol/equipo; `features/dashboard` consume trabajos agregados.
-- UI de trabajos reutiliza ahora `ClienteFormModal` compartido en los diálogos de crear/editar, garantizando una única superficie para crear o actualizar clientes desde flujos de trabajo.
-- Suite de pruebas con Vitest cubre los diálogos de trabajos (`CreateTrabajoDialog.test.tsx`, `EditTrabajoDialog.test.tsx`) y la página de clientes (`ClientesPage.test.tsx`), validando permisos básicos de apertura/cierre del modal y refresco de datos mockeados.
-- Scripts de soporte (PowerShell/JS en raíz) interactúan con endpoints actuales para debugging (`debug-auth.html`, `debug-jwt.js`). Evaluar actualización tras cambios de claims.
+- Páginas principales: `TrabajosPage`, `TrabajoDetail`, `ReporteAnualPage`, `ReporteMensualPage`, `ReporteBaseAnualPage`, `ClientesPage`, `Dashboard`, `AdminUsersPage`, `Login`, `Register`.
+- Módulo clientes consolidado en `features/clientes` con `ClienteFormModal`, `ClienteSelector`, `ClientesTable` y pruebas en `ClientesTable.test.tsx`/`ClientesPage.test.tsx`.
+- `TrabajosList` agrega filtros persistentes (`useTrabajosFilters`) y badges; `CreateTrabajoDialog`/`EditTrabajoDialog` comparten modal de cliente y validan selección obligatoria.
+- `features/trabajos/aprobaciones` ofrece hook `useAprobacionesDashboard` y componentes ya enlazados al endpoint real `GET /trabajos/aprobaciones/dashboard`.
+- Servicios API actualizados: `clientes.service.ts`, `trabajos.service.ts` (nuevo método `getAprobacionesDashboard`), `meses.service.ts`, `reportes-mensuales.service.ts`, `reporte-anual.service.ts`, `users.ts`, `services/api.ts` con axios e interceptores.
+- `AuthContext` normaliza rol y ahora conserva `equipoId` en sesión/localStorage para filtros futuros.
+- Vitest + Testing Library cubren diálogos, páginas y hooks críticos (`CreateTrabajoDialog.test.tsx`, `EditTrabajoDialog.test.tsx`, `TrabajosList.test.tsx`, `useAprobacionesDashboard.test.ts`).
+- Scripts de soporte (PowerShell/JS en raíz) siguen apuntando a endpoints legacy (`debug-auth.html`, `debug-jwt.js`); deberán revisarse cuando se agreguen nuevos claims/guards.
 
 **Impactos clave detectados**
 
-- Todos los endpoints expuestos bajo `JwtAuthGuard` carecen de granularidad por rol, por lo que los guards y DTO deberán revisarse antes de introducir visibilidad por cliente/equipo.
-- Los servicios frontend asumen campos `clienteNombre`/`clienteRfc`; el backlog de la Fase 1 exige sincronizar nuevos DTO (`clienteId`, `miembroAsignadoId`).
-- La UI usa `usuarioId` como filtro en `/trabajos`; este query se deberá reemplazar por reglas de visibilidad basadas en rol y equipo.
+- Se requiere historial/auditoría dedicada para cambios de estado y aprobaciones, además de endpoints de transición para completar el flujo.
+- Falta exponer gestión de equipos (crear, activar/inactivar, asignar miembros) desde UI y servicios específicos.
+- Los filtros legacy (`miembroId`/`usuarioId`) en frontend deben migrarse hacia criterios de equipo y ownership cuando se habiliten los nuevos endpoints.
 
 ## Flujos Clave
 
@@ -67,15 +74,16 @@
 ### 3. Ejecucion y Finalizacion
 
 1. Miembro actualiza progreso mensual (campos editables limitados: notas, archivos, checklist) dentro del periodo correspondiente al mes en curso.
-2. Al completar tareas, miembro marca `Marcar como completado`.
-3. Backend cambia estado a `EN_REVISION`, registra fecha y notifica al Gestor.
+2. Al completar tareas, miembro envía el mes a revisión (`estadoRevision` pasa de `EN_PROCESO` a `EN_REVISION`).
+3. Backend registra fecha de envío, bloquea ediciones salvo comentarios y notifica al Gestor.
 
 ### 4. Aprobacion Mensual
 
-1. Gestor visualiza dashboard de aprobaciones filtrado por mes.
-2. Revisa detalles del trabajo (solo lectura) con opcion de comentarios.
-3. Si aprueba → estado del mes pasa a `APROBADO`, se registran `fecha_aprobacion` y `aprobado_por`; los meses restantes permanecen editables.
-4. Si requiere cambios → reabre (`REABIERTO`) el periodo, que vuelve a ser editable para el miembro asignado.
+1. Gestor visualiza dashboard de aprobaciones filtrado por mes y equipo.
+2. Revisa detalles del trabajo (solo lectura) con opción de comentarios y registra observaciones desde el mismo panel.
+3. Si aprueba → estado del mes pasa a `APROBADO`, se registran `fechaAprobacion`, `aprobadoPorId` y `comentarioGestor`; ese periodo queda en solo lectura.
+4. Si requiere cambios → reabre (`REABIERTO`) el periodo, deja comentario obligatorio y el mes vuelve a editarse únicamente por el miembro asignado.
+5. Cuando todos los meses de un trabajo están `APROBADO`, el estado global del trabajo se actualiza automáticamente y permanece bloqueado hasta que se reabra al menos un mes.
 
 ### 5. Gestion de Equipos
 
@@ -90,6 +98,7 @@
 - Incluir buscador global en selector de clientes con resaltado de coincidencias.
 - Resumen en dashboard del Gestor: conteo de trabajos en revision por mes y recordatorios de periodos pendientes por aprobar.
 - Dashboard del miembro: lista de trabajos abiertos por mes con indicador de actualizacion requerida.
+- Diferenciar visualmente mes bloqueado vs editable (badges, tooltips) y mostrar el comentario del Gestor junto al sello de aprobación.
 
 ## Integracion con Notificaciones (Opcional)
 

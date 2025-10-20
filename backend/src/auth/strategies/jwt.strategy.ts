@@ -26,6 +26,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         }
         // Retornar el objeto con userId para usar en los controladores
         this.logger.log(`JWT validated for user=${user.email}`);
-        return { userId: user.id, email: user.email, name: user.name, role: user.role };
+        return {
+            userId: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            equipoId: user.equipoId ?? null,
+        };
     }
 }

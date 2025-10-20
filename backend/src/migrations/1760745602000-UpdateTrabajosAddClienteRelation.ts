@@ -6,7 +6,17 @@ export class UpdateTrabajosAddClienteRelation1760745602000 implements MigrationI
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`ALTER TABLE "trabajos" ADD "clienteId" uuid`);
         await queryRunner.query(`ALTER TABLE "trabajos" ADD "miembroAsignadoId" uuid`);
-        await queryRunner.query(`CREATE TYPE "public"."trabajos_estado_aprobacion_enum" AS ENUM('EN_PROGRESO','EN_REVISION','APROBADO','REABIERTO')`);
+        await queryRunner.query(`
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_type WHERE typname = 'trabajos_estado_aprobacion_enum'
+                ) THEN
+                    CREATE TYPE "public"."trabajos_estado_aprobacion_enum" AS ENUM('EN_PROGRESO','EN_REVISION','APROBADO','REABIERTO');
+                END IF;
+            END
+            $$;
+        `);
         await queryRunner.query(`ALTER TABLE "trabajos" ADD "estado_aprobacion" "public"."trabajos_estado_aprobacion_enum" NOT NULL DEFAULT 'EN_PROGRESO'`);
         await queryRunner.query(`ALTER TABLE "trabajos" ADD "fecha_aprobacion" TIMESTAMP`);
         await queryRunner.query(`ALTER TABLE "trabajos" ADD "aprobado_por_id" uuid`);
@@ -39,7 +49,17 @@ export class UpdateTrabajosAddClienteRelation1760745602000 implements MigrationI
         await queryRunner.query(`ALTER TABLE "trabajos" DROP COLUMN "aprobado_por_id"`);
         await queryRunner.query(`ALTER TABLE "trabajos" DROP COLUMN "fecha_aprobacion"`);
         await queryRunner.query(`ALTER TABLE "trabajos" DROP COLUMN "estado_aprobacion"`);
-        await queryRunner.query(`DROP TYPE "public"."trabajos_estado_aprobacion_enum"`);
+        await queryRunner.query(`
+            DO $$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM pg_type WHERE typname = 'trabajos_estado_aprobacion_enum'
+                ) THEN
+                    DROP TYPE "public"."trabajos_estado_aprobacion_enum";
+                END IF;
+            END
+            $$;
+        `);
         await queryRunner.query(`ALTER TABLE "trabajos" DROP COLUMN "miembroAsignadoId"`);
         await queryRunner.query(`ALTER TABLE "trabajos" DROP COLUMN "clienteId"`);
 

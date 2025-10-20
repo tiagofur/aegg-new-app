@@ -42,6 +42,7 @@ const normalizeUser = (raw: any): AppUser => {
     role,
     createdAt: raw?.createdAt,
     updatedAt: raw?.updatedAt,
+    equipoId: raw?.equipoId ?? null,
   };
 };
 
