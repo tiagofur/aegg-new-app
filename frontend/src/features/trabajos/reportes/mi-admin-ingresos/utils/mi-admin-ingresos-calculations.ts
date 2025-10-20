@@ -104,7 +104,6 @@ export const parseExcelToMiAdminIngresos = (
     const requiredColumns = {
         'Folio': COLUMN_KEYWORDS.FOLIO, // FOLIO es el campo clave
         'Subtotal': COLUMN_KEYWORDS.SUBTOTAL,
-        'Moneda': COLUMN_KEYWORDS.MONEDA,
     };
 
     // ✅ Validar columnas obligatorias
@@ -128,7 +127,10 @@ export const parseExcelToMiAdminIngresos = (
     // ✅ Obtener índices de columnas obligatorias
     const folioIndex = found['Folio']; // FOLIO es obligatorio ahora
     const subtotalIndex = found['Subtotal'];
-    const monedaIndex = found['Moneda'];
+    const monedaIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.MONEDA);
+    if (monedaIndex === -1) {
+        console.warn('⚠️ Columna "Moneda" no encontrada en Mi Admin. Se asumirá MXN por defecto.');
+    }
 
     // ✅ Obtener índices de columnas opcionales conocidas
     const uuidIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.UUID); // UUID ahora es opcional
@@ -139,6 +141,9 @@ export const parseExcelToMiAdminIngresos = (
     const serieIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.SERIE);
     const ivaIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.IVA);
     const totalIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.TOTAL);
+    const subtotalAuxIndex = findColumnIndex(normalized, ['subtotalaux', 'subtotal aux', 'subtotal auxiliar']);
+    const subtotalMxnIndex = findColumnIndex(normalized, ['subtotalmxn', 'subtotal mxn']);
+    const tcSugeridoIndex = findColumnIndex(normalized, ['tcsugerido', 'tc sugerido', 'tc_sugerido']);
     let estadoIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.ESTADO_SAT);
 
     if (estadoIndex === -1) {
@@ -157,7 +162,7 @@ export const parseExcelToMiAdminIngresos = (
         Subtotal: subtotalIndex,
         IVA: ivaIndex,
         Total: totalIndex,
-        Moneda: monedaIndex,
+        Moneda: monedaIndex === -1 ? '⚠️ no encontrada → MXN por defecto' : monedaIndex,
         'Tipo Cambio': tipoCambioIndex,
         'Estado SAT': estadoIndex,
     });
@@ -206,7 +211,7 @@ export const parseExcelToMiAdminIngresos = (
         const uuid = uuidIndex !== -1 ? row[uuidIndex]?.toString().trim() || '' : '';
 
         // Parsear valores básicos
-        const moneda = parseMoneda(row[monedaIndex]);
+        const moneda = monedaIndex !== -1 ? parseMoneda(row[monedaIndex]) : 'MXN';
         const subtotal = parseAmount(row[subtotalIndex]);
         const iva = ivaIndex !== -1 ? parseAmount(row[ivaIndex]) : 0;
         const total = totalIndex !== -1 ? parseAmount(row[totalIndex]) : subtotal + iva;
@@ -253,7 +258,22 @@ export const parseExcelToMiAdminIngresos = (
 
         // Buscar subtotalAUX desde Auxiliar POR FOLIO (ya viene en MXN)
         const auxiliarRow = auxiliarLookup.get(folio); // Buscar por FOLIO
-        const subtotalAUX = auxiliarRow?.subtotal || null;
+        let subtotalAUX = auxiliarRow?.subtotal ?? null;
+
+        if ((subtotalAUX === null || subtotalAUX === undefined) && subtotalAuxIndex !== -1) {
+            const rawSubtotalAux = row[subtotalAuxIndex];
+            const hasStoredSubtotalAux =
+                rawSubtotalAux !== null &&
+                rawSubtotalAux !== undefined &&
+                String(rawSubtotalAux).trim() !== '';
+
+            if (hasStoredSubtotalAux) {
+                const parsedSubtotalAux = parseAmount(rawSubtotalAux);
+                if (!Number.isNaN(parsedSubtotalAux)) {
+                    subtotalAUX = parsedSubtotalAux;
+                }
+            }
+        }
 
         // Calcular subtotal MXN
         const subtotalMXN = calculateSubtotalMXN(subtotal, moneda, tipoCambio);
@@ -274,7 +294,10 @@ export const parseExcelToMiAdminIngresos = (
                 index !== razonSocialIndex &&
                 index !== ivaIndex &&
                 index !== totalIndex &&
-                index !== estadoIndex) {
+                index !== estadoIndex &&
+                index !== subtotalAuxIndex &&
+                index !== subtotalMxnIndex &&
+                index !== tcSugeridoIndex) {
                 // Esta es una columna extra que no procesamos explícitamente
                 const headerName = String(header || `col_${index}`);
                 dynamicFields[headerName] = row[index];
