@@ -48,15 +48,19 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
   const [eliminando, setEliminando] = useState(false);
   const [reabriendo, setReabriendo] = useState(false);
   const [mostrarSelectorMeses, setMostrarSelectorMeses] = useState(false);
-  const [completandoMes, setCompletandoMes] = useState(false);
+  const [enviandoMes, setEnviandoMes] = useState(false);
 
   const { user } = useAuth();
   const role = user?.role ?? "Gestor";
   const userId = user?.id ?? "";
+  const isAdmin = role === "Admin";
+  const esGestorResponsable =
+    !!trabajo.gestorResponsableId && trabajo.gestorResponsableId === userId;
 
   const isAprobado = trabajo.estadoAprobacion === "APROBADO";
-  const canEdit = canManage && !isAprobado;
-  const canReabrir = canManage && isAprobado;
+  const canEdit = canManage && !isAprobado && (isAdmin || esGestorResponsable);
+  const canReabrir =
+    canManage && isAprobado && (isAdmin || esGestorResponsable);
 
   const progreso = trabajo.reporteBaseAnual?.mesesCompletados.length || 0;
 
@@ -94,14 +98,8 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
         mesActual.estadoRevision === "APROBADO")
   );
 
-  const esMiembroAsignado =
-    role === "Miembro" && trabajo.miembroAsignadoId === userId;
-
-  const puedeCompletarMesProvisional = Boolean(
-    mesActual &&
-      !mesEstaBloqueado &&
-      mesActual.estado !== "COMPLETADO" &&
-      (role === "Admin" || role === "Gestor" || esMiembroAsignado)
+  const puedeEnviarMesManual = Boolean(
+    mesActual && !mesEstaBloqueado && (isAdmin || esGestorResponsable)
   );
 
   const puedeEditarMesActual = Boolean(canEdit && !mesEstaBloqueado);
@@ -123,6 +121,8 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
     trabajo.miembroAsignado?.nombre ?? trabajo.miembroAsignado?.name ?? "";
   const aprobadorNombre =
     trabajo.aprobadoPor?.nombre ?? trabajo.aprobadoPor?.name ?? "";
+  const gestorResponsableNombre =
+    trabajo.gestorResponsable?.nombre ?? trabajo.gestorResponsable?.name ?? "";
 
   const handleEliminarProyecto = async () => {
     if (!canEdit) {
@@ -228,8 +228,8 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
     }
   };
 
-  const handleCompletarMesProvisional = async () => {
-    if (!mesActual || !puedeCompletarMesProvisional) {
+  const handleEnviarMesManual = async () => {
+    if (!mesActual || !puedeEnviarMesManual) {
       return;
     }
 
@@ -239,28 +239,28 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
     }
 
     const confirmar = window.confirm(
-      `¿Deseas marcar provisionalmente el mes de ${
+      `¿Deseas enviar el mes de ${
         MESES_NOMBRES[mesActual.mes - 1]
-      } como completado?`
+      } a revisión del gestor?`
     );
 
     if (!confirmar) {
       return;
     }
 
-    setCompletandoMes(true);
+    setEnviandoMes(true);
     try {
-      await mesesService.completar(mesActual.id);
-      alert("Mes marcado como completado para pruebas.");
+      await mesesService.enviarRevisionManual(mesActual.id);
+      alert("Mes enviado a revisión.");
       onReload();
     } catch (error: any) {
-      console.error("Error al completar provisionalmente el mes:", error);
+      console.error("Error al enviar mes manualmente a revisión:", error);
       alert(
-        error.response?.data?.message ||
-          "No fue posible marcar el mes como completado."
+        error?.response?.data?.message ||
+          "No fue posible enviar el mes a revisión."
       );
     } finally {
-      setCompletandoMes(false);
+      setEnviandoMes(false);
     }
   };
 
@@ -326,6 +326,9 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
             <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
               {trabajo.clienteRfc && <span>RFC: {trabajo.clienteRfc}</span>}
               <span>Estado aprobación: {estadoAprobacionLabel}</span>
+              {gestorResponsableNombre && (
+                <span>Gestor responsable: {gestorResponsableNombre}</span>
+              )}
               {miembroAsignadoNombre && (
                 <span>Asignado a: {miembroAsignadoNombre}</span>
               )}
@@ -338,15 +341,15 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
               )}
             </div>
           </div>
-          {(canEdit || canReabrir || puedeCompletarMesProvisional) && (
+          {(canEdit || canReabrir || puedeEnviarMesManual) && (
             <div className="flex flex-wrap gap-2">
-              {puedeCompletarMesProvisional && (
+              {puedeEnviarMesManual && (
                 <button
-                  onClick={handleCompletarMesProvisional}
-                  disabled={completandoMes}
+                  onClick={handleEnviarMesManual}
+                  disabled={enviandoMes}
                   className="bg-slate-600 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
                 >
-                  {completandoMes ? (
+                  {enviandoMes ? (
                     <>
                       <svg
                         className="animate-spin h-4 w-4 text-white"
@@ -368,7 +371,7 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                         ></path>
                       </svg>
-                      Marcando...
+                      Enviando...
                     </>
                   ) : (
                     <>
@@ -384,7 +387,7 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
                           clipRule="evenodd"
                         />
                       </svg>
-                      Completar mes (provisional)
+                      Enviar a revisión
                     </>
                   )}
                 </button>

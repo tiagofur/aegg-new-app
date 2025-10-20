@@ -27,11 +27,13 @@ export interface Trabajo {
     aprobadoPorId?: string | null;
     visibilidadEquipo: boolean;
     miembroAsignadoId?: string | null;
+    gestorResponsableId?: string | null;
     fechaCreacion: string;
     fechaActualizacion: string;
     cliente?: Cliente | null;
     miembroAsignado?: TrabajoUserSummary | null;
     aprobadoPor?: TrabajoUserSummary | null;
+    gestorResponsable?: TrabajoUserSummary | null;
     reporteBaseAnual?: ReporteBaseAnual;
     meses: Mes[];
 }
@@ -85,6 +87,7 @@ export interface CreateTrabajoDto {
     anio: number;
     miembroAsignadoId?: string | null;
     usuarioAsignadoId?: string | null;
+    gestorResponsableId?: string | null;
     estadoAprobacion?: EstadoAprobacion;
     visibilidadEquipo?: boolean;
     clienteNombre?: string;
@@ -98,6 +101,7 @@ export interface UpdateTrabajoDto {
     anio?: number;
     miembroAsignadoId?: string | null;
     usuarioAsignadoId?: string | null;
+    gestorResponsableId?: string | null;
     estado?: EstadoTrabajo;
     estadoAprobacion?: EstadoAprobacion;
     visibilidadEquipo?: boolean;

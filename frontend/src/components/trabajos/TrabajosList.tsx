@@ -94,6 +94,9 @@ export const TrabajosList: React.FC<TrabajosListProps> = ({
             trabajo.miembroAsignado?.nombre ??
               trabajo.miembroAsignado?.name ??
               "",
+            trabajo.gestorResponsable?.nombre ??
+              trabajo.gestorResponsable?.name ??
+              "",
           ]
             .join(" ")
             .toLowerCase()
@@ -187,6 +190,10 @@ export const TrabajosList: React.FC<TrabajosListProps> = ({
               trabajo.miembroAsignado?.nombre ??
               trabajo.miembroAsignado?.name ??
               "";
+            const gestorResponsableNombre =
+              trabajo.gestorResponsable?.nombre ??
+              trabajo.gestorResponsable?.name ??
+              "";
 
             return (
               <div
@@ -206,6 +213,11 @@ export const TrabajosList: React.FC<TrabajosListProps> = ({
                   Año: {trabajo.anio}
                 </p>
 
+                {gestorResponsableNombre && (
+                  <p className="text-xs text-gray-500 mb-2">
+                    Gestor: {gestorResponsableNombre}
+                  </p>
+                )}
                 <p className="text-xs text-gray-500 mb-4">
                   {miembroAsignadoNombre
                     ? `Asignado a: ${miembroAsignadoNombre}`

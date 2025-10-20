@@ -1,6 +1,12 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Cliente, CreateTrabajoDto, EstadoAprobacion } from "../../types";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Cliente,
+  CreateTrabajoDto,
+  EstadoAprobacion,
+  AppUser,
+} from "../../types";
 import { trabajosService } from "../../services";
+import { usersApi } from "../../services/users";
 import {
   ClienteSelector,
   ClienteSelectorHandle,
@@ -42,6 +48,11 @@ export const CreateTrabajoDialog: React.FC<CreateTrabajoDialogProps> = ({
     useState<EstadoAprobacion>("EN_PROGRESO");
   const [visibilidadEquipo, setVisibilidadEquipo] = useState<boolean>(true);
   const selectorRef = useRef<ClienteSelectorHandle | null>(null);
+  const [usuarios, setUsuarios] = useState<AppUser[]>([]);
+  const [usuariosLoading, setUsuariosLoading] = useState(false);
+  const [gestorResponsableId, setGestorResponsableId] =
+    useState<string>(currentUserId);
+  const [miembroAsignadoId, setMiembroAsignadoId] = useState<string>("");
 
   const resetForm = () => {
     setSelectedClienteId("");
@@ -52,14 +63,29 @@ export const CreateTrabajoDialog: React.FC<CreateTrabajoDialogProps> = ({
     setAnio(CURRENT_YEAR);
     setEstadoAprobacion("EN_PROGRESO");
     setVisibilidadEquipo(true);
+    setGestorResponsableId(currentUserId);
+    setMiembroAsignadoId("");
   };
 
   useEffect(() => {
     if (open) {
       resetForm();
+      void loadUsuarios();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  const loadUsuarios = async () => {
+    setUsuariosLoading(true);
+    try {
+      const data = await usersApi.getAll();
+      setUsuarios(data);
+    } catch (error) {
+      console.error("Error al cargar usuarios:", error);
+    } finally {
+      setUsuariosLoading(false);
+    }
+  };
 
   const handleClose = () => {
     resetForm();
@@ -88,6 +114,47 @@ export const CreateTrabajoDialog: React.FC<CreateTrabajoDialogProps> = ({
     selectorRef.current?.refresh();
   };
 
+  const gestoresDisponibles = useMemo(() => {
+    const getLabel = (usuario: AppUser) => usuario.name || usuario.email;
+    return usuarios
+      .filter(
+        (usuario) => usuario.role === "Gestor" || usuario.role === "Admin"
+      )
+      .sort((a, b) => getLabel(a).localeCompare(getLabel(b)));
+  }, [usuarios]);
+
+  const miembrosDisponibles = useMemo(() => {
+    const getLabel = (usuario: AppUser) => usuario.name || usuario.email;
+    return usuarios
+      .filter((usuario) => usuario.role === "Miembro")
+      .sort((a, b) => getLabel(a).localeCompare(getLabel(b)));
+  }, [usuarios]);
+
+  useEffect(() => {
+    if (gestoresDisponibles.length > 0) {
+      const gestorEncontrado = gestoresDisponibles.find(
+        (g) => g.id === gestorResponsableId
+      );
+      if (!gestorEncontrado) {
+        setGestorResponsableId(gestoresDisponibles[0].id);
+      }
+    }
+
+    if (miembroAsignadoId) {
+      const miembroExiste = miembrosDisponibles.some(
+        (m) => m.id === miembroAsignadoId
+      );
+      if (!miembroExiste) {
+        setMiembroAsignadoId("");
+      }
+    }
+  }, [
+    gestoresDisponibles,
+    miembrosDisponibles,
+    gestorResponsableId,
+    miembroAsignadoId,
+  ]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -102,7 +169,9 @@ export const CreateTrabajoDialog: React.FC<CreateTrabajoDialogProps> = ({
       const payload: CreateTrabajoDto = {
         clienteId: selectedClienteId,
         anio,
-        miembroAsignadoId: currentUserId,
+        miembroAsignadoId: miembroAsignadoId ? miembroAsignadoId : null,
+        usuarioAsignadoId: miembroAsignadoId ? miembroAsignadoId : null,
+        gestorResponsableId: gestorResponsableId || currentUserId,
         estadoAprobacion,
         visibilidadEquipo,
         clienteNombre: selectedCliente?.nombre,
@@ -224,6 +293,58 @@ export const CreateTrabajoDialog: React.FC<CreateTrabajoDialogProps> = ({
                     </option>
                   ))}
                 </select>
+              </div>
+            </section>
+
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Gestor responsable
+                </label>
+                <select
+                  value={gestorResponsableId}
+                  onChange={(e) => setGestorResponsableId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {gestoresDisponibles.length === 0 ? (
+                    <option value="">Sin gestores disponibles</option>
+                  ) : (
+                    gestoresDisponibles.map((usuario) => (
+                      <option key={usuario.id} value={usuario.id}>
+                        {usuario.name || usuario.email}
+                        {usuario.role === "Admin" ? " (Admin)" : ""}
+                      </option>
+                    ))
+                  )}
+                </select>
+                {usuariosLoading && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Cargando usuarios...
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Miembro ejecutor
+                </label>
+                <select
+                  value={miembroAsignadoId}
+                  onChange={(e) => setMiembroAsignadoId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Sin asignar</option>
+                  {miembrosDisponibles.map((usuario) => (
+                    <option key={usuario.id} value={usuario.id}>
+                      {usuario.name || usuario.email}
+                    </option>
+                  ))}
+                </select>
+                {usuariosLoading && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Cargando usuarios...
+                  </p>
+                )}
               </div>
             </section>
 

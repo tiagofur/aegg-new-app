@@ -9,6 +9,7 @@ interface MesCardProps {
   trabajoId: string;
   trabajoYear: number;
   onMesUpdated?: () => void;
+  gestorResponsableId?: string | null;
 }
 
 export const MesCard: React.FC<MesCardProps> = ({
@@ -16,13 +17,20 @@ export const MesCard: React.FC<MesCardProps> = ({
   trabajoId,
   trabajoYear,
   onMesUpdated,
+  gestorResponsableId,
 }) => {
   const [expanded, setExpanded] = useState(false);
   const [processing, setProcessing] = useState(false);
   const { user } = useAuth();
 
   const role = user?.role ?? "Gestor";
-  const isGestor = role === "Gestor" || role === "Admin";
+  const userId = user?.id ?? "";
+  const isAdmin = role === "Admin";
+  const esGestor = role === "Gestor";
+  const esGestorResponsable = gestorResponsableId
+    ? gestorResponsableId === userId
+    : esGestor;
+  const puedeRevisar = isAdmin || esGestorResponsable;
   const isMiembro = role === "Miembro";
 
   const isReadOnly =
@@ -92,8 +100,10 @@ export const MesCard: React.FC<MesCardProps> = ({
 
   const handleReabrirMes = async () => {
     if (mes.estado !== "COMPLETADO") return;
-    if (!isGestor) {
-      alert("Solo un gestor puede reabrir el mes.");
+    if (!puedeRevisar) {
+      alert(
+        "Solo el gestor responsable o un administrador puede reabrir el mes."
+      );
       return;
     }
 
@@ -161,35 +171,37 @@ export const MesCard: React.FC<MesCardProps> = ({
     }
   };
 
-  const handleCompletarProvisional = async () => {
+  const handleEnviarRevisionManual = async () => {
+    if (!puedeRevisar) {
+      alert(
+        "Solo el gestor responsable o un administrador puede enviar el mes manualmente."
+      );
+      return;
+    }
+
     if (isReadOnly) {
       alert("El mes está bloqueado por revisión o aprobación.");
       return;
     }
 
-    if (mes.estado === "COMPLETADO") {
-      alert("Este mes ya está marcado como completado.");
-      return;
-    }
-
     const confirmar = window.confirm(
-      `¿Deseas marcar provisionalmente el mes de ${
+      `¿Deseas enviar el mes de ${
         MESES_NOMBRES[mes.mes - 1]
-      } como completado?`
+      } a revisión del gestor?`
     );
 
     if (!confirmar) return;
 
     setProcessing(true);
     try {
-      await mesesService.completar(mes.id);
-      alert("Mes marcado como completado para pruebas.");
+      await mesesService.enviarRevisionManual(mes.id);
+      alert("Mes enviado a revisión.");
       onMesUpdated?.();
     } catch (error: any) {
-      console.error("Error al completar provisionalmente el mes:", error);
+      console.error("Error al enviar mes a revisión manual:", error);
       alert(
         error.response?.data?.message ||
-          "No fue posible marcar el mes como completado."
+          "No fue posible enviar el mes a revisión."
       );
     } finally {
       setProcessing(false);
@@ -197,7 +209,12 @@ export const MesCard: React.FC<MesCardProps> = ({
   };
 
   const handleAprobarMes = async () => {
-    if (!isGestor) return;
+    if (!puedeRevisar) {
+      alert(
+        "Solo el gestor responsable o un administrador puede aprobar el mes."
+      );
+      return;
+    }
     setProcessing(true);
     try {
       await mesesService.aprobar(mes.id);
@@ -212,7 +229,12 @@ export const MesCard: React.FC<MesCardProps> = ({
   };
 
   const handleSolicitarCambios = async () => {
-    if (!isGestor) return;
+    if (!puedeRevisar) {
+      alert(
+        "Solo el gestor responsable o un administrador puede solicitar cambios."
+      );
+      return;
+    }
     const comentario = window.prompt(
       "Describe los cambios necesarios para este mes:",
       mes.comentarioRevision ?? ""
@@ -347,55 +369,57 @@ export const MesCard: React.FC<MesCardProps> = ({
             })}
           </div>
 
-          {!isReadOnly && mes.estado !== "COMPLETADO" && (
-            <button
-              onClick={handleCompletarProvisional}
-              disabled={processing}
-              className="w-full bg-slate-600 hover:bg-slate-700 text-white px-4 py-3 rounded-lg font-semibold transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 mb-2"
-            >
-              {processing ? (
-                <>
-                  <svg
-                    className="animate-spin h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
+          {puedeRevisar &&
+            (mes.estadoRevision === "EN_EDICION" ||
+              mes.estadoRevision === "CAMBIOS_SOLICITADOS") && (
+              <button
+                onClick={handleEnviarRevisionManual}
+                disabled={processing}
+                className="w-full bg-slate-600 hover:bg-slate-700 text-white px-4 py-3 rounded-lg font-semibold transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 mb-2"
+              >
+                {processing ? (
+                  <>
+                    <svg
+                      className="animate-spin h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      viewBox="0 0 20 20"
                       fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Marcando...
-                </>
-              ) : (
-                <>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M6.267 3.455A2 2 0 017.956 2h4.088a2 2 0 011.689.955l1.911 3.185A2 2 0 0116 6.92V17a1 1 0 01-1 1H5a1 1 0 01-1-1V6.918a2 2 0 01.356-1.13l1.911-3.333zM8 4l-1 2h6l-1-2H8z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Completar mes (provisional)
-                </>
-              )}
-            </button>
-          )}
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M6.267 3.455A2 2 0 017.956 2h4.088a2 2 0 011.689.955l1.911 3.185A2 2 0 0116 6.92V17a1 1 0 01-1 1H5a1 1 0 01-1-1V6.918a2 2 0 01.356-1.13l1.911-3.333zM8 4l-1 2h6l-1-2H8z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Enviar a revisión
+                  </>
+                )}
+              </button>
+            )}
 
           {todosImportados && mes.estado !== "COMPLETADO" && !isReadOnly && (
             <button
@@ -497,8 +521,8 @@ export const MesCard: React.FC<MesCardProps> = ({
               </button>
             )}
 
-          {/* Acciones para el gestor cuando el mes está en revisión */}
-          {isGestor && mes.estadoRevision === "ENVIADO" && (
+          {/* Acciones para el gestor responsable cuando el mes está en revisión */}
+          {puedeRevisar && mes.estadoRevision === "ENVIADO" && (
             <div className="mb-3 grid grid-cols-1 gap-2 md:grid-cols-2">
               <button
                 onClick={handleAprobarMes}
@@ -604,7 +628,7 @@ export const MesCard: React.FC<MesCardProps> = ({
           )}
 
           {/* Botón para reabrir mes completado */}
-          {mes.estado === "COMPLETADO" && isGestor && (
+          {mes.estado === "COMPLETADO" && puedeRevisar && (
             <button
               onClick={handleReabrirMes}
               disabled={processing}
@@ -656,7 +680,7 @@ export const MesCard: React.FC<MesCardProps> = ({
 
           {/* Botón para eliminar mes */}
           {(mes.estado === "EN_PROCESO" || mes.estado === "COMPLETADO") &&
-            isGestor && (
+            puedeRevisar && (
               <button
                 onClick={handleEliminarMes}
                 disabled={processing}

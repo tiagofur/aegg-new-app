@@ -36,6 +36,10 @@ export class CreateTrabajoDto {
     @IsOptional()
     usuarioAsignadoId?: string;
 
+    @IsUUID('4')
+    @IsOptional()
+    gestorResponsableId?: string;
+
     @IsEnum(EstadoAprobacion)
     @IsOptional()
     estadoAprobacion?: EstadoAprobacion;

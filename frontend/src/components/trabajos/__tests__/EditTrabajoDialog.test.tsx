@@ -110,6 +110,7 @@ describe("EditTrabajoDialog", () => {
     estadoAprobacion: "EN_PROGRESO",
     visibilidadEquipo: true,
     miembroAsignadoId: null,
+    gestorResponsableId: null,
     fechaCreacion: new Date().toISOString(),
     fechaActualizacion: new Date().toISOString(),
     aprobadoPorId: null,

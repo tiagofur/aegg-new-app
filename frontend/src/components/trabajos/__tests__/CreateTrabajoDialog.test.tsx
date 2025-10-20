@@ -81,6 +81,25 @@ function clientesMockFactory() {
 vi.mock("../../features/clientes", clientesMockFactory);
 vi.mock("@/features/clientes", clientesMockFactory);
 
+vi.mock("../../../services/users", () => ({
+  usersApi: {
+    getAll: vi.fn().mockResolvedValue([
+      {
+        id: "usuario-1",
+        name: "Gestor Demo",
+        email: "gestor@example.com",
+        role: "Gestor",
+      },
+      {
+        id: "miembro-1",
+        name: "Miembro Demo",
+        email: "miembro@example.com",
+        role: "Miembro",
+      },
+    ]),
+  },
+}));
+
 let CreateTrabajoDialog: typeof import("../CreateTrabajoDialog").CreateTrabajoDialog;
 
 beforeAll(async () => {

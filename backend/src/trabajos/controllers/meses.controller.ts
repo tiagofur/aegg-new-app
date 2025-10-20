@@ -56,12 +56,13 @@ export class MesesController {
         return this.mesesService.enviarRevision(id, currentUser, body?.comentario);
     }
 
-    @Patch(':id/completar')
-    completarMes(
+    @Patch(':id/enviar-manual')
+    @Roles(UserRole.ADMIN, UserRole.GESTOR)
+    enviarRevisionManual(
         @Param('id') id: string,
         @CurrentUser() currentUser: CurrentUserPayload,
     ) {
-        return this.mesesService.marcarComoCompletado(id, currentUser);
+        return this.mesesService.enviarRevisionManual(id, currentUser);
     }
 
     @Patch(':id/aprobar')

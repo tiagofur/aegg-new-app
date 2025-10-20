@@ -52,11 +52,17 @@ describe("TrabajoDetail", () => {
     estado: "ACTIVO",
     estadoAprobacion: "APROBADO",
     visibilidadEquipo: true,
+    miembroAsignadoId: "user-1",
+    gestorResponsableId: "gestor-1",
     fechaCreacion: new Date().toISOString(),
     fechaActualizacion: new Date().toISOString(),
     meses: [],
     miembroAsignado: { id: "user-1", email: "user@example.com" },
     aprobadoPor: { id: "gestor-1", email: "gestor@example.com" },
+    gestorResponsable: {
+      id: "gestor-1",
+      email: "gestor@example.com",
+    },
   };
 
   const defaultProps = {

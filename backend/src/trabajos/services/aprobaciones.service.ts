@@ -40,6 +40,7 @@ export class AprobacionesService {
                 'cliente',
                 'miembroAsignado',
                 'aprobadoPor',
+                'gestorResponsable',
                 'meses',
                 'meses.enviadoRevisionPor',
                 'meses.aprobadoPor',
@@ -257,6 +258,10 @@ export class AprobacionesService {
             }
 
             if (trabajo.miembroAsignadoId === currentUser.userId) {
+                return true;
+            }
+
+            if (trabajo.gestorResponsableId === currentUser.userId) {
                 return true;
             }
 

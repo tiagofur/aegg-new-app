@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Cliente,
   EstadoAprobacion,
@@ -51,6 +51,9 @@ export const EditTrabajoDialog: React.FC<EditTrabajoDialogProps> = ({
   const [miembroAsignadoId, setMiembroAsignadoId] = useState<string>(
     trabajo.miembroAsignadoId || ""
   );
+  const [gestorResponsableId, setGestorResponsableId] = useState<string>(
+    trabajo.gestorResponsableId || ""
+  );
   const [aprobadoPorId, setAprobadoPorId] = useState<string>(
     trabajo.aprobadoPorId || ""
   );
@@ -78,6 +81,7 @@ export const EditTrabajoDialog: React.FC<EditTrabajoDialogProps> = ({
       setEstadoAprobacion(trabajo.estadoAprobacion);
       setVisibilidadEquipo(trabajo.visibilidadEquipo);
       setMiembroAsignadoId(trabajo.miembroAsignadoId || "");
+      setGestorResponsableId(trabajo.gestorResponsableId || "");
       setAprobadoPorId(trabajo.aprobadoPorId || "");
       setSelectedClienteId(nextClienteId);
       setSelectedCliente(trabajo.cliente ?? null);
@@ -104,6 +108,47 @@ export const EditTrabajoDialog: React.FC<EditTrabajoDialogProps> = ({
     }
   };
 
+  const gestoresDisponibles = useMemo(() => {
+    const getLabel = (usuario: AppUser) => usuario.name || usuario.email;
+    return usuarios
+      .filter(
+        (usuario) => usuario.role === "Gestor" || usuario.role === "Admin"
+      )
+      .sort((a, b) => getLabel(a).localeCompare(getLabel(b)));
+  }, [usuarios]);
+
+  const miembrosDisponibles = useMemo(() => {
+    const getLabel = (usuario: AppUser) => usuario.name || usuario.email;
+    return usuarios
+      .filter((usuario) => usuario.role === "Miembro")
+      .sort((a, b) => getLabel(a).localeCompare(getLabel(b)));
+  }, [usuarios]);
+
+  useEffect(() => {
+    if (gestoresDisponibles.length > 0) {
+      const gestorActual = gestoresDisponibles.find(
+        (usuario) => usuario.id === gestorResponsableId
+      );
+      if (!gestorActual) {
+        setGestorResponsableId(gestoresDisponibles[0].id);
+      }
+    }
+
+    if (miembroAsignadoId) {
+      const miembroActualExiste = miembrosDisponibles.some(
+        (usuario) => usuario.id === miembroAsignadoId
+      );
+      if (!miembroActualExiste) {
+        setMiembroAsignadoId("");
+      }
+    }
+  }, [
+    gestoresDisponibles,
+    miembrosDisponibles,
+    gestorResponsableId,
+    miembroAsignadoId,
+  ]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -124,6 +169,7 @@ export const EditTrabajoDialog: React.FC<EditTrabajoDialogProps> = ({
         visibilidadEquipo,
         miembroAsignadoId: miembroAsignadoId ? miembroAsignadoId : null,
         usuarioAsignadoId: miembroAsignadoId ? miembroAsignadoId : null,
+        gestorResponsableId: gestorResponsableId ? gestorResponsableId : null,
         aprobadoPorId: aprobadoPorId ? aprobadoPorId : null,
       };
 
@@ -280,6 +326,33 @@ export const EditTrabajoDialog: React.FC<EditTrabajoDialogProps> = ({
               <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Gestor responsable
+                  </label>
+                  <select
+                    value={gestorResponsableId}
+                    onChange={(e) => setGestorResponsableId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    {gestoresDisponibles.length === 0 ? (
+                      <option value="">Sin gestores disponibles</option>
+                    ) : (
+                      gestoresDisponibles.map((usuario) => (
+                        <option key={usuario.id} value={usuario.id}>
+                          {usuario.name || usuario.email}
+                          {usuario.role === "Admin" ? " (Admin)" : ""}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  {usuariosLoading && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Cargando usuarios...
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Miembro asignado
                   </label>
                   <select
@@ -288,9 +361,9 @@ export const EditTrabajoDialog: React.FC<EditTrabajoDialogProps> = ({
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="">Sin asignar</option>
-                    {usuarios.map((usuario) => (
+                    {miembrosDisponibles.map((usuario) => (
                       <option key={usuario.id} value={usuario.id}>
-                        {usuario.name}
+                        {usuario.name || usuario.email}
                       </option>
                     ))}
                   </select>
@@ -300,7 +373,9 @@ export const EditTrabajoDialog: React.FC<EditTrabajoDialogProps> = ({
                     </p>
                   )}
                 </div>
+              </section>
 
+              <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Aprobado por
@@ -313,7 +388,7 @@ export const EditTrabajoDialog: React.FC<EditTrabajoDialogProps> = ({
                     <option value="">Sin aprobador</option>
                     {usuarios.map((usuario) => (
                       <option key={usuario.id} value={usuario.id}>
-                        {usuario.name}
+                        {usuario.name || usuario.email}
                       </option>
                     ))}
                   </select>

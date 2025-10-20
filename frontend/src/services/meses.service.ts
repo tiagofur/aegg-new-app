@@ -33,8 +33,8 @@ export const mesesService = {
         return data;
     },
 
-    async completar(id: string): Promise<Mes> {
-        const { data } = await api.patch(`/meses/${id}/completar`);
+    async enviarRevisionManual(id: string): Promise<Mes> {
+        const { data } = await api.patch(`/meses/${id}/enviar-manual`);
         return data;
     },
 

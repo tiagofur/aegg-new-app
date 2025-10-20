@@ -60,6 +60,31 @@ export class TrabajosService {
             );
         }
 
+        const gestorResponsableId =
+            createTrabajoDto.gestorResponsableId ?? currentUser.userId;
+
+        const gestorResponsable = await this.userRepository.findOne({ where: { id: gestorResponsableId } });
+
+        if (!gestorResponsable) {
+            throw new NotFoundException(
+                `Usuario con id ${gestorResponsableId} no encontrado para asignar como gestor`,
+            );
+        }
+
+        if (gestorResponsable.role !== UserRole.ADMIN && gestorResponsable.role !== UserRole.GESTOR) {
+            throw new BadRequestException('El gestor responsable debe tener rol de Admin o Gestor.');
+        }
+
+        if (
+            currentUser.role === UserRole.GESTOR &&
+            currentUser.equipoId &&
+            gestorResponsable.role === UserRole.GESTOR &&
+            gestorResponsable.equipoId &&
+            gestorResponsable.equipoId !== currentUser.equipoId
+        ) {
+            throw new ForbiddenException('Solo puedes asignar gestores de tu equipo.');
+        }
+
         const miembroAsignadoId =
             createTrabajoDto.miembroAsignadoId ??
             createTrabajoDto.usuarioAsignadoId ??
@@ -111,7 +136,9 @@ export class TrabajosService {
                 estadoAprobacion:
                     createTrabajoDto.estadoAprobacion ?? EstadoAprobacion.EN_PROGRESO,
                 miembroAsignadoId,
+                gestorResponsableId: gestorResponsable.id,
             });
+            trabajo.gestorResponsable = gestorResponsable;
             const trabajoGuardado = await queryRunner.manager.save(trabajo);
             console.log('[TrabajosService] Trabajo guardado:', trabajoGuardado.id);
 
@@ -168,6 +195,7 @@ export class TrabajosService {
                 'miembroAsignado',
                 'cliente',
                 'aprobadoPor',
+                'gestorResponsable',
             ],
             order: {
                 fechaCreacion: 'DESC',
@@ -210,6 +238,41 @@ export class TrabajosService {
         }
 
         const payload: UpdateTrabajoDto = { ...updateTrabajoDto };
+
+        if (
+            payload.gestorResponsableId &&
+            payload.gestorResponsableId !== trabajo.gestorResponsableId
+        ) {
+            const nuevoGestor = await this.userRepository.findOne({
+                where: { id: payload.gestorResponsableId },
+            });
+
+            if (!nuevoGestor) {
+                throw new NotFoundException(
+                    `Usuario con id ${payload.gestorResponsableId} no encontrado para asignar como gestor`,
+                );
+            }
+
+            if (nuevoGestor.role !== UserRole.ADMIN && nuevoGestor.role !== UserRole.GESTOR) {
+                throw new BadRequestException('El gestor responsable debe tener rol de Admin o Gestor.');
+            }
+
+            if (
+                currentUser.role === UserRole.GESTOR &&
+                currentUser.equipoId &&
+                nuevoGestor.role === UserRole.GESTOR &&
+                nuevoGestor.equipoId &&
+                nuevoGestor.equipoId !== currentUser.equipoId
+            ) {
+                throw new ForbiddenException('Solo puedes asignar gestores de tu equipo.');
+            }
+
+            trabajo.gestorResponsable = nuevoGestor;
+            trabajo.gestorResponsableId = nuevoGestor.id;
+        } else if (payload.gestorResponsableId === null) {
+            trabajo.gestorResponsable = null;
+            trabajo.gestorResponsableId = null;
+        }
 
         if (payload.usuarioAsignadoId && !payload.miembroAsignadoId) {
             payload.miembroAsignadoId = payload.usuarioAsignadoId;
@@ -493,6 +556,10 @@ export class TrabajosService {
                 return;
             }
 
+            if (trabajo.gestorResponsableId === currentUser.userId) {
+                return;
+            }
+
             const miembroEquipoId = trabajo.miembroAsignado?.equipoId ?? null;
             if (miembroEquipoId === currentUser.equipoId) {
                 return;
@@ -528,6 +595,7 @@ export class TrabajosService {
                 'miembroAsignado',
                 'cliente',
                 'aprobadoPor',
+                'gestorResponsable',
             ],
         });
 
@@ -556,6 +624,10 @@ export class TrabajosService {
             }
 
             if (trabajo.miembroAsignadoId === currentUser.userId) {
+                return true;
+            }
+
+            if (trabajo.gestorResponsableId === currentUser.userId) {
                 return true;
             }
 

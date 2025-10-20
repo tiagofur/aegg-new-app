@@ -51,6 +51,9 @@ export class Trabajo {
     @Column({ name: 'miembroAsignadoId', type: 'uuid', nullable: true })
     miembroAsignadoId: string | null;
 
+    @Column({ name: 'gestor_responsable_id', type: 'uuid', nullable: true })
+    gestorResponsableId: string | null;
+
     @Column({
         type: 'enum',
         enum: EstadoTrabajo,
@@ -89,6 +92,10 @@ export class Trabajo {
     @ManyToOne(() => User, { eager: false })
     @JoinColumn({ name: 'miembroAsignadoId' })
     miembroAsignado?: User | null;
+
+    @ManyToOne(() => User, { eager: false })
+    @JoinColumn({ name: 'gestor_responsable_id' })
+    gestorResponsable?: User | null;
 
     @ManyToOne(() => User, { eager: false })
     @JoinColumn({ name: 'aprobado_por_id' })

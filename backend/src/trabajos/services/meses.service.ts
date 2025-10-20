@@ -104,7 +104,7 @@ export class MesesService {
     async findOne(id: string): Promise<Mes> {
         const mes = await this.mesRepository.findOne({
             where: { id },
-            relations: ['reportes', 'trabajo', 'trabajo.miembroAsignado', 'enviadoRevisionPor', 'aprobadoPor'],
+            relations: ['reportes', 'trabajo', 'trabajo.miembroAsignado', 'trabajo.gestorResponsable', 'enviadoRevisionPor', 'aprobadoPor'],
         });
 
         if (!mes) {
@@ -187,22 +187,25 @@ export class MesesService {
         return this.findOne(id);
     }
 
-    async marcarComoCompletado(
+    async enviarRevisionManual(
         id: string,
         currentUser: CurrentUserPayload,
     ): Promise<Mes> {
         const mes = await this.findOne(id);
-        this.assertPuedeSolicitarRevision(mes, currentUser);
+        this.assertPuedeEnviarManual(mes, currentUser);
 
         if (mes.estadoRevision === EstadoRevisionMes.ENVIADO) {
-            return mes;
+            throw new ConflictException('El mes ya fue enviado a revisión.');
         }
 
         if (mes.estadoRevision === EstadoRevisionMes.APROBADO) {
             throw new ConflictException('El mes ya fue aprobado.');
         }
 
-        mes.estado = EstadoMes.COMPLETADO;
+        if (mes.estado === EstadoMes.PENDIENTE) {
+            mes.estado = EstadoMes.EN_PROCESO;
+        }
+
         mes.estadoRevision = EstadoRevisionMes.ENVIADO;
         mes.enviadoRevisionPorId = currentUser.userId;
         mes.fechaEnvioRevision = new Date();
@@ -217,8 +220,8 @@ export class MesesService {
     }
 
     async aprobarMes(id: string, currentUser: CurrentUserPayload): Promise<Mes> {
-        this.assertPuedeRevisar(currentUser);
         const mes = await this.findOne(id);
+        this.assertPuedeRevisar(mes, currentUser);
 
         if (mes.estadoRevision !== EstadoRevisionMes.ENVIADO) {
             throw new ConflictException('Solo puedes aprobar meses enviados a revisión.');
@@ -240,8 +243,8 @@ export class MesesService {
         currentUser: CurrentUserPayload,
         comentario?: string,
     ): Promise<Mes> {
-        this.assertPuedeRevisar(currentUser);
         const mes = await this.findOne(id);
+        this.assertPuedeRevisar(mes, currentUser);
 
         if (mes.estadoRevision !== EstadoRevisionMes.ENVIADO) {
             throw new ConflictException('Solo puedes solicitar cambios para meses en revisión.');
@@ -283,10 +286,37 @@ export class MesesService {
         throw new ForbiddenException('No tienes permisos para enviar este mes a revisión.');
     }
 
-    private assertPuedeRevisar(currentUser: CurrentUserPayload) {
-        if (currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.GESTOR) {
+    private assertPuedeEnviarManual(mes: Mes, currentUser: CurrentUserPayload) {
+        if (currentUser.role === UserRole.ADMIN) {
             return;
         }
+
+        if (currentUser.role === UserRole.GESTOR) {
+            const gestorAsignadoId = mes.trabajo?.gestorResponsableId ?? null;
+            if (!gestorAsignadoId || gestorAsignadoId === currentUser.userId) {
+                return;
+            }
+
+            throw new ForbiddenException('Solo el gestor responsable puede enviar este mes manualmente.');
+        }
+
+        throw new ForbiddenException('No tienes permisos para enviar este mes manualmente.');
+    }
+
+    private assertPuedeRevisar(mes: Mes, currentUser: CurrentUserPayload) {
+        if (currentUser.role === UserRole.ADMIN) {
+            return;
+        }
+
+        if (currentUser.role === UserRole.GESTOR) {
+            const gestorAsignadoId = mes.trabajo?.gestorResponsableId ?? null;
+            if (!gestorAsignadoId || gestorAsignadoId === currentUser.userId) {
+                return;
+            }
+
+            throw new ForbiddenException('Solo el gestor responsable puede aprobar o rechazar este mes.');
+        }
+
         throw new ForbiddenException('No tienes permisos para aprobar o rechazar meses.');
     }
 
