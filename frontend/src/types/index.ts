@@ -3,3 +3,4 @@ export * from "./dashboard";
 export * from "./user";
 export * from "./cliente";
 export * from "./aprobaciones";
+export * from "./knowledge-base";

@@ -506,7 +506,7 @@ export const isValidTipoCambio = (value: number): boolean => {
 
 /**
  * Convertir array de filas tipadas a formato Excel para guardar
- * VERSIÓN DINÁMICA: Exporta TODAS las columnas que existen en los datos
+ * VERSIÓN ROBUSTA: Exporta un set de columnas principales explícitamente.
  * @param data - Array de filas tipadas
  * @returns Array bidimensional para Excel
  */
@@ -515,74 +515,45 @@ export const convertToExcelFormat = (data: MiAdminIngresosRow[]): any[][] => {
         return [];
     }
 
-    // Obtener todas las claves únicas de todas las filas (excluyendo campos internos)
-    const keysToIgnore = new Set(['id', 'isSummary', 'uuid']); // uuid se guarda como columna separada si existe
-    const allKeys = new Set<string>();
-
-    data.forEach(row => {
-        Object.keys(row).forEach(key => {
-            if (!keysToIgnore.has(key)) {
-                allKeys.add(key);
-            }
-        });
-    });
-
-    // Definir orden de columnas principales
-    const mainColumns = [
-        'folio',
-        'fecha',
-        'rfc',
-        'razonSocial',
-        'subtotal',
-        'iva',
-        'total',
-        'moneda',
-        'tipoCambio',
-        'estadoSat',
+    // Definir headers explícitamente para asegurar consistencia
+    const headers = [
+        'Folio',
+        'Fecha',
+        'RFC',
+        'Razón Social',
+        'Subtotal',
+        'IVA',
+        'Total',
+        'Moneda',
+        'Tipo de Cambio',
+        'Estado SAT',
+        'Subtotal AUX',
+        'Subtotal MXN',
+        'TC Sugerido',
+        'UUID', // Incluir UUID si existe
     ];
 
-    // Columnas calculadas que siempre van al final
-    const calculatedColumns = ['subtotalAUX', 'subtotalMXN', 'tcSugerido'];
-
-    // Separar columnas dinámicas (las que no están en mainColumns ni calculatedColumns)
-    const dynamicColumns = Array.from(allKeys).filter(
-        key => !mainColumns.includes(key) && !calculatedColumns.includes(key)
-    );
-
-    // Orden final: principales + dinámicas + calculadas
-    const orderedColumns = [
-        ...mainColumns.filter(col => allKeys.has(col)),
-        ...dynamicColumns.sort(),
-        ...calculatedColumns.filter(col => allKeys.has(col)),
-    ];
-
-    // Crear headers con nombres formateados
-    const headers = orderedColumns.map(key => {
-        // Formatear nombres de columnas comunes
-        const commonNames: Record<string, string> = {
-            folio: 'Folio',
-            fecha: 'Fecha',
-            rfc: 'RFC',
-            razonSocial: 'Razón Social',
-            subtotal: 'Subtotal',
-            iva: 'IVA',
-            total: 'Total',
-            moneda: 'Moneda',
-            tipoCambio: 'Tipo de Cambio',
-            estadoSat: 'Estado SAT',
-            subtotalAUX: 'Subtotal AUX',
-            subtotalMXN: 'Subtotal MXN',
-            tcSugerido: 'TC Sugerido',
-        };
-        return commonNames[key] || key;
-    });
-
-    // Crear filas de datos
+    // Mapear datos a las columnas definidas
     const rows = data
         .filter(row => !row.isSummary) // Excluir filas de resumen
-        .map(row => orderedColumns.map(key => row[key] ?? null));
+        .map(row => [
+            row.folio ?? null,
+            row.fecha ?? null,
+            row.rfc ?? null,
+            row.razonSocial ?? null,
+            row.subtotal ?? null,
+            row.iva ?? null,
+            row.total ?? null,
+            row.moneda ?? null,
+            row.tipoCambio ?? null,
+            row.estadoSat ?? 'Vigente',
+            row.subtotalAUX ?? null,
+            row.subtotalMXN ?? null,
+            row.tcSugerido ?? null,
+            row.uuid ?? null,
+        ]);
 
-    console.log(`📤 Exportando ${rows.length} filas con ${orderedColumns.length} columnas:`, orderedColumns);
+    console.log(`📤 Exportando ${rows.length} filas con ${headers.length} columnas explícitas.`);
 
     return [headers, ...rows];
 };

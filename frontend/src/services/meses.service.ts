@@ -25,4 +25,28 @@ export const mesesService = {
         const { data } = await api.patch(`/meses/${id}/reabrir`);
         return data;
     },
+
+    async enviarRevision(id: string, comentario?: string): Promise<Mes> {
+        const { data } = await api.patch(`/meses/${id}/enviar-revision`, {
+            comentario: comentario?.trim() || undefined,
+        });
+        return data;
+    },
+
+    async completar(id: string): Promise<Mes> {
+        const { data } = await api.patch(`/meses/${id}/completar`);
+        return data;
+    },
+
+    async aprobar(id: string): Promise<Mes> {
+        const { data } = await api.patch(`/meses/${id}/aprobar`);
+        return data;
+    },
+
+    async solicitarCambios(id: string, comentario: string): Promise<Mes> {
+        const { data } = await api.patch(`/meses/${id}/solicitar-cambios`, {
+            comentario,
+        });
+        return data;
+    },
 };

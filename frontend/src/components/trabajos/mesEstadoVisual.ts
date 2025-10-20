@@ -38,6 +38,29 @@ export const MES_ESTADO_TONE_CLASSES: Record<
 };
 
 export const getMesEstadoVisual = (mes: Mes): MesEstadoVisual => {
+    switch (mes.estadoRevision) {
+        case 'ENVIADO':
+            return {
+                icon: '🔒',
+                label: 'En revisión',
+                tone: 'warning',
+            };
+        case 'APROBADO':
+            return {
+                icon: '✅',
+                label: 'Aprobado',
+                tone: 'success',
+            };
+        case 'CAMBIOS_SOLICITADOS':
+            return {
+                icon: '✏️',
+                label: 'Cambios solicitados',
+                tone: 'warning',
+            };
+        default:
+            break;
+    }
+
     switch (mes.estado) {
         case "COMPLETADO":
             return {

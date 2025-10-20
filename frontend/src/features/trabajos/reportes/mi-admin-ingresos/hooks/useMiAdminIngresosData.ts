@@ -43,6 +43,7 @@ export const useMiAdminIngresosData = ({
         },
         enabled: enabled && !!mesId && !!reporteId,
         staleTime: 1000 * 60 * 5, // 5 minutos
+        keepPreviousData: true,
     });
 
     const miAdminData: MiAdminIngresosRow[] = useMemo(() => {

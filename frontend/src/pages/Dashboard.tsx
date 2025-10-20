@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
+  BookOpen,
   CalendarClock,
   CalendarDays,
   CalendarPlus,
@@ -20,6 +21,8 @@ import {
   useDashboardData,
 } from "../features/dashboard";
 import { useNavigate } from "react-router-dom";
+import { knowledgeBaseService } from "../services";
+import { KnowledgeBaseArticle } from "../types";
 
 const announcementCategoryStyles: Record<string, string> = {
   Urgente: "border border-red-200 bg-red-100 text-red-600",
@@ -66,7 +69,30 @@ const Dashboard = () => {
   const [announcementDialogOpen, setAnnouncementDialogOpen] = useState(false);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [eventDialogOpen, setEventDialogOpen] = useState(false);
+  const [knowledgeArticles, setKnowledgeArticles] = useState<
+    KnowledgeBaseArticle[]
+  >([]);
+  const [knowledgeLoading, setKnowledgeLoading] = useState(false);
+  const [knowledgeError, setKnowledgeError] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const loadKnowledge = async () => {
+      setKnowledgeLoading(true);
+      try {
+        const data = await knowledgeBaseService.getAll();
+        setKnowledgeArticles(data);
+        setKnowledgeError(null);
+      } catch (error) {
+        console.error("Error al cargar base de conocimiento", error);
+        setKnowledgeError("No fue posible cargar la base de conocimiento.");
+      } finally {
+        setKnowledgeLoading(false);
+      }
+    };
+
+    loadKnowledge();
+  }, []);
 
   const stats = useMemo(() => {
     const total = tasks.length;
@@ -419,6 +445,112 @@ const Dashboard = () => {
                   ))
                 )}
               </div>
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-blue-600">
+                  Base de conocimiento
+                </p>
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Guias para resolver dudas comunes
+                </h3>
+              </div>
+              <BookOpen className="h-5 w-5 text-slate-400" />
+            </div>
+            <div className="mt-6 space-y-4">
+              {knowledgeLoading ? (
+                <div className="flex items-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-500">
+                  <svg
+                    className="h-4 w-4 animate-spin"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    aria-hidden
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Consultando articulos...
+                </div>
+              ) : knowledgeError ? (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                  {knowledgeError}
+                </div>
+              ) : knowledgeArticles.length === 0 ? (
+                <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
+                  <BookOpen className="h-10 w-10 text-slate-500" />
+                  <p className="mt-4 text-base font-semibold text-slate-900">
+                    Sin articulos registrados
+                  </p>
+                  <p className="mt-2 max-w-sm text-sm text-slate-600">
+                    Documenta buenas practicas y flujos clave para acelerar la
+                    operacion diaria.
+                  </p>
+                </div>
+              ) : (
+                knowledgeArticles.slice(0, 3).map((article) => (
+                  <article
+                    key={article.id}
+                    className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 transition-colors hover:border-blue-200 hover:bg-blue-50/40"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+                      <span className="inline-flex items-center rounded-full bg-white px-3 py-1 font-semibold text-slate-600">
+                        {article.category}
+                      </span>
+                      <span>
+                        {formatDate(article.lastUpdated, { year: "numeric" })}
+                      </span>
+                    </div>
+                    <h4 className="mt-2 text-base font-semibold text-slate-900">
+                      {article.title}
+                    </h4>
+                    <p className="mt-1 text-sm text-slate-600">
+                      {article.summary}
+                    </p>
+                    {article.tags.length > 0 && (
+                      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                        {article.tags.map((tag) => (
+                          <span
+                            key={`${article.id}-${tag}`}
+                            className="inline-flex items-center rounded-full border border-slate-300 bg-white px-2 py-0.5 font-semibold"
+                          >
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {article.links && article.links.length > 0 && (
+                      <div className="mt-4 flex flex-wrap items-center gap-2">
+                        {article.links.map((link) => (
+                          <a
+                            key={link.url}
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 rounded-lg border border-blue-200 px-3 py-1 text-xs font-semibold text-blue-600 transition-colors hover:border-blue-300 hover:text-blue-700"
+                          >
+                            Abrir: {link.label}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </article>
+                ))
+              )}
             </div>
           </section>
 

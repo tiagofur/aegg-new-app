@@ -10,6 +10,51 @@
 - [x] Sembrar usuario administrador base (`admin@example.com`), validar login contra backend en caliente y documentar el flujo de arranque.
 - [ ] Alinear aprobaciones mensuales: diseño pactado (esta iteración) + backlog levantado para backend/frontend/QA.
 
+## Próxima Iteración · Orden 1 → 2 → 3
+
+1. **Migraciones aprobación mensual**
+   - Preparar migración TypeORM `1761801600000-ExtendMesesWithRevision.ts` agregando columnas:
+     - `estado_revision` (`varchar`, default `'EN_PROCESO'`, check enumerado).
+     - `fecha_envio_revision` (`timestamp with time zone`, nullable).
+     - `fecha_aprobacion` (`timestamp with time zone`, nullable).
+     - `aprobado_por_id` (`uuid`, FK a `users.id`, `SET NULL`).
+     - `comentario_gestor` (`text`, default `null`).
+     - `bloqueado` (`boolean`, default `false`, virtual en código; no se materializa si basta con derived prop).
+   - Crear tabla `mes_historial_estados` con columnas (`id`, `mes_id`, `estado_anterior`, `estado_nuevo`, `comentario`, `registrado_por`, `created_at`). Índices: FK `mes_id`, `registrado_por`, timestamp para auditoría.
+   - Script de retrocarga:
+     - Setear `estado_revision = 'APROBADO'` donde `trabajos.estado_aprobacion = 'APROBADO'` y el mes no está en progreso.
+     - Caso contrario dejar `estado_revision = 'EN_PROCESO'` y `fecha_envio_revision = now()` si `estado = 'EN_PROCESO'`.
+     - Insertar entrada inicial en `mes_historial_estados` con `estado_nuevo = estado_revision`.
+   - Validaciones post migración: contar meses por estado, verificar FKs (`SELECT count(*) FROM meses WHERE aprobado_por_id IS NOT NULL AND NOT EXISTS ...`).
+   - Plan de rollback: `migration:revert`, truncar `mes_historial_estados`, quitar columnas, restaurar dump. Coordinar feature flag `ff_trabajos_aprobacion` para aislar despliegue.
+2. **Contratos FE/BE**
+   - Especificar endpoints:
+     - `PATCH /meses/:id/aprobar`
+       - Body: `{ comentario: string }` (opcional pero se recomienda), server fija `estado_revision = 'APROBADO'`, `fecha_aprobacion = now()`, `aprobado_por_id` = usuario actual.
+       - Respuesta 200: `{ id, estadoRevision, fechaAprobacion, aprobadoPor { id, nombre }, comentarioGestor }`.
+       - Errores: `409` si el mes ya está aprobado, `403` si rol/ equipo inválido.
+     - `PATCH /meses/:id/reabrir`
+       - Body: `{ comentario: string }` obligatorio, cambia `estado_revision = 'REABIERTO'`, limpia `fecha_aprobacion`.
+       - Respuesta 200 similar a aprobar, con `fechaAprobacion = null`.
+     - `GET /meses/pendientes`
+       - Query: `equipoId?`, `clienteId?`, `mes?`, `estado?`.
+       - Respuesta: `{ items: [{ trabajoId, trabajoNombre, clienteNombre, mesNumero, estadoRevision, fechaEnvioRevision, miembroAsignado { id, nombre } }], meta: { total, filtros } }`.
+   - Actualizar DTOs en backend (`backend/src/meses/dto/approve-mes.dto.ts`, `reopen-mes.dto.ts`, `pending-meses.dto.ts`) y contratos en frontend (`frontend/src/types/mes.ts`, `frontend/src/services/meses.service.ts`).
+   - Documentar eventos de dominio: emitir `MesAprobadoEvent`, `MesReabiertoEvent` para logging/notificaciones.
+   - Ajustar `trabajosService.getAprobacionesDashboard` para incluir arreglo `mesesPendientes` y `mesesAprobadosRecientes` alimentados por el nuevo endpoint.
+3. **Plan de pruebas**
+   - Unitarias backend:
+     - `MesesService.aprobar` y `.reabrir` con mocks de repos para validar permisos, transiciones y registros en historial.
+     - Guards `RolesGuard` + nueva policy `CanManageMesGuard` asegurando que el gestor corresponde al equipo.
+     - Repositorio `MesHistorialEstadosRepository` creando y listando eventos.
+   - Contract/API tests (Supertest): happy path aprobación/reapertura, errores 403/404/409, formato de respuesta.
+   - Frontend unit/integration (Vitest): hooks `useAprobacionesDashboard`, `useMesActions` cubriendo estados loading/success/error.
+   - E2E (Cypress/Playwright):
+     - Miembro carga reporte → envía mes → se bloquea UI.
+     - Gestor aprueba desde dashboard → verifica solo lectura y badge.
+     - Gestor reabre con comentario → miembro ve mes editable, historial muestra evento.
+   - Métricas de aceptación: todo mes aprobado en un trabajo dispara `estadoAprobacion` global, reapertura de un mes desbloquea únicamente ese periodo, historial conserva secuencia.
+
 ## Fase 0 · Descubrimiento y Preparacion
 
 1. Analizar modelo de datos actual de trabajos y usuarios; validar restricciones de claves foraneas y roles existentes.
@@ -26,8 +71,8 @@
 5. [x] Agregar relación `Equipo` ↔ `Usuario` (gestor propietario, miembros). Actualizar DTOs y repositorios.
 6. [ ] Emitir eventos de dominio / logs cuando se creen clientes, se cambie asignación de trabajos o estado.
 7. [x] Actualizar autenticación (JWT claims) para incluir `rol` y `equipoId`; `AuthContext` y servicios frontend ya lo consumen.
-8. [ ] Extender entidad `Mes` con campos de aprobación (`estadoRevision`, `fechaAprobacion`, `aprobadoPorId`, `comentarioGestor`) y servicios `PATCH /meses/:id/aprobar|reabrir` con auditoría.
-9. [ ] Sincronizar `TrabajosService` para que `estadoAprobacion` agregue el estado global (todo aprobado) derivado de los meses; mover lógica de solo lectura a nivel de mes desde el backend.
+8. [ ] Extender entidad `Mes` con campos de aprobación (`estadoRevision`, `fechaEnvioRevision`, `fechaAprobacion`, `aprobadoPorId`, `comentarioGestor`) y crear tabla `mes_historial_estados` con migración/relleno inicial.
+9. [ ] Publicar endpoints `PATCH /meses/:id/aprobar|reabrir`, `GET /meses/pendientes`, actualizar auditoría y sincronizar `TrabajosService` para que `estadoAprobacion` derive del consolidado de meses.
 
 ## Fase 2 · Frontend Funcional
 

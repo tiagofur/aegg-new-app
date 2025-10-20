@@ -14,6 +14,7 @@ interface ReporteCardProps {
   mesNumber: number;
   /** ID del reporte Auxiliar del mismo mes (para integración en Mi Admin) */
   auxiliarReporteId?: string;
+  isReadOnly?: boolean;
 }
 
 export const ReporteCard: React.FC<ReporteCardProps> = ({
@@ -23,6 +24,7 @@ export const ReporteCard: React.FC<ReporteCardProps> = ({
   trabajoYear,
   mesNumber,
   auxiliarReporteId,
+  isReadOnly = false,
 }) => {
   const [loading, setLoading] = useState(false);
   const [localReporte, setLocalReporte] = useState(reporte);
@@ -67,6 +69,10 @@ export const ReporteCard: React.FC<ReporteCardProps> = ({
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
+    if (isReadOnly) {
+      return;
+    }
+
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -213,13 +219,17 @@ export const ReporteCard: React.FC<ReporteCardProps> = ({
             id={`file-input-${reporte.id}`}
             type="file"
             onChange={handleFileUpload}
-            disabled={loading || localReporte.estado === "PROCESADO"}
+            disabled={
+              isReadOnly || loading || localReporte.estado === "PROCESADO"
+            }
           />
           <label htmlFor={`file-input-${reporte.id}`} className="flex-1">
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              disabled={loading || localReporte.estado === "PROCESADO"}
+              disabled={
+                isReadOnly || loading || localReporte.estado === "PROCESADO"
+              }
               className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
@@ -260,7 +270,9 @@ export const ReporteCard: React.FC<ReporteCardProps> = ({
                       clipRule="evenodd"
                     />
                   </svg>
-                  {localReporte.estado === "SIN_IMPORTAR"
+                  {isReadOnly
+                    ? "Solo lectura"
+                    : localReporte.estado === "SIN_IMPORTAR"
                     ? "Importar"
                     : "Re-importar"}
                 </>

@@ -11,11 +11,19 @@ import {
 } from 'typeorm';
 import { Trabajo } from './trabajo.entity';
 import { ReporteMensual } from './reporte-mensual.entity';
+import { User } from '../../auth/entities/user.entity';
 
 export enum EstadoMes {
     PENDIENTE = 'PENDIENTE',
     EN_PROCESO = 'EN_PROCESO',
     COMPLETADO = 'COMPLETADO',
+}
+
+export enum EstadoRevisionMes {
+    EN_EDICION = 'EN_EDICION',
+    ENVIADO = 'ENVIADO',
+    APROBADO = 'APROBADO',
+    CAMBIOS_SOLICITADOS = 'CAMBIOS_SOLICITADOS',
 }
 
 @Entity('meses')
@@ -37,6 +45,29 @@ export class Mes {
     })
     estado: EstadoMes;
 
+    @Column({
+        type: 'enum',
+        enum: EstadoRevisionMes,
+        name: 'estado_revision',
+        default: EstadoRevisionMes.EN_EDICION,
+    })
+    estadoRevision: EstadoRevisionMes;
+
+    @Column({ name: 'enviado_revision_por_id', type: 'uuid', nullable: true })
+    enviadoRevisionPorId?: string | null;
+
+    @Column({ name: 'fecha_envio_revision', type: 'timestamp', nullable: true })
+    fechaEnvioRevision?: Date | null;
+
+    @Column({ name: 'aprobado_por_id', type: 'uuid', nullable: true })
+    aprobadoPorId?: string | null;
+
+    @Column({ name: 'fecha_aprobacion', type: 'timestamp', nullable: true })
+    fechaAprobacion?: Date | null;
+
+    @Column({ name: 'comentario_revision', type: 'text', nullable: true })
+    comentarioRevision?: string | null;
+
     @CreateDateColumn()
     fechaCreacion: Date;
 
@@ -55,4 +86,12 @@ export class Mes {
         eager: false,
     })
     reportes: ReporteMensual[];
+
+    @ManyToOne(() => User, { eager: false })
+    @JoinColumn({ name: 'enviado_revision_por_id' })
+    enviadoRevisionPor?: User | null;
+
+    @ManyToOne(() => User, { eager: false })
+    @JoinColumn({ name: 'aprobado_por_id' })
+    aprobadoPor?: User | null;
 }

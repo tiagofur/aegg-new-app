@@ -17,6 +17,32 @@ const getEstadoVisual = (
   textColor: string;
   borderColor: string;
 } => {
+  switch (mes.estadoRevision) {
+    case "ENVIADO":
+      return {
+        icon: "🔒",
+        bgColor: "bg-amber-100",
+        textColor: "text-amber-800",
+        borderColor: "border-amber-400",
+      };
+    case "APROBADO":
+      return {
+        icon: "✅",
+        bgColor: "bg-green-100",
+        textColor: "text-green-800",
+        borderColor: "border-green-400",
+      };
+    case "CAMBIOS_SOLICITADOS":
+      return {
+        icon: "✏️",
+        bgColor: "bg-rose-100",
+        textColor: "text-rose-800",
+        borderColor: "border-rose-400",
+      };
+    default:
+      break;
+  }
+
   switch (mes.estado) {
     case "COMPLETADO":
       return {

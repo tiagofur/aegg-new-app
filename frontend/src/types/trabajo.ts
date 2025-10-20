@@ -2,6 +2,11 @@ import { Cliente } from './cliente';
 
 export type EstadoTrabajo = 'ACTIVO' | 'INACTIVO' | 'COMPLETADO';
 export type EstadoAprobacion = 'EN_PROGRESO' | 'EN_REVISION' | 'APROBADO' | 'REABIERTO';
+export type EstadoRevisionMes =
+    | 'EN_EDICION'
+    | 'ENVIADO'
+    | 'APROBADO'
+    | 'CAMBIOS_SOLICITADOS';
 
 export interface TrabajoUserSummary {
     id: string;
@@ -50,8 +55,16 @@ export interface Mes {
     trabajoId: string;
     mes: number;
     estado: 'PENDIENTE' | 'EN_PROCESO' | 'COMPLETADO';
+    estadoRevision: EstadoRevisionMes;
     fechaCreacion: string;
     fechaActualizacion: string;
+    fechaEnvioRevision?: string | null;
+    fechaAprobacion?: string | null;
+    comentarioRevision?: string | null;
+    enviadoRevisionPorId?: string | null;
+    aprobadoPorId?: string | null;
+    enviadoRevisionPor?: TrabajoUserSummary | null;
+    aprobadoPor?: TrabajoUserSummary | null;
     reportes: ReporteMensual[];
 }
 

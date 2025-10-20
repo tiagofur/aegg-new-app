@@ -14,6 +14,7 @@ import {
   AprobacionesDashboardData,
   AprobacionesFilters,
   EstadoAprobacion,
+  EstadoRevisionMes,
 } from "../../../../types";
 
 const ESTADO_LABELS: Record<EstadoAprobacion, string> = {
@@ -28,6 +29,33 @@ const ESTADO_COLORS: Record<EstadoAprobacion, string> = {
   EN_REVISION: "bg-amber-50 text-amber-700 border-amber-200",
   APROBADO: "bg-emerald-50 text-emerald-700 border-emerald-200",
   REABIERTO: "bg-rose-50 text-rose-700 border-rose-200",
+};
+
+const REVISION_LABELS: Record<EstadoRevisionMes, string> = {
+  EN_EDICION: "En edición",
+  ENVIADO: "En revisión",
+  APROBADO: "Aprobado",
+  CAMBIOS_SOLICITADOS: "Cambios solicitados",
+};
+
+const REVISION_COLORS: Record<EstadoRevisionMes, string> = {
+  EN_EDICION: "bg-slate-50 text-slate-700 border-slate-200",
+  ENVIADO: "bg-amber-50 text-amber-700 border-amber-200",
+  APROBADO: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  CAMBIOS_SOLICITADOS: "bg-rose-50 text-rose-700 border-rose-200",
+};
+
+const iconForRevision = (estado: EstadoRevisionMes) => {
+  switch (estado) {
+    case "APROBADO":
+      return CheckCircle2;
+    case "CAMBIOS_SOLICITADOS":
+      return AlertTriangle;
+    case "ENVIADO":
+      return ShieldCheck;
+    default:
+      return Clock;
+  }
 };
 
 const ordenarEstados = (resumen: Record<EstadoAprobacion, number>) =>
@@ -199,8 +227,8 @@ export const AprobacionesDashboard: FC<AprobacionesDashboardProps> = ({
             <table className="min-w-full divide-y divide-slate-200 text-sm">
               <thead className="bg-slate-50">
                 <tr className="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  <th className="px-4 py-3">Cliente</th>
-                  <th className="px-4 py-3">Estado</th>
+                  <th className="px-4 py-3">Cliente / Mes</th>
+                  <th className="px-4 py-3">Estado revisión</th>
                   <th className="px-4 py-3">Asignado</th>
                   <th className="px-4 py-3">Última actualización</th>
                   <th className="px-4 py-3 text-right">Avance</th>
@@ -215,19 +243,23 @@ export const AprobacionesDashboard: FC<AprobacionesDashboardProps> = ({
                           {item.clienteNombre} · {item.anio}
                         </span>
                         <span className="text-xs text-slate-500">
-                          {item.comentariosPendientes ?? 0} comentarios
-                          pendientes
+                          Mes: {item.mesNombre || `#${item.mesNumero ?? "-"}`}
                         </span>
+                        {item.comentarioRevision && (
+                          <span className="text-xs text-rose-500">
+                            Nota gestor: {item.comentarioRevision}
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       <span
                         className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${
-                          ESTADO_COLORS[item.estadoAprobacion]
+                          REVISION_COLORS[item.estadoRevision]
                         }`}
                       >
                         <Clock className="h-3.5 w-3.5" aria-hidden />
-                        {ESTADO_LABELS[item.estadoAprobacion]}
+                        {REVISION_LABELS[item.estadoRevision]}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-slate-700">
@@ -237,12 +269,20 @@ export const AprobacionesDashboard: FC<AprobacionesDashboardProps> = ({
                             item.miembroAsignado?.name ||
                             "Sin asignar"}
                         </span>
-                        {item.aprobadoPor && (
-                          <span className="text-slate-500">
-                            Último aprobador:{" "}
-                            {item.aprobadoPor.nombre || item.aprobadoPor.name}
-                          </span>
-                        )}
+                        {item.aprobadoPor &&
+                          item.estadoRevision === "APROBADO" && (
+                            <span className="text-slate-500">
+                              Último aprobador:{" "}
+                              {item.aprobadoPor.nombre || item.aprobadoPor.name}
+                            </span>
+                          )}
+                        {item.enviadoPor &&
+                          item.estadoRevision === "ENVIADO" && (
+                            <span className="text-slate-500">
+                              Enviado por:{" "}
+                              {item.enviadoPor.nombre || item.enviadoPor.name}
+                            </span>
+                          )}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-slate-600">
@@ -307,6 +347,20 @@ export const AprobacionesDashboard: FC<AprobacionesDashboardProps> = ({
                 <div className="flex-1 rounded-xl border border-slate-200 bg-slate-50 p-4">
                   <div className="flex flex-col gap-1 text-sm">
                     <div className="flex flex-wrap items-center justify-between gap-2">
+                      {(() => {
+                        const RevisionIcon = iconForRevision(
+                          item.estadoRevision
+                        );
+                        return (
+                          <span
+                            className={`mt-1 inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border ${
+                              REVISION_COLORS[item.estadoRevision]
+                            }`}
+                          >
+                            <RevisionIcon className="h-4 w-4" aria-hidden />
+                          </span>
+                        );
+                      })()}
                       <span className="font-semibold text-slate-900">
                         {item.titulo}
                       </span>
@@ -317,6 +371,9 @@ export const AprobacionesDashboard: FC<AprobacionesDashboardProps> = ({
                     <p className="text-slate-600">{item.descripcion}</p>
                   </div>
                 </div>
+                <span className="text-xs font-semibold text-slate-500">
+                  {REVISION_LABELS[item.estadoRevision]}
+                </span>
               </li>
             ))}
           </ol>

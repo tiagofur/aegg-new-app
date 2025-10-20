@@ -2,11 +2,24 @@ import {
     Injectable,
     NotFoundException,
     ConflictException,
+    ForbiddenException,
+    BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Mes, ReporteMensual, Trabajo, TipoReporteMensual, EstadoMes, ReporteBaseAnual } from '../entities';
+import {
+    Mes,
+    ReporteMensual,
+    Trabajo,
+    TipoReporteMensual,
+    EstadoMes,
+    ReporteBaseAnual,
+    EstadoRevisionMes,
+    EstadoAprobacion,
+} from '../entities';
 import { CreateMesDto } from '../dto';
+import { CurrentUserPayload } from '../../auth/decorators/current-user.decorator';
+import { UserRole } from '../../auth/entities/user.entity';
 
 @Injectable()
 export class MesesService {
@@ -72,6 +85,8 @@ export class MesesService {
 
         await this.reporteMensualRepository.save(reportes);
 
+        await this.actualizarEstadoAprobacionTrabajo(createMesDto.trabajoId);
+
         // Retornar mes con reportes
         return this.findOne(mesGuardado.id);
     }
@@ -79,7 +94,7 @@ export class MesesService {
     async findByTrabajo(trabajoId: string): Promise<Mes[]> {
         return this.mesRepository.find({
             where: { trabajoId },
-            relations: ['reportes'],
+            relations: ['reportes', 'enviadoRevisionPor', 'aprobadoPor'],
             order: {
                 mes: 'ASC',
             },
@@ -89,7 +104,7 @@ export class MesesService {
     async findOne(id: string): Promise<Mes> {
         const mes = await this.mesRepository.findOne({
             where: { id },
-            relations: ['reportes', 'trabajo'],
+            relations: ['reportes', 'trabajo', 'trabajo.miembroAsignado', 'enviadoRevisionPor', 'aprobadoPor'],
         });
 
         if (!mes) {
@@ -104,24 +119,11 @@ export class MesesService {
 
         // Si el mes está completado, actualizar el reporteBaseAnual
         if (mes.estado === EstadoMes.COMPLETADO) {
-            const trabajo = await this.trabajoRepository.findOne({
-                where: { id: mes.trabajoId },
-                relations: ['reporteBaseAnual'],
-            });
-
-            if (trabajo?.reporteBaseAnual) {
-                // Remover el mes del array de mesesCompletados
-                const mesesCompletados = trabajo.reporteBaseAnual.mesesCompletados.filter(
-                    (m) => m !== mes.mes,
-                );
-                trabajo.reporteBaseAnual.mesesCompletados = mesesCompletados;
-
-                // Guardar el cambio
-                await this.reporteBaseRepository.save(trabajo.reporteBaseAnual);
-            }
+            await this.revertirReporteBase(mes);
         }
 
         await this.mesRepository.remove(mes);
+        await this.actualizarEstadoAprobacionTrabajo(mes.trabajoId);
     }
 
     async reabrirMes(id: string): Promise<Mes> {
@@ -134,27 +136,199 @@ export class MesesService {
             );
         }
 
-        // Cambiar estado a EN_PROCESO
+        // Cambiar estado a EN_PROCESO y limpiar flujo de revisión
         mes.estado = EstadoMes.EN_PROCESO;
+        mes.estadoRevision = EstadoRevisionMes.EN_EDICION;
+        mes.enviadoRevisionPorId = null;
+        mes.fechaEnvioRevision = null;
+        mes.aprobadoPorId = null;
+        mes.fechaAprobacion = null;
+        mes.comentarioRevision = null;
         await this.mesRepository.save(mes);
 
-        // Actualizar el reporteBaseAnual del trabajo
+        await this.revertirReporteBase(mes);
+        await this.actualizarEstadoAprobacionTrabajo(mes.trabajoId);
+
+        return this.findOne(id);
+    }
+
+    async enviarRevision(
+        id: string,
+        currentUser: CurrentUserPayload,
+        comentario?: string,
+    ): Promise<Mes> {
+        const mes = await this.findOne(id);
+        this.assertPuedeSolicitarRevision(mes, currentUser);
+
+        if (mes.estado !== EstadoMes.COMPLETADO) {
+            throw new ConflictException(
+                'Debes procesar el mes antes de enviarlo a revisión.',
+            );
+        }
+
+        if (mes.estadoRevision === EstadoRevisionMes.ENVIADO) {
+            throw new ConflictException('El mes ya está en revisión.');
+        }
+
+        if (mes.estadoRevision === EstadoRevisionMes.APROBADO) {
+            throw new ConflictException('El mes ya fue aprobado.');
+        }
+
+        mes.estadoRevision = EstadoRevisionMes.ENVIADO;
+        mes.enviadoRevisionPorId = currentUser.userId;
+        mes.fechaEnvioRevision = new Date();
+        if (comentario) {
+            mes.comentarioRevision = comentario;
+        }
+
+        await this.mesRepository.save(mes);
+        await this.actualizarEstadoAprobacionTrabajo(mes.trabajoId);
+
+        return this.findOne(id);
+    }
+
+    async marcarComoCompletado(
+        id: string,
+        currentUser: CurrentUserPayload,
+    ): Promise<Mes> {
+        const mes = await this.findOne(id);
+        this.assertPuedeSolicitarRevision(mes, currentUser);
+
+        if (mes.estadoRevision === EstadoRevisionMes.ENVIADO) {
+            throw new ConflictException(
+                'El mes está en revisión; espera la respuesta del gestor antes de modificarlo.',
+            );
+        }
+
+        if (mes.estadoRevision === EstadoRevisionMes.APROBADO) {
+            throw new ConflictException('El mes ya fue aprobado.');
+        }
+
+        if (mes.estado === EstadoMes.COMPLETADO) {
+            return mes;
+        }
+
+        mes.estado = EstadoMes.COMPLETADO;
+        await this.mesRepository.save(mes);
+        await this.actualizarEstadoAprobacionTrabajo(mes.trabajoId);
+
+        return this.findOne(id);
+    }
+
+    async aprobarMes(id: string, currentUser: CurrentUserPayload): Promise<Mes> {
+        this.assertPuedeRevisar(currentUser);
+        const mes = await this.findOne(id);
+
+        if (mes.estadoRevision !== EstadoRevisionMes.ENVIADO) {
+            throw new ConflictException('Solo puedes aprobar meses enviados a revisión.');
+        }
+
+        mes.estadoRevision = EstadoRevisionMes.APROBADO;
+        mes.aprobadoPorId = currentUser.userId;
+        mes.fechaAprobacion = new Date();
+        mes.comentarioRevision = null;
+
+        await this.mesRepository.save(mes);
+        await this.actualizarEstadoAprobacionTrabajo(mes.trabajoId);
+
+        return this.findOne(id);
+    }
+
+    async solicitarCambios(
+        id: string,
+        currentUser: CurrentUserPayload,
+        comentario?: string,
+    ): Promise<Mes> {
+        this.assertPuedeRevisar(currentUser);
+        const mes = await this.findOne(id);
+
+        if (mes.estadoRevision !== EstadoRevisionMes.ENVIADO) {
+            throw new ConflictException('Solo puedes solicitar cambios para meses en revisión.');
+        }
+
+        if (!comentario || comentario.trim().length === 0) {
+            throw new BadRequestException('Debes incluir un comentario para solicitar cambios.');
+        }
+
+        // Si el mes ya estaba completado, regresarlo a EN_PROCESO para permitir ajustes
+        if (mes.estado === EstadoMes.COMPLETADO) {
+            mes.estado = EstadoMes.EN_PROCESO;
+            await this.revertirReporteBase(mes);
+        }
+
+        mes.estadoRevision = EstadoRevisionMes.CAMBIOS_SOLICITADOS;
+        mes.aprobadoPorId = null;
+        mes.fechaAprobacion = null;
+        mes.comentarioRevision = comentario.trim();
+
+        await this.mesRepository.save(mes);
+        await this.actualizarEstadoAprobacionTrabajo(mes.trabajoId);
+
+        return this.findOne(id);
+    }
+
+    private assertPuedeSolicitarRevision(mes: Mes, currentUser: CurrentUserPayload) {
+        if (currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.GESTOR) {
+            return;
+        }
+
+        if (
+            currentUser.role === UserRole.MIEMBRO &&
+            mes.trabajo?.miembroAsignadoId === currentUser.userId
+        ) {
+            return;
+        }
+
+        throw new ForbiddenException('No tienes permisos para enviar este mes a revisión.');
+    }
+
+    private assertPuedeRevisar(currentUser: CurrentUserPayload) {
+        if (currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.GESTOR) {
+            return;
+        }
+        throw new ForbiddenException('No tienes permisos para aprobar o rechazar meses.');
+    }
+
+    private async revertirReporteBase(mes: Mes): Promise<void> {
         const trabajo = await this.trabajoRepository.findOne({
             where: { id: mes.trabajoId },
             relations: ['reporteBaseAnual'],
         });
 
         if (trabajo?.reporteBaseAnual) {
-            // Remover el mes del array de mesesCompletados
             const mesesCompletados = trabajo.reporteBaseAnual.mesesCompletados.filter(
                 (m) => m !== mes.mes,
             );
             trabajo.reporteBaseAnual.mesesCompletados = mesesCompletados;
-
-            // Guardar el reporteBaseAnual
             await this.reporteBaseRepository.save(trabajo.reporteBaseAnual);
         }
+    }
 
-        return this.findOne(id);
+    private async actualizarEstadoAprobacionTrabajo(trabajoId: string): Promise<void> {
+        const trabajo = await this.trabajoRepository.findOne({
+            where: { id: trabajoId },
+            relations: ['meses'],
+        });
+
+        if (!trabajo) {
+            return;
+        }
+
+        const meses = trabajo.meses ?? [];
+        const hayEnRevision = meses.some((m) => m.estadoRevision === EstadoRevisionMes.ENVIADO);
+        const hayCambios = meses.some((m) => m.estadoRevision === EstadoRevisionMes.CAMBIOS_SOLICITADOS);
+        const todosAprobados = meses.length > 0 && meses.every((m) => m.estadoRevision === EstadoRevisionMes.APROBADO);
+
+        if (hayEnRevision) {
+            trabajo.estadoAprobacion = EstadoAprobacion.EN_REVISION;
+        } else if (hayCambios) {
+            trabajo.estadoAprobacion = EstadoAprobacion.REABIERTO;
+        } else if (todosAprobados) {
+            trabajo.estadoAprobacion = EstadoAprobacion.APROBADO;
+        } else {
+            trabajo.estadoAprobacion = EstadoAprobacion.EN_PROGRESO;
+        }
+
+        await this.trabajoRepository.save(trabajo);
     }
 }

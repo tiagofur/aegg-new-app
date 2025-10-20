@@ -8,9 +8,14 @@ import { ReporteMensualViewer } from "./ReporteMensualViewer";
 import { ImportReporteBaseDialog } from "./ImportReporteBaseDialog";
 import { ImportReporteMensualDialog } from "./ImportReporteMensualDialog";
 import { EditTrabajoDialog } from "./EditTrabajoDialog";
-import { trabajosService, reportesMensualesService } from "../../services";
+import {
+  trabajosService,
+  reportesMensualesService,
+  mesesService,
+} from "../../services";
 import { MesSelectorModal } from "./MesSelectorModal";
 import { getMesEstadoVisual, MES_ESTADO_TONE_CLASSES } from "./mesEstadoVisual";
+import { useAuth } from "../../context/AuthContext";
 
 interface TrabajoDetailProps {
   trabajo: Trabajo;
@@ -43,6 +48,11 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
   const [eliminando, setEliminando] = useState(false);
   const [reabriendo, setReabriendo] = useState(false);
   const [mostrarSelectorMeses, setMostrarSelectorMeses] = useState(false);
+  const [completandoMes, setCompletandoMes] = useState(false);
+
+  const { user } = useAuth();
+  const role = user?.role ?? "Gestor";
+  const userId = user?.id ?? "";
 
   const isAprobado = trabajo.estadoAprobacion === "APROBADO";
   const canEdit = canManage && !isAprobado;
@@ -77,6 +87,22 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
   const mesSeleccionadoLabel = mesActual
     ? MESES_NOMBRES[mesActual.mes - 1]
     : "Seleccionar mes";
+
+  const mesEstaBloqueado = Boolean(
+    mesActual &&
+      (mesActual.estadoRevision === "ENVIADO" ||
+        mesActual.estadoRevision === "APROBADO")
+  );
+
+  const esMiembroAsignado =
+    role === "Miembro" && trabajo.miembroAsignadoId === userId;
+
+  const puedeCompletarMesProvisional = Boolean(
+    mesActual &&
+      !mesEstaBloqueado &&
+      mesActual.estado !== "COMPLETADO" &&
+      (role === "Admin" || role === "Gestor" || esMiembroAsignado)
+  );
 
   // Encontrar el reporte seleccionado
   const reporteActual = mesActual?.reportes?.find(
@@ -200,6 +226,42 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
     }
   };
 
+  const handleCompletarMesProvisional = async () => {
+    if (!mesActual || !puedeCompletarMesProvisional) {
+      return;
+    }
+
+    if (mesEstaBloqueado) {
+      alert("El mes está bloqueado por revisión o aprobación.");
+      return;
+    }
+
+    const confirmar = window.confirm(
+      `¿Deseas marcar provisionalmente el mes de ${
+        MESES_NOMBRES[mesActual.mes - 1]
+      } como completado?`
+    );
+
+    if (!confirmar) {
+      return;
+    }
+
+    setCompletandoMes(true);
+    try {
+      await mesesService.completar(mesActual.id);
+      alert("Mes marcado como completado para pruebas.");
+      onReload();
+    } catch (error: any) {
+      console.error("Error al completar provisionalmente el mes:", error);
+      alert(
+        error.response?.data?.message ||
+          "No fue posible marcar el mes como completado."
+      );
+    } finally {
+      setCompletandoMes(false);
+    }
+  };
+
   return (
     <div className="px-2 py-3">
       {/* Header consolidado con breadcrumbs, título y acciones */}
@@ -274,8 +336,57 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
               )}
             </div>
           </div>
-          {(canEdit || canReabrir) && (
-            <div className="flex gap-2">
+          {(canEdit || canReabrir || puedeCompletarMesProvisional) && (
+            <div className="flex flex-wrap gap-2">
+              {puedeCompletarMesProvisional && (
+                <button
+                  onClick={handleCompletarMesProvisional}
+                  disabled={completandoMes}
+                  className="bg-slate-600 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
+                >
+                  {completandoMes ? (
+                    <>
+                      <svg
+                        className="animate-spin h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Marcando...
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M6.267 3.455A2 2 0 017.956 2h4.088a2 2 0 011.689.955l1.911 3.185A2 2 0 0116 6.92V17a1 1 0 01-1 1H5a1 1 0 01-1-1V6.918a2 2 0 01.356-1.13l1.911-3.333zM8 4l-1 2h6l-1-2H8z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      Completar mes (provisional)
+                    </>
+                  )}
+                </button>
+              )}
               {canEdit && (
                 <>
                   <button

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
@@ -8,6 +8,7 @@ import {
     TipoReporteMensual,
     EstadoReporte,
     EstadoMes,
+    EstadoRevisionMes,
 } from '../entities';
 import * as XLSX from 'xlsx';
 
@@ -36,6 +37,8 @@ export class ReportesMensualesService {
         if (!mes) {
             throw new NotFoundException(`Mes con id ${mesId} no encontrado`);
         }
+
+        this.assertMesEditable(mes);
 
         // Encontrar el reporte correspondiente
         const reporte = mes.reportes.find((r) => r.tipo === tipo);
@@ -74,6 +77,8 @@ export class ReportesMensualesService {
         if (!mes) {
             throw new NotFoundException(`Mes con id ${mesId} no encontrado`);
         }
+
+        this.assertMesEditable(mes);
 
         // Verificar que los 3 reportes estén importados
         const todosImportados = mes.reportes.every(
@@ -661,6 +666,17 @@ export class ReportesMensualesService {
         return meses[mes - 1];
     }
 
+    private assertMesEditable(mes: Mes): void {
+        if (
+            mes.estadoRevision === EstadoRevisionMes.ENVIADO ||
+            mes.estadoRevision === EstadoRevisionMes.APROBADO
+        ) {
+            throw new ConflictException(
+                'El mes está bloqueado por revisión o aprobación y no permite modificaciones.',
+            );
+        }
+    }
+
     async obtenerDatos(mesId: string, reporteId: string): Promise<{ datos: any[][] }> {
         // Buscar el mes con sus reportes
         const mes = await this.mesRepository.findOne({
@@ -671,6 +687,8 @@ export class ReportesMensualesService {
         if (!mes) {
             throw new NotFoundException(`Mes con id ${mesId} no encontrado`);
         }
+
+        this.assertMesEditable(mes);
 
         // Buscar el reporte específico
         const reporte = mes.reportes.find((r) => r.id === reporteId);
@@ -692,6 +710,8 @@ export class ReportesMensualesService {
         if (!mes) {
             throw new NotFoundException(`Mes con id ${mesId} no encontrado`);
         }
+
+        this.assertMesEditable(mes);
 
         // Buscar el reporte específico
         const reporte = mes.reportes.find((r) => r.id === reporteId);
@@ -722,6 +742,8 @@ export class ReportesMensualesService {
         if (!mes) {
             throw new NotFoundException(`Mes con id ${mesId} no encontrado`);
         }
+
+        this.assertMesEditable(mes);
 
         // Buscar el reporte específico
         const reporte = mes.reportes.find((r) => r.id === reporteId);
@@ -771,6 +793,8 @@ export class ReportesMensualesService {
         if (!mes) {
             throw new NotFoundException(`Mes con id ${mesId} no encontrado`);
         }
+
+        this.assertMesEditable(mes);
 
         // Buscar el reporte específico
         const reporte = mes.reportes.find((r) => r.id === reporteId);
