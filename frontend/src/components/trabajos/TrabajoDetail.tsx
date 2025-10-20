@@ -104,6 +104,8 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
       (role === "Admin" || role === "Gestor" || esMiembroAsignado)
   );
 
+  const puedeEditarMesActual = Boolean(canEdit && !mesEstaBloqueado);
+
   // Encontrar el reporte seleccionado
   const reporteActual = mesActual?.reportes?.find(
     (r) => r.id === reporteSeleccionado
@@ -161,21 +163,21 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
   };
 
   const handleImportarReporte = () => {
-    if (!canEdit) {
+    if (!puedeEditarMesActual) {
       return;
     }
     setMostrarImportReporteMensualDialog(true);
   };
 
   const handleReimportarReporte = () => {
-    if (!canEdit) {
+    if (!puedeEditarMesActual) {
       return;
     }
     setMostrarImportReporteMensualDialog(true);
   };
 
   const handleLimpiarDatos = async () => {
-    if (!canEdit) {
+    if (!puedeEditarMesActual) {
       return;
     }
     if (!reporteActual || !mesActual) return;
@@ -555,7 +557,7 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
                   onImportarReporte={handleImportarReporte}
                   onReimportarReporte={handleReimportarReporte}
                   onLimpiarDatos={handleLimpiarDatos}
-                  canManage={canEdit}
+                  canManage={puedeEditarMesActual}
                 />
               )}
             </>

@@ -195,20 +195,21 @@ export class MesesService {
         this.assertPuedeSolicitarRevision(mes, currentUser);
 
         if (mes.estadoRevision === EstadoRevisionMes.ENVIADO) {
-            throw new ConflictException(
-                'El mes está en revisión; espera la respuesta del gestor antes de modificarlo.',
-            );
+            return mes;
         }
 
         if (mes.estadoRevision === EstadoRevisionMes.APROBADO) {
             throw new ConflictException('El mes ya fue aprobado.');
         }
 
-        if (mes.estado === EstadoMes.COMPLETADO) {
-            return mes;
-        }
-
         mes.estado = EstadoMes.COMPLETADO;
+        mes.estadoRevision = EstadoRevisionMes.ENVIADO;
+        mes.enviadoRevisionPorId = currentUser.userId;
+        mes.fechaEnvioRevision = new Date();
+        mes.aprobadoPorId = null;
+        mes.fechaAprobacion = null;
+        mes.comentarioRevision = null;
+
         await this.mesRepository.save(mes);
         await this.actualizarEstadoAprobacionTrabajo(mes.trabajoId);
 
