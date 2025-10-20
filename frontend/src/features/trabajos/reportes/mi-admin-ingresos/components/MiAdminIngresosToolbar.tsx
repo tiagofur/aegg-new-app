@@ -3,7 +3,7 @@
  * Incluye botones especiales: Aplicar TC Sugerido y Cancelar Folios Únicos
  */
 
-import { ArrowDownCircle, GitCompare, Save, XCircle } from "lucide-react";
+import { GitCompare, Save } from "lucide-react";
 import type { MiAdminIngresosTotales, TotalesComparison } from "../types";
 import { badgeStyles } from "../utils";
 
@@ -18,10 +18,6 @@ interface MiAdminIngresosToolbarProps {
   isComparisonActive: boolean;
   /** Callback para toggle de comparación */
   onToggleComparison: () => void;
-  /** Callback para aplicar TC Sugerido a todas las filas */
-  onAplicarTCSugeridoATodos: () => void;
-  /** Callback para cancelar folios únicos */
-  onCancelarFoliosUnicos: () => void;
   /** Totales calculados */
   totales: MiAdminIngresosTotales;
   /** Comparación de totales (null si no está activa) */
@@ -36,6 +32,8 @@ interface MiAdminIngresosToolbarProps {
   showSaveButton?: boolean;
   /** Controla si se muestra el botón de sincronización */
   showComparisonButton?: boolean;
+  /** Controla si se muestran los badges de estado */
+  showStatusBadges?: boolean;
 }
 
 /**
@@ -47,13 +45,12 @@ export const MiAdminIngresosToolbar: React.FC<MiAdminIngresosToolbarProps> = ({
   isSaving,
   isComparisonActive,
   onToggleComparison,
-  onAplicarTCSugeridoATodos,
-  onCancelarFoliosUnicos,
   totales,
   totalesComparison,
   hasAuxiliarData,
   showSaveButton = true,
   showComparisonButton = true,
+  showStatusBadges = true,
 }) => {
   return (
     <div className="bg-white border-b border-gray-200 px-4 py-3">
@@ -105,101 +102,49 @@ export const MiAdminIngresosToolbar: React.FC<MiAdminIngresosToolbarProps> = ({
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
-            {isDirty && (
-              <span
-                className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 ${badgeStyles.unsavedChanges}`}
-                title="Hay cambios sin guardar en el reporte"
-              >
-                ⚠️ Cambios sin guardar
-              </span>
-            )}
+          {showStatusBadges && (
+            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
+              {isDirty && (
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 ${badgeStyles.unsavedChanges}`}
+                  title="Hay cambios sin guardar en el reporte"
+                >
+                  ⚠️ Cambios sin guardar
+                </span>
+              )}
 
-            {totales.cantidadCanceladas > 0 && (
-              <span
-                className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 ${badgeStyles.canceladas}`}
-                title={`${totales.cantidadCanceladas} facturas aparecen como canceladas`}
-              >
-                🚫 {totales.cantidadCanceladas} canceladas
-              </span>
-            )}
+              {totales.cantidadCanceladas > 0 && (
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 ${badgeStyles.canceladas}`}
+                  title={`${totales.cantidadCanceladas} facturas aparecen como canceladas`}
+                >
+                  🚫 {totales.cantidadCanceladas} canceladas
+                </span>
+              )}
 
-            {totalesComparison && (
-              <span
-                className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 ${
-                  totalesComparison.match
-                    ? badgeStyles.totalesMatch
-                    : badgeStyles.totalesMismatch
-                }`}
-                title={
-                  totalesComparison.match
-                    ? "Los totales coinciden con el Auxiliar"
-                    : `Diferencia contra Auxiliar: $${totalesComparison.difference.toFixed(
-                        2
-                      )}`
-                }
-              >
-                {totalesComparison.match
-                  ? "✅ Totales conciliados"
-                  : "❌ Diferencia vs Auxiliar"}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {hasAuxiliarData && (
-          <details
-            className="group border-t border-gray-100 pt-2"
-            open={isComparisonActive}
-          >
-            <summary className="flex cursor-pointer items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-              Automatizaciones
-              <span className="text-gray-400 transition-transform group-open:-rotate-180">
-                ⌃
-              </span>
-            </summary>
-
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <button
-                onClick={onAplicarTCSugeridoATodos}
-                disabled={isSaving}
-                className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-400 ${
-                  isSaving
-                    ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                    : "bg-blue-50 text-blue-700 hover:bg-blue-100"
-                }`}
-                title="Aplicar el tipo de cambio sugerido a todas las filas disponibles"
-              >
-                <ArrowDownCircle className="h-4 w-4" />
-                Aplicar TC sugerido
-              </button>
-
-              <button
-                onClick={onCancelarFoliosUnicos}
-                disabled={isSaving || !isComparisonActive}
-                className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-400 ${
-                  isSaving || !isComparisonActive
-                    ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                    : "bg-red-50 text-red-700 hover:bg-red-100"
-                }`}
-                title={
-                  !isComparisonActive
-                    ? "Activa la sincronización para poder quitar los folios exclusivos de Mi Admin"
-                    : "Quitar de Mi Admin los folios que no existen en Auxiliar"
-                }
-              >
-                <XCircle className="h-4 w-4" />
-                Quitar folios solo Mi Admin
-              </button>
-
-              <span className="ml-auto text-xs text-gray-500">
-                {isComparisonActive
-                  ? "Sincronización lista: puedes automatizar TC y limpieza de folios"
-                  : "Activa la sincronización con Auxiliar para habilitar estas acciones"}
-              </span>
+              {totalesComparison && (
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 ${
+                    totalesComparison.match
+                      ? badgeStyles.totalesMatch
+                      : badgeStyles.totalesMismatch
+                  }`}
+                  title={
+                    totalesComparison.match
+                      ? "Los totales coinciden con el Auxiliar"
+                      : `Diferencia contra Auxiliar: $${totalesComparison.difference.toFixed(
+                          2
+                        )}`
+                  }
+                >
+                  {totalesComparison.match
+                    ? "✅ Totales conciliados"
+                    : "❌ Diferencia vs Auxiliar"}
+                </span>
+              )}
             </div>
-          </details>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

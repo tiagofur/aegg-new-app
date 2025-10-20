@@ -30,6 +30,10 @@ interface AuxiliarIngresosToolbarProps {
   showSaveButton?: boolean;
   /** Controla si se muestra el botón de comparación */
   showComparisonButton?: boolean;
+  /** Controla si se muestran los badges de estado en la barra */
+  showStatusBadges?: boolean;
+  /** Controla si se muestran las acciones especiales en la barra */
+  showSpecialActions?: boolean;
 }
 
 /**
@@ -49,6 +53,8 @@ export const AuxiliarIngresosToolbar: React.FC<
   hasMiAdminData,
   showSaveButton = true,
   showComparisonButton = true,
+  showStatusBadges = true,
+  showSpecialActions = true,
 }) => {
   return (
     <div className="bg-white border-b border-gray-200 px-4 py-3">
@@ -100,50 +106,52 @@ export const AuxiliarIngresosToolbar: React.FC<
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
-            {isDirty && (
-              <span
-                className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 ${badgeStyles.unsavedChanges}`}
-                title="Hay cambios sin guardar"
-              >
-                ⚠️ Cambios sin guardar
-              </span>
-            )}
+          {showStatusBadges && (
+            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
+              {isDirty && (
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 ${badgeStyles.unsavedChanges}`}
+                  title="Hay cambios sin guardar"
+                >
+                  ⚠️ Cambios sin guardar
+                </span>
+              )}
 
-            {totales.cantidadCanceladas > 0 && (
-              <span
-                className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 ${badgeStyles.canceladas}`}
-                title={`${totales.cantidadCanceladas} facturas canceladas`}
-              >
-                🚫 {totales.cantidadCanceladas} Canceladas (
-                {totales.porcentajeCanceladas.toFixed(1)}%)
-              </span>
-            )}
+              {totales.cantidadCanceladas > 0 && (
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 ${badgeStyles.canceladas}`}
+                  title={`${totales.cantidadCanceladas} facturas canceladas`}
+                >
+                  🚫 {totales.cantidadCanceladas} Canceladas (
+                  {totales.porcentajeCanceladas.toFixed(1)}%)
+                </span>
+              )}
 
-            {totalesComparison && (
-              <span
-                className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 ${
-                  totalesComparison.match
-                    ? badgeStyles.totalesMatch
-                    : badgeStyles.totalesMismatch
-                }`}
-                title={
-                  totalesComparison.match
-                    ? "Los totales coinciden"
-                    : `Diferencia: $${Math.abs(
-                        totalesComparison.difference
-                      ).toFixed(2)}`
-                }
-              >
-                {totalesComparison.match
-                  ? "✅ Totales conciliados"
-                  : "❌ Diferencia vs Mi Admin"}
-              </span>
-            )}
-          </div>
+              {totalesComparison && (
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 ${
+                    totalesComparison.match
+                      ? badgeStyles.totalesMatch
+                      : badgeStyles.totalesMismatch
+                  }`}
+                  title={
+                    totalesComparison.match
+                      ? "Los totales coinciden"
+                      : `Diferencia: $${Math.abs(
+                          totalesComparison.difference
+                        ).toFixed(2)}`
+                  }
+                >
+                  {totalesComparison.match
+                    ? "✅ Totales conciliados"
+                    : "❌ Diferencia vs Mi Admin"}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
-        {hasMiAdminData && (
+        {hasMiAdminData && showSpecialActions && (
           <div className="flex flex-wrap items-center gap-3 border-t border-gray-100 pt-2">
             <span className="text-sm text-gray-600 font-medium">
               Acciones especiales:

@@ -29,13 +29,10 @@ import { MiAdminIngresosToolbar } from "./MiAdminIngresosToolbar";
 
 import { MiAdminIngresosFooter } from "./MiAdminIngresosFooter";
 
-import {
-  getRowBackgroundColor,
-  createMiAdminDynamicColumns,
-  formatCurrency,
-} from "../utils";
+import { getRowBackgroundColor, createMiAdminDynamicColumns } from "../utils";
 
 import type { AuxiliarIngresosRow } from "../../auxiliar-ingresos";
+import type { MiAdminIngresosTotales } from "../types";
 
 interface MiAdminIngresosTableProps {
   /** ID del mes */
@@ -84,6 +81,8 @@ interface MiAdminIngresosTableProps {
   showSaveButtonInToolbar?: boolean;
   /** Controla si se muestra el botón de sincronización en el toolbar */
   showComparisonButtonInToolbar?: boolean;
+  /** Controla si se muestran los badges de estado en el toolbar */
+  showStatusBadgesInToolbar?: boolean;
   /** Permite portalizar el botón Guardar en Base fuera del toolbar */
   onGuardarEnBaseContextChange?: (
     context: {
@@ -100,6 +99,18 @@ interface MiAdminIngresosTableProps {
   comparisonActive?: boolean;
   /** Callback cuando cambia el estado de comparación */
   onComparisonActiveChange?: (active: boolean) => void;
+  /** Notifica al contenedor los totales para mostrarlos en el resumen */
+  onTotalesResumenChange?: (totales: MiAdminIngresosTotales | null) => void;
+  /** Expone las acciones masivas disponibles en la tabla */
+  onAutomationActionsChange?: (
+    actions: {
+      aplicarTCSugeridoATodos: () => void;
+      cancelarFoliosUnicos: () => void;
+      isSaving: boolean;
+      isComparisonActive: boolean;
+      hasAuxiliarData: boolean;
+    } | null
+  ) => void;
 }
 
 /**
@@ -131,9 +142,12 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
 
   showSaveButtonInToolbar = true,
   showComparisonButtonInToolbar = true,
+  showStatusBadgesInToolbar = true,
   onGuardarEnBaseContextChange,
   comparisonActive,
   onComparisonActiveChange,
+  onTotalesResumenChange,
+  onAutomationActionsChange,
 }) => {
   // 🔥 Si no se proporciona auxiliarData, buscar el reporte Auxiliar del mismo mes
 
@@ -369,6 +383,46 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
     };
   }, [onSaveContextChange]);
 
+  useEffect(() => {
+    if (!onAutomationActionsChange) {
+      return;
+    }
+
+    onAutomationActionsChange({
+      aplicarTCSugeridoATodos,
+      cancelarFoliosUnicos,
+      isSaving,
+      isComparisonActive,
+      hasAuxiliarData,
+    });
+  }, [
+    onAutomationActionsChange,
+    aplicarTCSugeridoATodos,
+    cancelarFoliosUnicos,
+    isSaving,
+    isComparisonActive,
+    hasAuxiliarData,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      onAutomationActionsChange?.(null);
+    };
+  }, [onAutomationActionsChange]);
+
+  useEffect(() => {
+    if (!onTotalesResumenChange) {
+      return;
+    }
+    onTotalesResumenChange(totales);
+  }, [onTotalesResumenChange, totales]);
+
+  useEffect(() => {
+    return () => {
+      onTotalesResumenChange?.(null);
+    };
+  }, [onTotalesResumenChange]);
+
   // Estados de carga y error
   if (isLoading) {
     return (
@@ -401,49 +455,13 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
         isSaving={isSaving}
         isComparisonActive={isComparisonActive}
         onToggleComparison={toggleComparison}
-        onAplicarTCSugeridoATodos={aplicarTCSugeridoATodos}
-        onCancelarFoliosUnicos={cancelarFoliosUnicos}
         totales={totales}
         totalesComparison={totalesComparison}
         hasAuxiliarData={hasAuxiliarData}
         showSaveButton={showSaveButtonInToolbar}
         showComparisonButton={showComparisonButtonInToolbar}
+        showStatusBadges={showStatusBadgesInToolbar}
       />
-
-      <div className="border-b border-gray-100 bg-slate-50 px-4 py-2.5 text-sm text-slate-700">
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-          <span>
-            Facturas:{" "}
-            <strong>{totales.cantidadTotal.toLocaleString("es-MX")}</strong>
-          </span>
-          <span>
-            Vigentes:{" "}
-            <strong>{totales.cantidadVigentes.toLocaleString("es-MX")}</strong>
-          </span>
-          <span>
-            Canceladas:{" "}
-            <strong>
-              {totales.cantidadCanceladas.toLocaleString("es-MX")}
-            </strong>
-          </span>
-          <span>
-            Total MXN:{" "}
-            <strong>{formatCurrency(totales.totalSubtotalMXN)}</strong>
-          </span>
-          {totalesComparison && (
-            <span
-              className={
-                totalesComparison.match
-                  ? "text-emerald-700"
-                  : "text-red-600 font-semibold"
-              }
-            >
-              Diferencia vs Auxiliar:{" "}
-              {formatCurrency(totalesComparison.difference)}
-            </span>
-          )}
-        </div>
-      </div>
 
       {/* Table container */}
       <div className="flex-1 overflow-auto">

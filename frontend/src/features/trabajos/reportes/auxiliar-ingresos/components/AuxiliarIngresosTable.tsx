@@ -25,7 +25,11 @@ import { AuxiliarIngresosToolbar } from "./AuxiliarIngresosToolbar";
 import { AuxiliarIngresosFooter } from "./AuxiliarIngresosFooter";
 
 import { getRowBackgroundColor, createDynamicColumns } from "../utils";
-import type { AuxiliarIngresosRow, MiAdminIngresosRow } from "../types";
+import type {
+  AuxiliarIngresosRow,
+  MiAdminIngresosRow,
+  TotalesComparison,
+} from "../types";
 
 interface AuxiliarIngresosTableProps {
   /** ID del mes */
@@ -52,10 +56,33 @@ interface AuxiliarIngresosTableProps {
   showSaveButtonInToolbar?: boolean;
   /** Controla si se muestra el botón de comparación en la barra interna */
   showComparisonButtonInToolbar?: boolean;
+  /** Controla si se muestran los badges de estado dentro de la barra interna */
+  showStatusBadgesInToolbar?: boolean;
+  /** Controla si se muestran las acciones especiales dentro de la barra interna */
+  showSpecialActionsInToolbar?: boolean;
   /** Estado controlado para la comparación */
   comparisonActive?: boolean;
   /** Callback cuando el estado de comparación cambia */
   onComparisonActiveChange?: (active: boolean) => void;
+  /** Notifica cambios en resumen para que el contenedor pueda mostrar badges */
+  onResumenChange?: (
+    resumen: {
+      cantidadCanceladas: number;
+      porcentajeCanceladas: number;
+      totalesComparison: TotalesComparison | null;
+      isDirty: boolean;
+      hasMiAdminData: boolean;
+    } | null
+  ) => void;
+  /** Notifica cambios en las acciones especiales para portalizarlas */
+  onSpecialActionsChange?: (
+    actions: {
+      cancelarFoliosUnicos: () => void;
+      isSaving: boolean;
+      isComparisonActive: boolean;
+      hasMiAdminData: boolean;
+    } | null
+  ) => void;
 }
 
 const columnHelper = createColumnHelper<AuxiliarIngresosRow>();
@@ -73,8 +100,12 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
   onSaveContextChange,
   showSaveButtonInToolbar = true,
   showComparisonButtonInToolbar = true,
+  showStatusBadgesInToolbar = true,
+  showSpecialActionsInToolbar = true,
   comparisonActive,
   onComparisonActiveChange,
+  onResumenChange,
+  onSpecialActionsChange,
 }) => {
   // Hooks de datos y lógica
   const { data, isLoading, error, saveChanges, isSaving } =
@@ -124,6 +155,54 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
   });
 
   const hasMiAdminData = !!miAdminData && miAdminData.length > 0;
+
+  useEffect(() => {
+    if (!onResumenChange) {
+      return;
+    }
+
+    onResumenChange({
+      cantidadCanceladas: totales.cantidadCanceladas,
+      porcentajeCanceladas: totales.porcentajeCanceladas,
+      totalesComparison,
+      isDirty,
+      hasMiAdminData,
+    });
+
+    return () => {
+      onResumenChange(null);
+    };
+  }, [
+    onResumenChange,
+    totales.cantidadCanceladas,
+    totales.porcentajeCanceladas,
+    totalesComparison,
+    isDirty,
+    hasMiAdminData,
+  ]);
+
+  useEffect(() => {
+    if (!onSpecialActionsChange) {
+      return;
+    }
+
+    onSpecialActionsChange({
+      cancelarFoliosUnicos,
+      isSaving,
+      isComparisonActive,
+      hasMiAdminData,
+    });
+
+    return () => {
+      onSpecialActionsChange(null);
+    };
+  }, [
+    onSpecialActionsChange,
+    cancelarFoliosUnicos,
+    isSaving,
+    isComparisonActive,
+    hasMiAdminData,
+  ]);
 
   // Auto-guardado simple (patrón Mi Admin)
   useEffect(() => {
@@ -340,6 +419,8 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
         hasMiAdminData={hasMiAdminData}
         showSaveButton={showSaveButtonInToolbar}
         showComparisonButton={showComparisonButtonInToolbar}
+        showStatusBadges={showStatusBadgesInToolbar}
+        showSpecialActions={showSpecialActionsInToolbar}
       />
 
       {/* Table container */}

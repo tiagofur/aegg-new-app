@@ -1,9 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { GitCompare, Save } from "lucide-react";
-import { AuxiliarIngresosTable } from "../../features/trabajos/reportes/auxiliar-ingresos";
+import { ArrowDownCircle, GitCompare, Save, XCircle } from "lucide-react";
+import {
+  AuxiliarIngresosTable,
+  type TotalesComparison,
+} from "../../features/trabajos/reportes/auxiliar-ingresos";
 import { MiAdminIngresosTable } from "../../features/trabajos/reportes/mi-admin-ingresos";
 import { GuardarEnBaseButton } from "../../features/trabajos/reportes/reporte-anual";
 import { ReporteMensual, TIPOS_REPORTE_NOMBRES } from "../../types/trabajo";
+import type { MiAdminIngresosTotales } from "../../features/trabajos/reportes/mi-admin-ingresos";
 
 type ReporteMensualViewerProps = {
   reporte: ReporteMensual;
@@ -32,6 +36,35 @@ type GuardarEnBaseContext = {
   totalAuxiliar: number | null;
   hasAuxiliarData: boolean;
   isDirty: boolean;
+};
+
+type SummaryItem = {
+  label: string;
+  value: string;
+  tone?: string;
+};
+
+type MiAdminAutomationActions = {
+  aplicarTCSugeridoATodos: () => void;
+  cancelarFoliosUnicos: () => void;
+  isSaving: boolean;
+  isComparisonActive: boolean;
+  hasAuxiliarData: boolean;
+};
+
+type AuxiliarResumenState = {
+  cantidadCanceladas: number;
+  porcentajeCanceladas: number;
+  totalesComparison: TotalesComparison | null;
+  isDirty: boolean;
+  hasMiAdminData: boolean;
+};
+
+type AuxiliarSpecialActions = {
+  cancelarFoliosUnicos: () => void;
+  isSaving: boolean;
+  isComparisonActive: boolean;
+  hasMiAdminData: boolean;
 };
 
 const getIconoReporte = (tipo: ReporteMensual["tipo"]): string => {
@@ -157,6 +190,14 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
   } | null>(null);
   const [guardarEnBaseContext, setGuardarEnBaseContext] =
     useState<GuardarEnBaseContext | null>(null);
+  const [miAdminResumen, setMiAdminResumen] =
+    useState<MiAdminIngresosTotales | null>(null);
+  const [miAdminAutomationActions, setMiAdminAutomationActions] =
+    useState<MiAdminAutomationActions | null>(null);
+  const [auxiliarResumen, setAuxiliarResumen] =
+    useState<AuxiliarResumenState | null>(null);
+  const [auxiliarSpecialActions, setAuxiliarSpecialActions] =
+    useState<AuxiliarSpecialActions | null>(null);
 
   const estado = getEstadoInfo(reporte);
   const icono = getIconoReporte(reporte.tipo);
@@ -349,14 +390,25 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
   const comparacionDisponible = Boolean(
     esReporteComparable && reporteComplementario
   );
-  const comparacionTargetNombre =
-    reporte.tipo === "INGRESOS_AUXILIAR" ? "Mi Admin" : "Auxiliar";
-
   useEffect(() => {
     if (!comparacionDisponible && comparacionActiva) {
       setComparacionActiva(false);
     }
   }, [comparacionDisponible, comparacionActiva]);
+
+  useEffect(() => {
+    if (reporte.tipo !== "INGRESOS_MI_ADMIN") {
+      setMiAdminResumen(null);
+      setMiAdminAutomationActions(null);
+    }
+  }, [reporte.tipo]);
+
+  useEffect(() => {
+    if (reporte.tipo !== "INGRESOS_AUXILIAR") {
+      setAuxiliarResumen(null);
+      setAuxiliarSpecialActions(null);
+    }
+  }, [reporte.tipo]);
 
   const resumenTotales = useMemo(() => {
     if (!guardarEnBaseContext || guardarEnBaseContext.totalAuxiliar === null) {
@@ -381,6 +433,90 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
   const complementoNombre = reporteComplementario
     ? TIPOS_REPORTE_NOMBRES[reporteComplementario.tipo]
     : null;
+
+  const summaryItems = useMemo<SummaryItem[]>(() => {
+    const items: SummaryItem[] = [
+      {
+        label: "Registros importados",
+        value: totalRegistros.toLocaleString("es-MX"),
+        tone: "text-gray-900",
+      },
+      {
+        label: "Actualizado",
+        value: ultimaActualizacion,
+        tone: "text-gray-800",
+      },
+    ];
+
+    if (complementoNombre) {
+      items.push({
+        label: "Complemento",
+        value: complementoNombre,
+        tone: "text-gray-900",
+      });
+    }
+
+    if (reporte.tipo === "INGRESOS_MI_ADMIN" && miAdminResumen) {
+      items.push(
+        {
+          label: "Facturas",
+          value: miAdminResumen.cantidadTotal.toLocaleString("es-MX"),
+          tone: "text-gray-900",
+        },
+        {
+          label: "Vigentes",
+          value: miAdminResumen.cantidadVigentes.toLocaleString("es-MX"),
+          tone: "text-gray-900",
+        },
+        {
+          label: "Canceladas",
+          value: miAdminResumen.cantidadCanceladas.toLocaleString("es-MX"),
+          tone: "text-gray-900",
+        }
+      );
+    }
+
+    if (resumenTotales) {
+      items.push(
+        {
+          label: "Subtotal Mi Admin",
+          value: formatCurrency(resumenTotales.totalMiAdmin),
+          tone: "text-gray-900",
+        },
+        {
+          label: "Subtotal Auxiliar",
+          value: formatCurrency(resumenTotales.totalAuxiliar),
+          tone: "text-gray-900",
+        },
+        {
+          label: "Diferencia",
+          value: formatCurrency(resumenTotales.diferencia),
+          tone: resumenTotales.coincide ? "text-emerald-600" : "text-rose-600",
+        }
+      );
+    }
+
+    if (comparacionDisponible && complementoNombre) {
+      items.push({
+        label: "Sincronización",
+        value: comparacionActiva
+          ? `Comparando con ${complementoNombre}`
+          : `Disponible con ${complementoNombre}`,
+        tone: comparacionActiva ? "text-purple-700" : "text-gray-700",
+      });
+    }
+
+    return items;
+  }, [
+    totalRegistros,
+    ultimaActualizacion,
+    complementoNombre,
+    reporte.tipo,
+    miAdminResumen,
+    resumenTotales,
+    comparacionDisponible,
+    comparacionActiva,
+  ]);
 
   const toggleComparacion = useCallback(() => {
     if (!comparacionDisponible) {
@@ -415,6 +551,34 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
   const handleGuardarEnBaseContextChange = useCallback(
     (context: GuardarEnBaseContext | null) => {
       setGuardarEnBaseContext(context);
+    },
+    []
+  );
+
+  const handleMiAdminTotalesResumenChange = useCallback(
+    (totales: MiAdminIngresosTotales | null) => {
+      setMiAdminResumen(totales);
+    },
+    []
+  );
+
+  const handleMiAdminAutomationActionsChange = useCallback(
+    (actions: MiAdminAutomationActions | null) => {
+      setMiAdminAutomationActions(actions);
+    },
+    []
+  );
+
+  const handleAuxiliarResumenChange = useCallback(
+    (resumen: AuxiliarResumenState | null) => {
+      setAuxiliarResumen(resumen);
+    },
+    []
+  );
+
+  const handleAuxiliarSpecialActionsChange = useCallback(
+    (actions: AuxiliarSpecialActions | null) => {
+      setAuxiliarSpecialActions(actions);
     },
     []
   );
@@ -488,31 +652,6 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
             </div>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
-            {esReporteComparable && (
-              <button
-                onClick={toggleComparacion}
-                disabled={!comparacionDisponible}
-                className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-purple-500 ${
-                  !comparacionDisponible
-                    ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : comparacionActiva
-                    ? "border-purple-600 bg-purple-50 text-purple-700 hover:bg-purple-100"
-                    : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
-                }`}
-                title={
-                  comparacionDisponible
-                    ? comparacionActiva
-                      ? "Desactivar la sincronización entre reportes"
-                      : `Sincronizar con ${comparacionTargetNombre}`
-                    : "Importa ambos reportes para habilitar la sincronización"
-                }
-              >
-                <GitCompare className="h-4 w-4" aria-hidden />
-                {comparacionActiva
-                  ? "Sincronización activa"
-                  : `Sincronizar con ${comparacionTargetNombre}`}
-              </button>
-            )}
             {canManage && guardarEnBaseContext && (
               <GuardarEnBaseButton {...guardarEnBaseContext} />
             )}
@@ -611,135 +750,240 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
         <section className="min-w-0 space-y-4">
           {tieneDatos ? (
             <>
-              <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600">
-                <div className="flex flex-wrap items-center gap-4">
-                  <span className="font-semibold text-gray-700">
-                    Registros importados:{" "}
-                    {totalRegistros.toLocaleString("es-MX")}
-                  </span>
-                  <span>
-                    Actualizado:{" "}
-                    <span className="font-semibold text-gray-800">
-                      {ultimaActualizacion}
-                    </span>
-                  </span>
-                  {comparacionActiva &&
-                    !usaTablaEspecializada &&
-                    complementoNombre && (
-                      <span className="text-xs text-blue-700">
-                        Comparando contra {complementoNombre}.
+              <div className="rounded-lg border border-gray-200 bg-white/80 p-4">
+                <div className="grid gap-4 text-sm text-gray-700 sm:grid-cols-2 lg:grid-cols-3">
+                  {summaryItems.map((item) => (
+                    <div key={item.label} className="flex flex-col gap-1">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        {item.label}
                       </span>
-                    )}
+                      <span
+                        className={`text-sm font-semibold ${
+                          item.tone ?? "text-gray-900"
+                        }`}
+                      >
+                        {item.value}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-                {comparacionDisponible && !usaTablaEspecializada && (
-                  <button
-                    onClick={toggleComparacion}
-                    className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors ${
-                      comparacionActiva
-                        ? "bg-purple-600 text-white hover:bg-purple-700"
-                        : "bg-blue-600 text-white hover:bg-blue-700"
-                    }`}
-                    title={
-                      comparacionActiva
-                        ? "Detener el análisis de diferencias"
-                        : `Analizar diferencias con ${complementoNombre}`
-                    }
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      aria-hidden
-                    >
-                      <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                      <path
-                        fillRule="evenodd"
-                        d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    {comparacionActiva
-                      ? "Analizando diferencias"
-                      : "Analizar diferencias"}
-                  </button>
-                )}
-              </div>
 
-              <div className="rounded-lg border border-gray-200 bg-white/80 p-3">
-                <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-gray-700">
-                  <div className="flex flex-wrap items-center gap-4">
-                    <span className="inline-flex items-center gap-2 text-xs text-gray-600">
-                      <span className="font-semibold uppercase tracking-wide text-gray-500">
-                        Estado
-                      </span>
-                      <span className={estadoChipClasses}>
-                        <span aria-hidden>{estado.icon}</span>
-                        {estado.label}
-                      </span>
-                    </span>
-                    <span>
-                      Registros:
-                      <span className="ml-1 font-semibold text-gray-900">
-                        {totalRegistros.toLocaleString("es-MX")}
-                      </span>
-                    </span>
-                    <span>
-                      Actualizado:
-                      <span className="ml-1 font-semibold text-gray-900">
-                        {ultimaActualizacion}
-                      </span>
-                    </span>
-                    {complementoNombre && (
-                      <span>
-                        Complemento:
-                        <span className="ml-1 font-semibold text-gray-900">
-                          {complementoNombre}
-                        </span>
+                {(comparacionDisponible ||
+                  (reporte.tipo === "INGRESOS_MI_ADMIN" &&
+                    miAdminAutomationActions) ||
+                  (reporte.tipo === "INGRESOS_AUXILIAR" &&
+                    auxiliarSpecialActions)) && (
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {comparacionDisponible && (
+                        <button
+                          onClick={toggleComparacion}
+                          disabled={!comparacionDisponible}
+                          className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-purple-500 ${
+                            !comparacionDisponible
+                              ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+                              : comparacionActiva
+                              ? "border-purple-600 bg-purple-50 text-purple-700 hover:bg-purple-100"
+                              : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+                          }`}
+                          title={
+                            comparacionDisponible
+                              ? comparacionActiva
+                                ? "Desactivar la sincronización entre reportes"
+                                : complementoNombre
+                                ? `Sincronizar con ${complementoNombre}`
+                                : "Sincronizar con reporte complementario"
+                              : "Importa ambos reportes para habilitar la sincronización"
+                          }
+                        >
+                          <GitCompare className="h-4 w-4" aria-hidden />
+                          {comparacionActiva
+                            ? "Sincronización activa"
+                            : "Sincronizar"}
+                        </button>
+                      )}
+
+                      {reporte.tipo === "INGRESOS_MI_ADMIN" &&
+                        miAdminAutomationActions && (
+                          <>
+                            <button
+                              onClick={
+                                miAdminAutomationActions.aplicarTCSugeridoATodos
+                              }
+                              disabled={
+                                !miAdminAutomationActions.hasAuxiliarData ||
+                                miAdminAutomationActions.isSaving
+                              }
+                              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-400 ${
+                                miAdminAutomationActions.hasAuxiliarData &&
+                                !miAdminAutomationActions.isSaving
+                                  ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                              }`}
+                              title={
+                                miAdminAutomationActions.hasAuxiliarData
+                                  ? "Aplicar el tipo de cambio sugerido a todas las filas"
+                                  : "Importa el Auxiliar para habilitar el TC sugerido"
+                              }
+                            >
+                              <ArrowDownCircle
+                                className="h-4 w-4"
+                                aria-hidden
+                              />
+                              Aplicar TC sugerido
+                            </button>
+
+                            <button
+                              onClick={
+                                miAdminAutomationActions.cancelarFoliosUnicos
+                              }
+                              disabled={
+                                miAdminAutomationActions.isSaving ||
+                                !miAdminAutomationActions.isComparisonActive
+                              }
+                              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-400 ${
+                                !miAdminAutomationActions.isSaving &&
+                                miAdminAutomationActions.isComparisonActive
+                                  ? "bg-red-50 text-red-700 hover:bg-red-100"
+                                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                              }`}
+                              title={
+                                miAdminAutomationActions.isComparisonActive
+                                  ? "Quitar de Mi Admin los folios que no existen en Auxiliar"
+                                  : "Activa la sincronización para habilitar la limpieza de folios"
+                              }
+                            >
+                              <XCircle className="h-4 w-4" aria-hidden />
+                              Quitar folios solo Mi Admin
+                            </button>
+                          </>
+                        )}
+                      {reporte.tipo === "INGRESOS_AUXILIAR" &&
+                        auxiliarSpecialActions && (
+                          <button
+                            onClick={
+                              auxiliarSpecialActions.cancelarFoliosUnicos
+                            }
+                            disabled={
+                              auxiliarSpecialActions.isSaving ||
+                              !auxiliarSpecialActions.isComparisonActive ||
+                              !auxiliarSpecialActions.hasMiAdminData
+                            }
+                            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-400 ${
+                              auxiliarSpecialActions.hasMiAdminData &&
+                              auxiliarSpecialActions.isComparisonActive &&
+                              !auxiliarSpecialActions.isSaving
+                                ? "bg-red-50 text-red-700 hover:bg-red-100"
+                                : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                            }`}
+                            title={
+                              auxiliarSpecialActions.isComparisonActive
+                                ? "Quitar del Auxiliar los folios que no existen en Mi Admin"
+                                : "Activa la sincronización para habilitar la limpieza de folios"
+                            }
+                          >
+                            <XCircle className="h-4 w-4" aria-hidden />
+                            Cancelar folios únicos
+                          </button>
+                        )}
+                    </div>
+                    {comparacionDisponible && complementoNombre && (
+                      <span className="text-xs text-gray-500">
+                        {comparacionActiva
+                          ? `Analizando diferencias entre ${nombre} y ${complementoNombre}.`
+                          : `Sincroniza con ${complementoNombre} para revisar diferencias.`}
                       </span>
                     )}
                   </div>
-                  {resumenTotales && (
-                    <div className="flex flex-wrap items-center gap-4 text-sm">
-                      <span>
-                        Subtotal Mi Admin:
-                        <span className="ml-1 font-semibold text-gray-900">
-                          {formatCurrency(resumenTotales.totalMiAdmin)}
-                        </span>
-                      </span>
-                      <span>
-                        Subtotal Auxiliar:
-                        <span className="ml-1 font-semibold text-gray-900">
-                          {formatCurrency(resumenTotales.totalAuxiliar)}
-                        </span>
-                      </span>
-                      <span
-                        className={`font-semibold ${
-                          resumenTotales.coincide
-                            ? "text-emerald-600"
-                            : "text-rose-600"
-                        }`}
-                      >
-                        Diferencia:
-                        <span className="ml-1">
-                          {formatCurrency(resumenTotales.diferencia)}
-                        </span>
-                      </span>
+                )}
+
+                {(resumenTotales ||
+                  (reporte.tipo === "INGRESOS_MI_ADMIN" &&
+                    miAdminResumen &&
+                    miAdminResumen.cantidadCanceladas > 0) ||
+                  (reporte.tipo === "INGRESOS_AUXILIAR" &&
+                    auxiliarResumen &&
+                    (auxiliarResumen.cantidadCanceladas > 0 ||
+                      auxiliarResumen.totalesComparison))) && (
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-gray-500">
+                    <div className="flex-1">
+                      {resumenTotales ? (
+                        resumenTotales.coincide ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700">
+                            Totales coinciden, puedes guardar el valor en el
+                            reporte base anual.
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 font-semibold text-rose-700">
+                            Diferencia detectada, revisa antes de guardar en
+                            base.
+                          </span>
+                        )
+                      ) : reporte.tipo === "INGRESOS_AUXILIAR" &&
+                        auxiliarResumen?.totalesComparison ? (
+                        auxiliarResumen.totalesComparison.match ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700">
+                            Totales conciliados con Mi Admin.
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 font-semibold text-rose-700">
+                            Diferencia vs Mi Admin:{" "}
+                            {formatCurrency(
+                              auxiliarResumen.totalesComparison.difference
+                            )}
+                          </span>
+                        )
+                      ) : null}
                     </div>
-                  )}
-                </div>
-                {resumenTotales && (
-                  <div className="mt-2 text-xs text-gray-500">
-                    {resumenTotales.coincide ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700">
-                        Totales coinciden, puedes guardar el valor en el reporte
-                        base anual.
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 font-semibold text-rose-700">
-                        Diferencia detectada, revisa antes de guardar en base.
-                      </span>
-                    )}
+                    <div className="flex flex-wrap items-center gap-2">
+                      {reporte.tipo === "INGRESOS_MI_ADMIN" &&
+                        miAdminResumen &&
+                        miAdminResumen.cantidadCanceladas > 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 font-semibold text-red-600">
+                            {miAdminResumen.cantidadCanceladas.toLocaleString(
+                              "es-MX"
+                            )}{" "}
+                            canceladas
+                          </span>
+                        )}
+                      {reporte.tipo === "INGRESOS_AUXILIAR" &&
+                        auxiliarResumen &&
+                        auxiliarResumen.cantidadCanceladas > 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 font-semibold text-red-600">
+                            {auxiliarResumen.cantidadCanceladas.toLocaleString(
+                              "es-MX"
+                            )}{" "}
+                            canceladas
+                          </span>
+                        )}
+                      {resumenTotales && (
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-semibold ${
+                            resumenTotales.coincide
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                              : "border-rose-200 bg-rose-50 text-rose-700"
+                          }`}
+                        >
+                          {resumenTotales.coincide
+                            ? "Totales conciliados"
+                            : "Diferencia detectada"}
+                        </span>
+                      )}
+                      {reporte.tipo === "INGRESOS_AUXILIAR" &&
+                        auxiliarResumen?.totalesComparison && (
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-semibold ${
+                              auxiliarResumen.totalesComparison.match
+                                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                : "border-rose-200 bg-rose-50 text-rose-700"
+                            }`}
+                          >
+                            {auxiliarResumen.totalesComparison.match
+                              ? "Totales conciliados"
+                              : "Diferencia vs Mi Admin"}
+                          </span>
+                        )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -776,9 +1020,13 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
                     miAdminReporteVersion={miAdminReporteVersion}
                     showSaveButtonInToolbar={false}
                     showComparisonButtonInToolbar={false}
+                    showStatusBadgesInToolbar={false}
+                    showSpecialActionsInToolbar={false}
                     onSaveContextChange={handleSaveContextChange}
                     comparisonActive={comparacionActiva}
                     onComparisonActiveChange={handleComparacionActiveChange}
+                    onResumenChange={handleAuxiliarResumenChange}
+                    onSpecialActionsChange={handleAuxiliarSpecialActionsChange}
                   />
                 </div>
               ) : reporte.tipo === "INGRESOS_MI_ADMIN" ||
@@ -798,9 +1046,22 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
                     showComparisonButtonInToolbar={
                       esReporteComparable ? false : true
                     }
+                    showStatusBadgesInToolbar={
+                      reporte.tipo === "INGRESOS_MI_ADMIN" ? false : true
+                    }
                     onSaveContextChange={handleSaveContextChange}
                     onGuardarEnBaseContextChange={
                       handleGuardarEnBaseContextChange
+                    }
+                    onTotalesResumenChange={
+                      reporte.tipo === "INGRESOS_MI_ADMIN"
+                        ? handleMiAdminTotalesResumenChange
+                        : undefined
+                    }
+                    onAutomationActionsChange={
+                      reporte.tipo === "INGRESOS_MI_ADMIN"
+                        ? handleMiAdminAutomationActionsChange
+                        : undefined
                     }
                     comparisonActive={
                       esReporteComparable ? comparacionActiva : undefined
