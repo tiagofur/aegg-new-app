@@ -643,4 +643,189 @@ export class TrabajosService {
             return false;
         });
     }
+
+    /**
+     * Actualiza las ventas mensuales en el Reporte Base Anual (Excel)
+     * Busca la fila "Ventas" y la columna del mes para actualizar la celda
+     */
+    async actualizarVentasMensualesEnExcel(
+        trabajoId: string,
+        mes: number,
+        ventas: number,
+        currentUser: CurrentUserPayload,
+    ): Promise<ReporteBaseAnual> {
+        this.assertCanManage(currentUser);
+
+        // Validar mes
+        if (mes < 1 || mes > 12) {
+            throw new BadRequestException('Mes debe estar entre 1 y 12');
+        }
+
+        // Obtener el trabajo con el reporte base anual
+        const trabajo = await this.trabajoRepository.findOne({
+            where: { id: trabajoId },
+            relations: ['reporteBaseAnual'],
+        });
+
+        if (!trabajo) {
+            throw new NotFoundException(`Trabajo con ID ${trabajoId} no encontrado`);
+        }
+
+        if (!trabajo.reporteBaseAnual) {
+            throw new NotFoundException(
+                'Reporte Base Anual no encontrado. Debe importar el Excel primero.',
+            );
+        }
+
+        const reporte = trabajo.reporteBaseAnual;
+
+        // Verificar que exista al menos una hoja
+        if (!reporte.hojas || reporte.hojas.length === 0) {
+            throw new BadRequestException(
+                'El Reporte Base Anual no contiene hojas',
+            );
+        }
+
+        console.log(`[TrabajosService] Reporte Base tiene ${reporte.hojas.length} hojas`);
+        console.log(`[TrabajosService] Nombres de hojas:`, reporte.hojas.map(h => h.nombre));
+
+        // Trabajar con la hoja 0 (PRIMERA HOJA del Excel importado)
+        const hoja0 = reporte.hojas[0];
+
+        if (!hoja0 || !hoja0.datos || hoja0.datos.length === 0) {
+            throw new BadRequestException('La hoja 0 no contiene datos');
+        }
+
+        console.log(`[TrabajosService] Trabajando con hoja: "${hoja0.nombre}"`);
+        console.log(`[TrabajosService] La hoja tiene ${hoja0.datos.length} filas`);
+
+        const datos = hoja0.datos;
+
+        // Función auxiliar para normalizar texto
+        const normalize = (text: any): string => {
+            if (!text) return '';
+            return text
+                .toString()
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9]/g, '');
+        };
+
+        // 1. Buscar la fila de encabezado (debe contener los meses)
+        let headerRowIndex = -1;
+        for (let i = 0; i < Math.min(datos.length, 20); i++) {
+            const row = datos[i];
+            if (Array.isArray(row)) {
+                const rowText = row.map((cell) => normalize(cell)).join(' ');
+                // Buscar si contiene varios nombres de meses
+                const mesesEncontrados = [
+                    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+                ].filter(m => rowText.includes(m)).length;
+
+                if (mesesEncontrados >= 3) {
+                    headerRowIndex = i;
+                    break;
+                }
+            }
+        }
+
+        if (headerRowIndex === -1) {
+            // Log de diagnóstico: mostrar primeras 10 filas
+            console.log('[TrabajosService] ❌ No se encontró el encabezado. Mostrando primeras 10 filas:');
+            for (let i = 0; i < Math.min(datos.length, 10); i++) {
+                console.log(`Fila ${i}:`, datos[i]);
+            }
+            throw new BadRequestException(
+                'No se encontró la fila de encabezado con los nombres de los meses',
+            );
+        }
+
+        console.log(`[TrabajosService] ✅ Encabezado encontrado en fila ${headerRowIndex}`);
+
+        const headerRow = datos[headerRowIndex];
+        console.log(`[TrabajosService] Contenido del encabezado:`, headerRow);
+
+        // 2. Buscar la columna del mes
+        const mesesNombres = [
+            'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+            'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+        ];
+        const mesNombre = mesesNombres[mes - 1];
+
+        let mesColumnIndex = -1;
+        for (let i = 0; i < headerRow.length; i++) {
+            const cellNorm = normalize(headerRow[i]);
+            if (cellNorm === mesNombre) {
+                mesColumnIndex = i;
+                break;
+            }
+        }
+
+        if (mesColumnIndex === -1) {
+            console.log('[TrabajosService] ❌ No se encontró la columna del mes');
+            console.log(`[TrabajosService] Mes buscado: "${mesNombre}"`);
+            console.log(`[TrabajosService] Columnas normalizadas:`, headerRow.map((c, i) => `[${i}]="${normalize(c)}"`));
+            throw new BadRequestException(
+                `No se encontró la columna del mes "${mesesNombres[mes - 1].toUpperCase()}"`,
+            );
+        }
+
+        console.log(`[TrabajosService] ✅ Columna del mes "${mesNombre.toUpperCase()}" encontrada en índice ${mesColumnIndex}`);
+
+        // 3. Buscar la fila "Ventas" (después del encabezado)
+        // Buscar en la columna de CONCEPTO (normalmente índice 1)
+        let ventasRowIndex = -1;
+        for (let i = headerRowIndex + 1; i < datos.length; i++) {
+            const row = datos[i];
+            if (Array.isArray(row) && row.length > 1) {
+                const concepto = normalize(row[1]); // Columna CONCEPTO
+                // Buscar la fila que tenga exactamente "ventas"
+                if (concepto === 'ventas') {
+                    ventasRowIndex = i;
+                    break;
+                }
+            }
+        }
+
+        if (ventasRowIndex === -1) {
+            console.log('[TrabajosService] ❌ No se encontró la fila de Ventas');
+            console.log('[TrabajosService] Buscando filas después del encabezado:');
+            for (let i = headerRowIndex + 1; i < Math.min(datos.length, headerRowIndex + 20); i++) {
+                const row = datos[i];
+                if (Array.isArray(row) && row.length > 1) {
+                    console.log(`Fila ${i}: [0]="${normalize(row[0])}" [1]="${normalize(row[1])}"`);
+                }
+            }
+            throw new BadRequestException(
+                'No se encontró la fila "( = ) Ventas" en la hoja',
+            );
+        }
+
+        console.log(`[TrabajosService] ✅ Fila de Ventas encontrada en índice ${ventasRowIndex}`);
+
+        // 4. Actualizar la celda en la intersección
+        console.log(`[TrabajosService] Actualizando celda en Excel:`, {
+            trabajoId,
+            mes: mesesNombres[mes - 1],
+            ventas,
+            fila: ventasRowIndex,
+            columna: mesColumnIndex,
+            valorAnterior: datos[ventasRowIndex][mesColumnIndex],
+        });
+
+        datos[ventasRowIndex][mesColumnIndex] = ventas;
+
+        // 5. Guardar cambios
+        hoja0.datos = datos;
+        reporte.hojas[0] = hoja0;
+        reporte.ultimaActualizacion = new Date();
+
+        const reporteActualizado = await this.reporteBaseRepository.save(reporte);
+
+        console.log(`[TrabajosService] ✅ Ventas actualizadas en Excel para ${mesesNombres[mes - 1]}`);
+
+        return reporteActualizado;
+    }
 }

@@ -48,6 +48,18 @@ export const trabajosService = {
         return data;
     },
 
+    async actualizarVentasMensualesEnExcel(
+        trabajoId: string,
+        mes: number,
+        ventas: number
+    ): Promise<ReporteBaseAnual> {
+        const { data } = await api.post(
+            `/trabajos/${trabajoId}/reporte-base/actualizar-ventas-mes`,
+            { mes, ventas }
+        );
+        return data;
+    },
+
     async getAprobacionesDashboard(filters?: AprobacionesFilters): Promise<AprobacionesDashboardData> {
         const { data } = await api.get('/trabajos/aprobaciones/dashboard', {
             params: filters,
