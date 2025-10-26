@@ -953,134 +953,135 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
                   ))}
                 </div>
 
-                {(comparacionDisponible ||
-                  (reporte.tipo === "INGRESOS_MI_ADMIN" &&
-                    miAdminAutomationActions) ||
-                  (reporte.tipo === "INGRESOS_AUXILIAR" &&
-                    auxiliarSpecialActions)) && (
-                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {comparacionDisponible && (
-                        <button
-                          onClick={toggleComparacion}
-                          disabled={!comparacionDisponible}
-                          className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-purple-500 ${
-                            !comparacionDisponible
-                              ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
-                              : comparacionActiva
-                              ? "border-purple-600 bg-purple-50 text-purple-700 hover:bg-purple-100"
-                              : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
-                          }`}
-                          title={
-                            comparacionDisponible
-                              ? comparacionActiva
-                                ? "Desactivar la sincronización entre reportes"
-                                : complementoNombre
-                                ? `Sincronizar con ${complementoNombre}`
-                                : "Sincronizar con reporte complementario"
-                              : "Importa ambos reportes para habilitar la sincronización"
-                          }
-                        >
-                          <GitCompare className="h-4 w-4" aria-hidden />
-                          {comparacionActiva
-                            ? "Sincronización activa"
-                            : "Sincronizar"}
-                        </button>
-                      )}
+                {!isReadOnly &&
+                  (comparacionDisponible ||
+                    (reporte.tipo === "INGRESOS_MI_ADMIN" &&
+                      miAdminAutomationActions) ||
+                    (reporte.tipo === "INGRESOS_AUXILIAR" &&
+                      auxiliarSpecialActions)) && (
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {comparacionDisponible && (
+                          <button
+                            onClick={toggleComparacion}
+                            disabled={!comparacionDisponible}
+                            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-purple-500 ${
+                              !comparacionDisponible
+                                ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+                                : comparacionActiva
+                                ? "border-purple-600 bg-purple-50 text-purple-700 hover:bg-purple-100"
+                                : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+                            }`}
+                            title={
+                              comparacionDisponible
+                                ? comparacionActiva
+                                  ? "Desactivar la sincronización entre reportes"
+                                  : complementoNombre
+                                  ? `Sincronizar con ${complementoNombre}`
+                                  : "Sincronizar con reporte complementario"
+                                : "Importa ambos reportes para habilitar la sincronización"
+                            }
+                          >
+                            <GitCompare className="h-4 w-4" aria-hidden />
+                            {comparacionActiva
+                              ? "Sincronización activa"
+                              : "Sincronizar"}
+                          </button>
+                        )}
 
-                      {reporte.tipo === "INGRESOS_MI_ADMIN" &&
-                        miAdminAutomationActions && (
-                          <>
+                        {reporte.tipo === "INGRESOS_MI_ADMIN" &&
+                          miAdminAutomationActions && (
+                            <>
+                              <button
+                                onClick={
+                                  miAdminAutomationActions.aplicarTCSugeridoATodos
+                                }
+                                disabled={
+                                  !miAdminAutomationActions.hasAuxiliarData ||
+                                  miAdminAutomationActions.isSaving
+                                }
+                                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-400 ${
+                                  miAdminAutomationActions.hasAuxiliarData &&
+                                  !miAdminAutomationActions.isSaving
+                                    ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                                }`}
+                                title={
+                                  miAdminAutomationActions.hasAuxiliarData
+                                    ? "Aplicar el tipo de cambio sugerido a todas las filas"
+                                    : "Importa el Auxiliar para habilitar el TC sugerido"
+                                }
+                              >
+                                <ArrowDownCircle
+                                  className="h-4 w-4"
+                                  aria-hidden
+                                />
+                                Aplicar TC sugerido
+                              </button>
+
+                              <button
+                                onClick={
+                                  miAdminAutomationActions.cancelarFoliosUnicos
+                                }
+                                disabled={
+                                  miAdminAutomationActions.isSaving ||
+                                  !miAdminAutomationActions.isComparisonActive
+                                }
+                                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-400 ${
+                                  !miAdminAutomationActions.isSaving &&
+                                  miAdminAutomationActions.isComparisonActive
+                                    ? "bg-red-50 text-red-700 hover:bg-red-100"
+                                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                                }`}
+                                title={
+                                  miAdminAutomationActions.isComparisonActive
+                                    ? "Quitar de Mi Admin los folios que no existen en Auxiliar"
+                                    : "Activa la sincronización para habilitar la limpieza de folios"
+                                }
+                              >
+                                <XCircle className="h-4 w-4" aria-hidden />
+                                Quitar folios solo Mi Admin
+                              </button>
+                            </>
+                          )}
+                        {reporte.tipo === "INGRESOS_AUXILIAR" &&
+                          auxiliarSpecialActions && (
                             <button
                               onClick={
-                                miAdminAutomationActions.aplicarTCSugeridoATodos
+                                auxiliarSpecialActions.cancelarFoliosUnicos
                               }
                               disabled={
-                                !miAdminAutomationActions.hasAuxiliarData ||
-                                miAdminAutomationActions.isSaving
-                              }
-                              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-400 ${
-                                miAdminAutomationActions.hasAuxiliarData &&
-                                !miAdminAutomationActions.isSaving
-                                  ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
-                                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                              }`}
-                              title={
-                                miAdminAutomationActions.hasAuxiliarData
-                                  ? "Aplicar el tipo de cambio sugerido a todas las filas"
-                                  : "Importa el Auxiliar para habilitar el TC sugerido"
-                              }
-                            >
-                              <ArrowDownCircle
-                                className="h-4 w-4"
-                                aria-hidden
-                              />
-                              Aplicar TC sugerido
-                            </button>
-
-                            <button
-                              onClick={
-                                miAdminAutomationActions.cancelarFoliosUnicos
-                              }
-                              disabled={
-                                miAdminAutomationActions.isSaving ||
-                                !miAdminAutomationActions.isComparisonActive
+                                auxiliarSpecialActions.isSaving ||
+                                !auxiliarSpecialActions.isComparisonActive ||
+                                !auxiliarSpecialActions.hasMiAdminData
                               }
                               className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-400 ${
-                                !miAdminAutomationActions.isSaving &&
-                                miAdminAutomationActions.isComparisonActive
+                                auxiliarSpecialActions.hasMiAdminData &&
+                                auxiliarSpecialActions.isComparisonActive &&
+                                !auxiliarSpecialActions.isSaving
                                   ? "bg-red-50 text-red-700 hover:bg-red-100"
                                   : "bg-gray-200 text-gray-500 cursor-not-allowed"
                               }`}
                               title={
-                                miAdminAutomationActions.isComparisonActive
-                                  ? "Quitar de Mi Admin los folios que no existen en Auxiliar"
+                                auxiliarSpecialActions.isComparisonActive
+                                  ? "Quitar del Auxiliar los folios que no existen en Mi Admin"
                                   : "Activa la sincronización para habilitar la limpieza de folios"
                               }
                             >
                               <XCircle className="h-4 w-4" aria-hidden />
-                              Quitar folios solo Mi Admin
+                              Cancelar folios únicos
                             </button>
-                          </>
-                        )}
-                      {reporte.tipo === "INGRESOS_AUXILIAR" &&
-                        auxiliarSpecialActions && (
-                          <button
-                            onClick={
-                              auxiliarSpecialActions.cancelarFoliosUnicos
-                            }
-                            disabled={
-                              auxiliarSpecialActions.isSaving ||
-                              !auxiliarSpecialActions.isComparisonActive ||
-                              !auxiliarSpecialActions.hasMiAdminData
-                            }
-                            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-400 ${
-                              auxiliarSpecialActions.hasMiAdminData &&
-                              auxiliarSpecialActions.isComparisonActive &&
-                              !auxiliarSpecialActions.isSaving
-                                ? "bg-red-50 text-red-700 hover:bg-red-100"
-                                : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                            }`}
-                            title={
-                              auxiliarSpecialActions.isComparisonActive
-                                ? "Quitar del Auxiliar los folios que no existen en Mi Admin"
-                                : "Activa la sincronización para habilitar la limpieza de folios"
-                            }
-                          >
-                            <XCircle className="h-4 w-4" aria-hidden />
-                            Cancelar folios únicos
-                          </button>
-                        )}
+                          )}
+                      </div>
+                      {comparacionDisponible && complementoNombre && (
+                        <span className="text-xs text-gray-500">
+                          {comparacionActiva
+                            ? `Analizando diferencias entre ${nombre} y ${complementoNombre}.`
+                            : `Sincroniza con ${complementoNombre} para revisar diferencias.`}
+                        </span>
+                      )}
                     </div>
-                    {comparacionDisponible && complementoNombre && (
-                      <span className="text-xs text-gray-500">
-                        {comparacionActiva
-                          ? `Analizando diferencias entre ${nombre} y ${complementoNombre}.`
-                          : `Sincroniza con ${complementoNombre} para revisar diferencias.`}
-                      </span>
-                    )}
-                  </div>
-                )}
+                  )}
 
                 {(resumenTotales ||
                   (reporte.tipo === "INGRESOS_MI_ADMIN" &&
@@ -1212,6 +1213,7 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
                     onComparisonActiveChange={handleComparacionActiveChange}
                     onResumenChange={handleAuxiliarResumenChange}
                     onSpecialActionsChange={handleAuxiliarSpecialActionsChange}
+                    isReadOnly={isReadOnly}
                   />
                 </div>
               ) : reporte.tipo === "INGRESOS_MI_ADMIN" ||
@@ -1243,6 +1245,7 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
                         ? handleMiAdminTotalesResumenChange
                         : undefined
                     }
+                    isReadOnly={isReadOnly}
                     onAutomationActionsChange={
                       reporte.tipo === "INGRESOS_MI_ADMIN"
                         ? handleMiAdminAutomationActionsChange

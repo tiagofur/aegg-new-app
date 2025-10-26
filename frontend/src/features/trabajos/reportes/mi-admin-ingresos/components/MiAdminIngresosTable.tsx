@@ -111,6 +111,8 @@ interface MiAdminIngresosTableProps {
       hasAuxiliarData: boolean;
     } | null
   ) => void;
+  /** Si es true, deshabilita la edición de celdas */
+  isReadOnly?: boolean;
 }
 
 /**
@@ -148,6 +150,7 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
   onComparisonActiveChange,
   onTotalesResumenChange,
   onAutomationActionsChange,
+  isReadOnly = false,
 }) => {
   // 🔥 Si no se proporciona auxiliarData, buscar el reporte Auxiliar del mismo mes
 
@@ -324,6 +327,7 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
 
     return createMiAdminDynamicColumns(dataWithTotals, callbacks, {
       isComparisonActive,
+      isReadOnly,
     });
   }, [
     dataWithTotals,
@@ -331,6 +335,7 @@ export const MiAdminIngresosTable: React.FC<MiAdminIngresosTableProps> = ({
     updateEstadoSat,
     aplicarTCSugerido,
     isComparisonActive,
+    isReadOnly,
   ]);
 
   // Configuración de TanStack Table

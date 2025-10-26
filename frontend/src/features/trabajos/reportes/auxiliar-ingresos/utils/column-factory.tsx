@@ -47,10 +47,8 @@ type SpecialColumnConfig = Record<
 const getSpecialColumnConfig = (
   updateTipoCambio: (id: string, value: number) => void,
   updateEstadoSat: (id: string, value: EstadoSat) => void,
-  options: { isComparisonActive?: boolean } = {}
+  options: { isComparisonActive?: boolean; isReadOnly?: boolean } = {}
 ): SpecialColumnConfig => {
-  const { isComparisonActive = false } = options;
-
   return {
     folio: {
       header: "Folio",
@@ -152,15 +150,18 @@ const getSpecialColumnConfig = (
         }
         const value = info.getValue() as number | null;
         const isMonedaMXN = row.moneda === "MXN";
-        const isReadOnly = isComparisonActive;
-        const isDisabled = isMonedaMXN || isReadOnly;
+        const isComparisonReadOnly = options.isComparisonActive ?? false;
+        const isMesReadOnly = options.isReadOnly ?? false;
+        const isDisabled = isMonedaMXN || isComparisonReadOnly || isMesReadOnly;
         return (
           <EditableTipoCambioCell
             value={value}
             onChange={(newValue) => updateTipoCambio(row.id, newValue)}
             disabled={isDisabled}
             disabledReason={
-              isReadOnly
+              isMesReadOnly
+                ? "Mes en revisión o aprobado: Solo lectura"
+                : isComparisonReadOnly
                 ? "Comparación activa: Tipo de cambio en solo lectura"
                 : undefined
             }
@@ -182,10 +183,12 @@ const getSpecialColumnConfig = (
             </span>
           );
         }
+        const isMesReadOnly = options.isReadOnly ?? false;
         return (
           <EditableEstadoSatCell
             value={value}
             onChange={(newValue) => updateEstadoSat(row.id, newValue)}
+            disabled={isMesReadOnly}
           />
         );
       },
@@ -205,7 +208,7 @@ export function createDynamicColumns(
   data: AuxiliarIngresosRow[],
   updateTipoCambio: (id: string, value: number) => void,
   updateEstadoSat: (id: string, value: EstadoSat) => void,
-  options: { isComparisonActive?: boolean } = {}
+  options: { isComparisonActive?: boolean; isReadOnly?: boolean } = {}
 ) {
   if (!data || data.length === 0) return [];
 

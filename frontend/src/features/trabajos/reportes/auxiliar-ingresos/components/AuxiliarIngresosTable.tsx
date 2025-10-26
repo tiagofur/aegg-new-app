@@ -64,6 +64,8 @@ interface AuxiliarIngresosTableProps {
   comparisonActive?: boolean;
   /** Callback cuando el estado de comparación cambia */
   onComparisonActiveChange?: (active: boolean) => void;
+  /** Si es true, deshabilita la edición de celdas */
+  isReadOnly?: boolean;
   /** Notifica cambios en resumen para que el contenedor pueda mostrar badges */
   onResumenChange?: (
     resumen: {
@@ -106,6 +108,7 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
   onComparisonActiveChange,
   onResumenChange,
   onSpecialActionsChange,
+  isReadOnly = false,
 }) => {
   // Hooks de datos y lógica
   const { data, isLoading, error, saveChanges, isSaving } =
@@ -288,6 +291,7 @@ export const AuxiliarIngresosTable: React.FC<AuxiliarIngresosTableProps> = ({
       updateEstadoSat,
       {
         isComparisonActive,
+        isReadOnly,
       }
     );
 
