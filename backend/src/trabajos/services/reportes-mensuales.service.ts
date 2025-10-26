@@ -31,7 +31,7 @@ export class ReportesMensualesService {
         // Verificar que el mes existe
         const mes = await this.mesRepository.findOne({
             where: { id: mesId },
-            relations: ['reportes'],
+            relations: ['reportes', 'trabajo', 'trabajo.gestorResponsable'],
         });
 
         if (!mes) {
@@ -71,7 +71,7 @@ export class ReportesMensualesService {
     async procesarYGuardar(mesId: string): Promise<{ success: boolean; message: string }> {
         const mes = await this.mesRepository.findOne({
             where: { id: mesId },
-            relations: ['reportes', 'trabajo', 'trabajo.reporteBaseAnual'],
+            relations: ['reportes', 'trabajo', 'trabajo.reporteBaseAnual', 'trabajo.gestorResponsable'],
         });
 
         if (!mes) {
@@ -666,13 +666,26 @@ export class ReportesMensualesService {
         return meses[mes - 1];
     }
 
+    /**
+     * Valida que un mes esté en estado editable
+     * @throws ConflictException si el mes está en revisión o aprobado
+     */
     private assertMesEditable(mes: Mes): void {
-        if (
-            mes.estadoRevision === EstadoRevisionMes.ENVIADO ||
-            mes.estadoRevision === EstadoRevisionMes.APROBADO
-        ) {
+        if (mes.estadoRevision === EstadoRevisionMes.ENVIADO) {
+            const gestorNombre = mes.trabajo?.gestorResponsable?.name || 'No asignado';
             throw new ConflictException(
-                'El mes está bloqueado por revisión o aprobación y no permite modificaciones.',
+                `El mes está en revisión por el gestor y no puede ser modificado. ` +
+                `Debes esperar a que el gestor lo apruebe o rechace. ` +
+                `Gestor responsable: ${gestorNombre}`
+            );
+        }
+
+        if (mes.estadoRevision === EstadoRevisionMes.APROBADO) {
+            const gestorNombre = mes.trabajo?.gestorResponsable?.name || 'No asignado';
+            throw new ConflictException(
+                `El mes está aprobado y bloqueado permanentemente. ` +
+                `Si necesitas hacer cambios, contacta al gestor responsable para que reabra el mes. ` +
+                `Gestor responsable: ${gestorNombre}`
             );
         }
     }
@@ -681,14 +694,15 @@ export class ReportesMensualesService {
         // Buscar el mes con sus reportes
         const mes = await this.mesRepository.findOne({
             where: { id: mesId },
-            relations: ['reportes'],
+            relations: ['reportes', 'trabajo', 'trabajo.gestorResponsable'],
         });
 
         if (!mes) {
             throw new NotFoundException(`Mes con id ${mesId} no encontrado`);
         }
 
-        this.assertMesEditable(mes);
+        // NO validar mes editable - este método es solo lectura
+        // El gestor necesita ver los datos para aprobar/rechazar
 
         // Buscar el reporte específico
         const reporte = mes.reportes.find((r) => r.id === reporteId);
@@ -704,7 +718,7 @@ export class ReportesMensualesService {
         // Buscar el mes con sus reportes
         const mes = await this.mesRepository.findOne({
             where: { id: mesId },
-            relations: ['reportes'],
+            relations: ['reportes', 'trabajo', 'trabajo.gestorResponsable'],
         });
 
         if (!mes) {
@@ -736,7 +750,7 @@ export class ReportesMensualesService {
         // Buscar el mes con sus reportes
         const mes = await this.mesRepository.findOne({
             where: { id: mesId },
-            relations: ['reportes'],
+            relations: ['reportes', 'trabajo', 'trabajo.gestorResponsable'],
         });
 
         if (!mes) {
@@ -787,7 +801,7 @@ export class ReportesMensualesService {
         // Buscar el mes con sus reportes
         const mes = await this.mesRepository.findOne({
             where: { id: mesId },
-            relations: ['reportes'],
+            relations: ['reportes', 'trabajo', 'trabajo.gestorResponsable'],
         });
 
         if (!mes) {

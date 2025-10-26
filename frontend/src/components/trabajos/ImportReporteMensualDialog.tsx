@@ -94,6 +94,16 @@ export const ImportReporteMensualDialog: React.FC<
         err.response?.data?.message ||
         err.message ||
         "Error al importar el reporte";
+
+      // Mejorar visualización de errores de bloqueo por revisión
+      if (
+        errorMessage.includes("revisión") ||
+        errorMessage.includes("aprobado") ||
+        errorMessage.includes("bloqueado")
+      ) {
+        alert(`❌ No se puede importar el reporte\n\n${errorMessage}`);
+      }
+
       setError(errorMessage);
     } finally {
       setImporting(false);

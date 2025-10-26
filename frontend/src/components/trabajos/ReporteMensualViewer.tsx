@@ -6,8 +6,14 @@ import {
 } from "../../features/trabajos/reportes/auxiliar-ingresos";
 import { MiAdminIngresosTable } from "../../features/trabajos/reportes/mi-admin-ingresos";
 import { GuardarEnBaseButton } from "../../features/trabajos/reportes/reporte-anual";
-import { ReporteMensual, TIPOS_REPORTE_NOMBRES } from "../../types/trabajo";
+import {
+  ReporteMensual,
+  TIPOS_REPORTE_NOMBRES,
+  EstadoRevisionMes,
+} from "../../types/trabajo";
 import type { MiAdminIngresosTotales } from "../../features/trabajos/reportes/mi-admin-ingresos";
+import { mesesService } from "../../services";
+import { useAuth } from "../../context/AuthContext";
 
 type ReporteMensualViewerProps = {
   reporte: ReporteMensual;
@@ -21,6 +27,9 @@ type ReporteMensualViewerProps = {
   onReimportarReporte: () => void;
   onLimpiarDatos?: () => void;
   canManage: boolean;
+  mesEstadoRevision: EstadoRevisionMes;
+  gestorResponsableId?: string | null;
+  onMesUpdated: () => void;
 };
 
 type ComparacionResultado = {
@@ -180,8 +189,29 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
   onReimportarReporte,
   onLimpiarDatos,
   canManage,
+  mesEstadoRevision,
+  gestorResponsableId,
+  onMesUpdated,
 }) => {
+  const { user } = useAuth();
   const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
+  const [processingApproval, setProcessingApproval] = useState(false);
+
+  // Cálculo de permisos para revisión/aprobación
+  const role = user?.role ?? "Gestor";
+  const userId = user?.id ?? "";
+  const isAdmin = role === "Admin";
+  const esGestor = role === "Gestor";
+  const esGestorResponsable = gestorResponsableId
+    ? gestorResponsableId === userId
+    : esGestor;
+  const puedeRevisar = isAdmin || esGestorResponsable;
+  const isMiembro = role === "Miembro";
+  const isReadOnly =
+    mesEstadoRevision === "ENVIADO" || mesEstadoRevision === "APROBADO";
+  const deberianMostrarseLosBotones =
+    puedeRevisar && mesEstadoRevision === "ENVIADO";
+
   const [comparacionActiva, setComparacionActiva] = useState(false);
   const [tablaSaveContext, setTablaSaveContext] = useState<{
     save: () => Promise<void>;
@@ -616,6 +646,64 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
     onLimpiarDatos?.();
   };
 
+  const handleAprobarMes = async () => {
+    if (!puedeRevisar) {
+      alert(
+        "Solo el gestor responsable o un administrador puede aprobar el mes."
+      );
+      return;
+    }
+
+    const confirmar = window.confirm(
+      `¿Deseas aprobar el mes de ${mesNombre}?\n\nEsto marcará el mes como aprobado y ya no podrá editarse.`
+    );
+
+    if (!confirmar) return;
+
+    setProcessingApproval(true);
+    try {
+      await mesesService.aprobar(mesId);
+      alert("Mes aprobado correctamente");
+      onMesUpdated();
+    } catch (error: any) {
+      console.error("Error al aprobar mes:", error);
+      alert(error.response?.data?.message || "Error al aprobar el mes");
+    } finally {
+      setProcessingApproval(false);
+    }
+  };
+
+  const handleSolicitarCambios = async () => {
+    if (!puedeRevisar) {
+      alert(
+        "Solo el gestor responsable o un administrador puede solicitar cambios."
+      );
+      return;
+    }
+
+    const comentario = window.prompt(
+      `Describe los cambios necesarios para el mes de ${mesNombre}:`,
+      ""
+    );
+
+    if (!comentario || comentario.trim().length === 0) {
+      alert("Debes ingresar un comentario para solicitar cambios.");
+      return;
+    }
+
+    setProcessingApproval(true);
+    try {
+      await mesesService.solicitarCambios(mesId, comentario.trim());
+      alert("Se han solicitado cambios. El mes vuelve a estar en edición.");
+      onMesUpdated();
+    } catch (error: any) {
+      console.error("Error al solicitar cambios:", error);
+      alert(error.response?.data?.message || "Error al solicitar cambios");
+    } finally {
+      setProcessingApproval(false);
+    }
+  };
+
   return (
     <div className="mt-3 overflow-hidden rounded-lg border border-gray-200 bg-white">
       <header
@@ -652,10 +740,10 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
             </div>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
-            {canManage && guardarEnBaseContext && (
+            {canManage && !isReadOnly && guardarEnBaseContext && (
               <GuardarEnBaseButton {...guardarEnBaseContext} />
             )}
-            {canManage && tablaSaveContext && (
+            {canManage && !isReadOnly && tablaSaveContext && (
               <button
                 onClick={handleGuardarTabla}
                 disabled={
@@ -677,6 +765,7 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
               </button>
             )}
             {canManage &&
+              !isReadOnly &&
               (tieneDatos ? (
                 <button
                   onClick={onReimportarReporte}
@@ -720,7 +809,7 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
                   Importar archivo
                 </button>
               ))}
-            {canManage && onLimpiarDatos && tieneDatos && (
+            {canManage && !isReadOnly && onLimpiarDatos && tieneDatos && (
               <button
                 onClick={() => setMostrarConfirmacion(true)}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-100"
@@ -745,6 +834,102 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
           </div>
         </div>
       </header>
+
+      {/* Banner de estado de revisión y botones de aprobación */}
+      {mesEstadoRevision === "ENVIADO" && (
+        <div className="border-b-2 border-amber-400 bg-gradient-to-r from-amber-50 to-yellow-50 px-4 py-4 lg:px-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-amber-500 text-white shadow-lg">
+                <svg
+                  className="h-6 w-6"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h4 className="text-base font-bold text-amber-900 mb-1">
+                  🔒 Mes en Revisión
+                </h4>
+                <p className="text-sm text-amber-800">
+                  {isMiembro
+                    ? "Este mes está bloqueado mientras el gestor lo revisa. No puedes hacer cambios hasta que el gestor lo apruebe o solicite modificaciones."
+                    : "Este mes está en revisión. Los reportes están en modo solo lectura. Revisa los datos y decide si aprobar o solicitar cambios."}
+                </p>
+              </div>
+            </div>
+
+            {/* Botones de aprobación (solo para gestores) */}
+            {deberianMostrarseLosBotones && (
+              <div className="flex flex-wrap items-center gap-2 sm:flex-shrink-0">
+                <button
+                  onClick={handleAprobarMes}
+                  disabled={processingApproval}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition-colors hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  <svg
+                    className="h-5 w-5"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  {processingApproval ? "Procesando..." : "Aprobar"}
+                </button>
+                <button
+                  onClick={handleSolicitarCambios}
+                  disabled={processingApproval}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  <svg
+                    className="h-5 w-5"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  {processingApproval ? "Procesando..." : "Solicitar cambios"}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {mesEstadoRevision === "APROBADO" && (
+        <div className="border-b-2 border-emerald-400 bg-gradient-to-r from-emerald-50 to-green-50 px-4 py-4 lg:px-6">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg">
+              <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h4 className="text-base font-bold text-emerald-900 mb-1">
+                ✅ Mes Aprobado
+              </h4>
+              <p className="text-sm text-emerald-800">
+                Este mes fue aprobado y permanece en modo de solo lectura
+                permanente. Los datos no pueden modificarse.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="px-4 py-4 lg:px-6">
         <section className="min-w-0 space-y-4">

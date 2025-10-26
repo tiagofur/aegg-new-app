@@ -1,4 +1,5 @@
 import { FC, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   CalendarCheck,
@@ -93,6 +94,14 @@ const formatDate = (value: string) =>
     year: "numeric",
   }).format(new Date(value));
 
+const calcularDiasEnRevision = (fechaEnvio?: string | null) => {
+  if (!fechaEnvio) return null;
+  const dias = Math.floor(
+    (Date.now() - new Date(fechaEnvio).getTime()) / (1000 * 60 * 60 * 24)
+  );
+  return dias;
+};
+
 interface AprobacionesDashboardProps {
   data: AprobacionesDashboardData;
   loading: boolean;
@@ -113,6 +122,8 @@ export const AprobacionesDashboard: FC<AprobacionesDashboardProps> = ({
   onChangeFilters,
   onRetry,
 }) => {
+  const navigate = useNavigate();
+
   const estadosOrdenados = useMemo(
     () => ordenarEstados(data.resumenEstados),
     [data.resumenEstados]
@@ -232,15 +243,35 @@ export const AprobacionesDashboard: FC<AprobacionesDashboardProps> = ({
                   <th className="px-4 py-3">Asignado</th>
                   <th className="px-4 py-3">Última actualización</th>
                   <th className="px-4 py-3 text-right">Avance</th>
+                  <th className="px-4 py-3 text-center">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
                 {pendientesFiltradas.map((item) => (
-                  <tr key={item.id} className="transition hover:bg-slate-50">
+                  <tr
+                    key={item.id}
+                    onClick={() =>
+                      navigate(`/trabajos/${item.trabajoId}?mes=${item.id}`)
+                    }
+                    className="transition hover:bg-blue-50 cursor-pointer group"
+                  >
                     <td className="px-4 py-3 font-medium text-slate-800">
                       <div className="flex flex-col">
-                        <span>
+                        <span className="group-hover:text-blue-600 transition flex items-center gap-2">
                           {item.clienteNombre} · {item.anio}
+                          <svg
+                            className="h-4 w-4 opacity-0 group-hover:opacity-100 transition"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M13 7l5 5m0 0l-5 5m5-5H6"
+                            />
+                          </svg>
                         </span>
                         <span className="text-xs text-slate-500">
                           Mes: {item.mesNombre || `#${item.mesNumero ?? "-"}`}
@@ -291,6 +322,30 @@ export const AprobacionesDashboard: FC<AprobacionesDashboardProps> = ({
                         <span className="text-slate-400">
                           {formatDate(item.fechaActualizacion)}
                         </span>
+                        {item.estadoRevision === "ENVIADO" &&
+                          item.fechaEnvioRevision && (
+                            <span
+                              className={`font-semibold mt-1 flex items-center gap-1 ${
+                                calcularDiasEnRevision(
+                                  item.fechaEnvioRevision
+                                )! > 3
+                                  ? "text-rose-600"
+                                  : "text-amber-600"
+                              }`}
+                            >
+                              <Clock className="h-3 w-3" aria-hidden />
+                              ⏱️{" "}
+                              {calcularDiasEnRevision(
+                                item.fechaEnvioRevision
+                              )}{" "}
+                              {calcularDiasEnRevision(
+                                item.fechaEnvioRevision
+                              ) === 1
+                                ? "día"
+                                : "días"}{" "}
+                              en revisión
+                            </span>
+                          )}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right text-sm font-semibold text-slate-700">
@@ -301,6 +356,37 @@ export const AprobacionesDashboard: FC<AprobacionesDashboardProps> = ({
                           meses
                         </span>
                       </div>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(
+                            `/trabajos/${item.trabajoId}?mes=${item.id}`
+                          );
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700 hover:shadow-md"
+                      >
+                        <svg
+                          className="h-3.5 w-3.5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                        </svg>
+                        Revisar
+                      </button>
                     </td>
                   </tr>
                 ))}

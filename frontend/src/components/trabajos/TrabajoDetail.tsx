@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { CalendarDays } from "lucide-react";
 import { Trabajo, MESES_NOMBRES } from "../../types/trabajo";
 import { ReporteAnualHeader } from "./ReporteAnualHeader";
@@ -33,6 +33,7 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
   canManage,
 }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [mesSeleccionado, setMesSeleccionado] = useState<string | undefined>(
     trabajo.meses[0]?.id
   );
@@ -74,6 +75,51 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
 
   // Encontrar el mes seleccionado
   const mesActual = trabajo.meses.find((m) => m.id === mesSeleccionado);
+
+  // Auto-expandir mes al llegar desde el dashboard de aprobaciones
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const mesIdParam = params.get("mes");
+
+    if (mesIdParam && trabajo.meses) {
+      // Buscar si el mes existe en este trabajo
+      const mesEncontrado = trabajo.meses.find((m) => m.id === mesIdParam);
+
+      if (mesEncontrado) {
+        // Establecer el mes seleccionado
+        setMesSeleccionado(mesEncontrado.id);
+
+        // Hacer scroll al mes después de un pequeño delay
+        setTimeout(() => {
+          const mesElement = document.getElementById(
+            `mes-card-${mesEncontrado.id}`
+          );
+          if (mesElement) {
+            mesElement.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+            // Agregar highlight temporal
+            mesElement.classList.add(
+              "ring-2",
+              "ring-blue-500",
+              "ring-offset-2"
+            );
+            setTimeout(() => {
+              mesElement.classList.remove(
+                "ring-2",
+                "ring-blue-500",
+                "ring-offset-2"
+              );
+            }, 2000);
+          }
+        }, 300);
+
+        // Limpiar el parámetro de la URL
+        navigate(location.pathname, { replace: true });
+      }
+    }
+  }, [trabajo.meses, location.search, navigate, location.pathname]);
 
   // Cuando cambia el mes, seleccionar el primer reporte automáticamente
   React.useEffect(() => {
@@ -537,7 +583,10 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
 
       {/* Reportes Mensuales del mes seleccionado */}
       {mesActual ? (
-        <div className="mt-3">
+        <div
+          id={`mes-card-${mesActual.id}`}
+          className="mt-3 scroll-mt-20 transition-all duration-200"
+        >
           {/* Selector de pestañas de reportes */}
           {mesActual.reportes && mesActual.reportes.length > 0 ? (
             <>
@@ -561,6 +610,9 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
                   onReimportarReporte={handleReimportarReporte}
                   onLimpiarDatos={handleLimpiarDatos}
                   canManage={puedeEditarMesActual}
+                  mesEstadoRevision={mesActual.estadoRevision}
+                  gestorResponsableId={trabajo.gestorResponsableId}
+                  onMesUpdated={onReload}
                 />
               )}
             </>
