@@ -11,6 +11,7 @@ git push origin production
 ```
 
 ¡Y listo! GitHub automáticamente:
+
 1. ✅ Build del frontend
 2. ✅ Deploy al servidor
 3. ✅ Backup automático
@@ -62,24 +63,28 @@ Debería responder: `OK`
 5. Agrega estos 3 secrets:
 
 **Secret 1: SERVER_HOST**
+
 ```
 Name: SERVER_HOST
 Value: 74.208.234.244
 ```
 
 **Secret 2: SERVER_USER**
+
 ```
 Name: SERVER_USER
 Value: root
 ```
 
 **Secret 3: SSH_PRIVATE_KEY**
+
 ```
 Name: SSH_PRIVATE_KEY
 Value: (pega la clave privada completa que copiaste en paso 2)
 ```
 
 **IMPORTANTE:** La clave privada debe incluir las líneas:
+
 ```
 -----BEGIN OPENSSH PRIVATE KEY-----
 ... todo el contenido ...
@@ -185,7 +190,7 @@ Después de cada deployment, GitHub Actions muestra:
 
 ✅ Build exitoso  
 ✅ Deploy exitoso  
-✅ URL: https://aegg.creapolis.mx  
+✅ URL: https://aegg.creapolis.mx
 
 **Verifica manualmente:**
 
@@ -252,6 +257,7 @@ Para evitar pushes accidentales a production:
 6. Save changes
 
 Con esto, para deployar necesitarás:
+
 1. Crear Pull Request: `mejoras-2025-10-18` → `production`
 2. Aprobar PR
 3. Merge → Deploy automático
@@ -292,6 +298,7 @@ dnf install -y git
 ### El workflow no se ejecuta
 
 Verifica que:
+
 1. El archivo `.github/workflows/deploy-frontend.yml` está en la rama `production`
 2. Los secrets están configurados correctamente
 3. Ve a Actions → Revisa si hay errores

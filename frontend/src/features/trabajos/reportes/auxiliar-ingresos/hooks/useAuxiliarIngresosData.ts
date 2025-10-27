@@ -62,7 +62,7 @@ export const useAuxiliarIngresosData = ({
         },
         enabled: enabled && !!mesId && !!reporteId,
         staleTime: 5 * 60 * 1000, // 5 minutos
-        keepPreviousData: true,
+        placeholderData: (previousData) => previousData,
         select: (response) => {
             // Transformar datos del Excel a formato tipado
             if (!response?.datos) return [];
@@ -105,7 +105,7 @@ export const useAuxiliarIngresosData = ({
     );
 
     return {
-        data: rawData || [],
+        data: (rawData as AuxiliarIngresosRow[]) || [],
         isLoading,
         error: error as Error | null,
         saveChanges,

@@ -15,13 +15,13 @@ main (producción estable)
 
 ### Descripción de Ramas
 
-| Rama                    | Ambiente     | Propósito                           | Deploy            |
-| ----------------------- | ------------ | ----------------------------------- | ----------------- |
-| `main`                  | Producción   | Código estable en producción        | Manual/CI/CD      |
-| `production`            | Pre-Prod     | Testing final antes de producción   | Automático/Manual |
-| `mejoras-2025-10-18`    | Desarrollo   | Desarrollo activo                   | Manual            |
-| `feature/nombre-feature` | Local/Dev    | Nuevas características              | No deploy         |
-| `hotfix/nombre-fix`     | Todos        | Fixes urgentes                      | Fast-track        |
+| Rama                     | Ambiente   | Propósito                         | Deploy            |
+| ------------------------ | ---------- | --------------------------------- | ----------------- |
+| `main`                   | Producción | Código estable en producción      | Manual/CI/CD      |
+| `production`             | Pre-Prod   | Testing final antes de producción | Automático/Manual |
+| `mejoras-2025-10-18`     | Desarrollo | Desarrollo activo                 | Manual            |
+| `feature/nombre-feature` | Local/Dev  | Nuevas características            | No deploy         |
+| `hotfix/nombre-fix`      | Todos      | Fixes urgentes                    | Fast-track        |
 
 ---
 
@@ -167,7 +167,7 @@ name: Deploy on Push
 on:
   push:
     branches:
-      - production  # Deploya cuando haces push a production
+      - production # Deploya cuando haces push a production
 
 jobs:
   deploy-frontend:
@@ -179,8 +179,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
       - name: Build Frontend
@@ -368,6 +368,7 @@ cd ..
 ```
 
 **Ventajas:**
+
 - Rápido y simple
 - Sin complejidad extra
 - Deployments en minutos
@@ -395,6 +396,7 @@ git push  # → Deploy automático
 ```
 
 **Ventajas:**
+
 - Deploy automático
 - Testing antes de producción
 - Trazabilidad completa
@@ -404,6 +406,7 @@ git push  # → Deploy automático
 ✅ **Migra a:** Flujo completo con `main` + Pull Requests
 
 **Ventajas:**
+
 - Code review
 - CI/CD completo
 - Protección de producción
@@ -452,17 +455,17 @@ mv httpdocs.backup.YYYYMMDD-HHMM httpdocs
 
 ## 📊 Resumen de Comandos
 
-| Acción                     | Comando                                       |
-| -------------------------- | --------------------------------------------- |
-| Deploy frontend rápido     | `.\deploy-frontend-only.ps1`                  |
-| Deploy frontend auto       | `.\deploy-to-production.ps1 -FrontendOnly`    |
-| Deploy completo            | `.\deploy-to-production.ps1`                  |
-| Crear paquete manual       | `.\prepare-deployment.ps1`                    |
-| Ver estado Git             | `git status`                                  |
-| Cambiar de rama            | `git checkout production`                     |
-| Crear rama nueva           | `git checkout -b feature/nombre`              |
-| Merge a production         | `git checkout production && git merge mejoras-2025-10-18` |
-| Push con force             | `git push origin mejoras-2025-10-18 --force` |
+| Acción                 | Comando                                                   |
+| ---------------------- | --------------------------------------------------------- |
+| Deploy frontend rápido | `.\deploy-frontend-only.ps1`                              |
+| Deploy frontend auto   | `.\deploy-to-production.ps1 -FrontendOnly`                |
+| Deploy completo        | `.\deploy-to-production.ps1`                              |
+| Crear paquete manual   | `.\prepare-deployment.ps1`                                |
+| Ver estado Git         | `git status`                                              |
+| Cambiar de rama        | `git checkout production`                                 |
+| Crear rama nueva       | `git checkout -b feature/nombre`                          |
+| Merge a production     | `git checkout production && git merge mejoras-2025-10-18` |
+| Push con force         | `git push origin mejoras-2025-10-18 --force`              |
 
 ---
 

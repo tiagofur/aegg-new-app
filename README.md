@@ -358,7 +358,57 @@ docker-compose up -d --build
 
 Este proyecto está bajo la Licencia MIT.
 
-## 🙏 Agradecimientos
+## � Deployment a Producción
+
+### 📋 Guías Completas Disponibles
+
+Este proyecto incluye documentación exhaustiva para deployment en VPS con Plesk Obsidian:
+
+- **[DEPLOYMENT-README.md](./DEPLOYMENT-README.md)** - 🎯 **EMPIEZA AQUÍ** - Índice completo de todas las guías
+- **[PLESK-QUICK-START.md](./PLESK-QUICK-START.md)** - Inicio rápido con Plesk (45 minutos)
+- **[DEPLOYMENT-CHECKLIST.md](./DEPLOYMENT-CHECKLIST.md)** - Checklist interactivo paso a paso (90 minutos)
+- **[DEPLOYMENT-GUIDE.md](./DEPLOYMENT-GUIDE.md)** - Guía detallada completa
+- **[DEPLOYMENT-UTILS.md](./DEPLOYMENT-UTILS.md)** - Scripts y utilidades de mantenimiento
+- **[DEPLOYMENT-GIT.md](./DEPLOYMENT-GIT.md)** - Deployment con Git y CI/CD (avanzado)
+
+### 🎯 Inicio Rápido (5 pasos)
+
+```powershell
+# 1. Preparar deployment
+.\prepare-deployment.ps1
+
+# 2. Configurar .env.production con credenciales reales
+notepad .env.production
+
+# 3. Subir al servidor
+scp deployment-package.zip root@74.208.234.244:/tmp/
+
+# 4. SSH y desplegar
+ssh root@74.208.234.244
+cd /tmp && unzip deployment-package.zip
+chmod +x deploy-on-server.sh && ./deploy-on-server.sh
+
+# 5. Configurar dominios en Plesk
+# Ver DEPLOYMENT-CHECKLIST.md para detalles
+```
+
+### 🌐 URLs de Producción
+
+- **Frontend:** https://aegg.creapolis.mx
+- **Backend API:** https://aegg-api.creapolis.mx
+
+### 📦 Stack de Producción
+
+- **Backend:** NestJS + PM2 (cluster mode)
+- **Frontend:** React SPA (Apache/Nginx)
+- **Base de Datos:** PostgreSQL 15
+- **Servidor Web:** Nginx (proxy reverso) + Apache
+- **SSL:** Let's Encrypt
+- **VPS:** Plesk Obsidian
+
+---
+
+## �🙏 Agradecimientos
 
 Construido con:
 
@@ -375,4 +425,5 @@ Construido con:
 **Última actualización:** Octubre 2025  
 **Versión:** 1.1.0
 
-**📚 Documentación completa:** [`docs/README.md`](./docs/README.md)
+**📚 Documentación completa:** [`docs/README.md`](./docs/README.md)  
+**🚀 Guías de Deployment:** [`DEPLOYMENT-README.md`](./DEPLOYMENT-README.md)

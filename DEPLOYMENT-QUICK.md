@@ -9,12 +9,14 @@
 ```
 
 **Resultado:**
+
 - ✅ Build automático del frontend
 - ✅ Commit y push a GitHub
 - ✅ Genera ZIP listo para subir
 - ⏱️ Tiempo: ~2 minutos
 
 **Luego:**
+
 1. Ve a Plesk File Manager
 2. Sube el ZIP de `deployment-packages/`
 3. Extrae en `/var/www/vhosts/creapolis.mx/aegg/httpdocs/`
@@ -29,6 +31,7 @@
 ```
 
 **Incluye:**
+
 - Confirmación antes de proceder
 - README con instrucciones
 - Verificación de cambios Git
@@ -105,25 +108,28 @@ ssh root@74.208.234.244 "echo OK"
 
 ## 📋 Resumen de Comandos
 
-| Lo que necesitas                | Comando                                    | Tiempo  |
-| ------------------------------- | ------------------------------------------ | ------- |
-| Deploy frontend rápido          | `.\quick-deploy.ps1`                       | 2 min   |
-| Deploy frontend con control     | `.\deploy-frontend-only.ps1`               | 3 min   |
-| Deploy frontend automático      | `.\deploy-to-production.ps1 -FrontendOnly` | 1 min   |
-| Deploy completo (back+front)    | `.\deploy-to-production.ps1`               | 5 min   |
-| Crear paquete completo manual   | `.\prepare-deployment.ps1`                 | 10 min  |
+| Lo que necesitas              | Comando                                    | Tiempo |
+| ----------------------------- | ------------------------------------------ | ------ |
+| Deploy frontend rápido        | `.\quick-deploy.ps1`                       | 2 min  |
+| Deploy frontend con control   | `.\deploy-frontend-only.ps1`               | 3 min  |
+| Deploy frontend automático    | `.\deploy-to-production.ps1 -FrontendOnly` | 1 min  |
+| Deploy completo (back+front)  | `.\deploy-to-production.ps1`               | 5 min  |
+| Crear paquete completo manual | `.\prepare-deployment.ps1`                 | 10 min |
 
 ---
 
 ## 🎯 Recomendación
 
 **AHORA (desarrollo activo):**
+
 ```powershell
 .\quick-deploy.ps1
 ```
+
 Es lo más rápido y simple.
 
 **DESPUÉS (cuando estabilices):**
+
 1. Crea rama `production`
 2. Configura GitHub Actions
 3. Deploy automático con solo: `git push origin production`
@@ -133,6 +139,7 @@ Es lo más rápido y simple.
 ## 🆘 Si algo falla
 
 ### Build Error
+
 ```powershell
 cd frontend
 Remove-Item -Recurse node_modules
@@ -142,6 +149,7 @@ cd ..
 ```
 
 ### Git Error
+
 ```powershell
 git status
 git add .
@@ -150,6 +158,7 @@ git push origin mejoras-2025-10-18
 ```
 
 ### Rollback (en el servidor)
+
 ```bash
 ssh root@74.208.234.244
 cd /var/www/vhosts/creapolis.mx/aegg
@@ -168,5 +177,6 @@ cp -r httpdocs.backup.* httpdocs/
 ---
 
 ¿Necesitas ayuda? Revisa los logs:
+
 - Frontend: DevTools → Console
 - Backend: `ssh root@74.208.234.244 'pm2 logs aegg-backend'`
