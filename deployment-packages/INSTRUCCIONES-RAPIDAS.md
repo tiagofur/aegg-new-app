@@ -26,6 +26,7 @@ bash /tmp/deployment-package/deploy-update.sh
 ```
 
 **¡Eso es todo!** El script hace automáticamente:
+
 - ✅ Backup del backend actual
 - ✅ Backup del frontend actual
 - ✅ Actualiza backend
@@ -83,9 +84,10 @@ bash /tmp/deployment-package/deploy-update.sh
 ## 🆘 Si algo sale mal
 
 ### Rollback Backend
+
 ```bash
 ssh root@74.208.234.244
-cd /var/www/vhosts/creapolis.mx/aegg-api/backend
+cd /var/www/vhosts/creapolis.mx/aegg-api.creapolis.mx/backend
 rm -rf dist
 # Busca el backup más reciente
 ls -lt | grep dist.backup
@@ -95,6 +97,7 @@ pm2 restart aegg-backend
 ```
 
 ### Rollback Frontend
+
 ```bash
 ssh root@74.208.234.244
 cd /var/www/vhosts/creapolis.mx/aegg/httpdocs
@@ -105,6 +108,7 @@ tar -xzf /tmp/frontend-backup-20251026-214040.tar.gz
 ```
 
 ### Ver logs si hay errores
+
 ```bash
 pm2 logs aegg-backend --lines 50
 ```

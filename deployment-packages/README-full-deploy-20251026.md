@@ -37,12 +37,12 @@ cd /tmp
 unzip -o full-deploy-20251026-211536.zip
 
 # 4. Backup del backend actual (opcional pero recomendado)
-cp -r /var/www/vhosts/creapolis.mx/aegg-api/backend/dist \
-      /var/www/vhosts/creapolis.mx/aegg-api/backend/dist.backup.$(date +%Y%m%d-%H%M)
+cp -r /var/www/vhosts/creapolis.mx/aegg-api.creapolis.mx/backend/dist \
+    /var/www/vhosts/creapolis.mx/aegg-api.creapolis.mx/backend/dist.backup.$(date +%Y%m%d-%H%M)
 
 # 5. Actualizar backend
-rm -rf /var/www/vhosts/creapolis.mx/aegg-api/backend/dist
-cp -r deployment-package/backend-dist /var/www/vhosts/creapolis.mx/aegg-api/backend/dist
+rm -rf /var/www/vhosts/creapolis.mx/aegg-api.creapolis.mx/backend/dist
+cp -r deployment-package/backend-dist /var/www/vhosts/creapolis.mx/aegg-api.creapolis.mx/backend/dist
 
 # 6. Actualizar frontend
 rm -rf /var/www/vhosts/creapolis.mx/aegg/httpdocs/*
@@ -99,8 +99,9 @@ pm2 logs aegg-backend --lines 20
 ```bash
 # Verificar que el backend se actualizó
 ssh root@74.208.234.244
-cd /var/www/vhosts/creapolis.mx/aegg-api/backend
-grep -A 5 "actualizarVentasMensualesEnExcel" dist/trabajos/services/trabajos.service.js
+# cd /var/www/vhosts/creapolis.mx/aegg-api.creapolis.mx/backend
+# grep -A 5 "actualizarVentasMensualesEnExcel" dist/trabajos/services/trabajos.service.js
+# (Nota: la ruta del backend en este servidor es /var/www/vhosts/creapolis.mx/aegg-api.creapolis.mx/backend)
 
 # Debe mostrar el código sin "assertCanManage"
 ```

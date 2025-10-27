@@ -5,7 +5,7 @@
 echo "🚀 Iniciando actualización completa..."
 
 # Directorios
-BACKEND_DIR="/var/www/vhosts/creapolis.mx/aegg-api/backend"
+BACKEND_DIR="/var/www/vhosts/creapolis.mx/aegg-api.creapolis.mx/backend"
 FRONTEND_DIR="/var/www/vhosts/creapolis.mx/aegg/httpdocs"
 TEMP_DIR="/tmp/deployment-package"
 
