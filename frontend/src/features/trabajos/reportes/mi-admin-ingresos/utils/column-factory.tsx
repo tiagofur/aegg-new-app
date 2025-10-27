@@ -64,9 +64,9 @@ type SpecialColumnConfig = Record<
  */
 const getSpecialColumnConfig = (
   callbacks: ColumnCallbacks,
-  options: { isComparisonActive?: boolean } = {}
+  options: { isComparisonActive?: boolean; isReadOnly?: boolean } = {}
 ): SpecialColumnConfig => {
-  const { isComparisonActive = false } = options;
+  const { isComparisonActive = false, isReadOnly = false } = options;
 
   return {
     folio: {
@@ -119,8 +119,8 @@ const getSpecialColumnConfig = (
         }
         const value = info.getValue() as number | null;
         const isMonedaMXN = row.moneda === "MXN";
-        const isReadOnly = isComparisonActive;
-        const isDisabled = isMonedaMXN || isReadOnly;
+        const isMesReadOnly = isReadOnly;
+        const isDisabled = isMonedaMXN || isComparisonActive || isMesReadOnly;
         return (
           <EditableTipoCambioCell
             value={value}
@@ -130,7 +130,9 @@ const getSpecialColumnConfig = (
             }
             disabled={isDisabled}
             disabledReason={
-              isReadOnly
+              isMesReadOnly
+                ? "Mes en revisión o aprobado"
+                : isComparisonActive
                 ? "Comparación activa: Tipo de cambio en solo lectura"
                 : undefined
             }
@@ -151,12 +153,14 @@ const getSpecialColumnConfig = (
           );
         }
         const value = (info.getValue() as EstadoSat | null) ?? "Vigente";
+        const isMesReadOnly = isReadOnly;
         return (
           <EditableEstadoSatCell
             value={value}
             onChange={(newValue) =>
               callbacks.updateEstadoSat(row.folio, newValue)
             }
+            disabled={isMesReadOnly}
           />
         );
       },
@@ -254,7 +258,7 @@ const getSpecialColumnConfig = (
 export function createMiAdminDynamicColumns(
   data: MiAdminIngresosRow[],
   callbacks: ColumnCallbacks,
-  options: { isComparisonActive?: boolean } = {}
+  options: { isComparisonActive?: boolean; isReadOnly?: boolean } = {}
 ) {
   if (!data || data.length === 0) return [];
 

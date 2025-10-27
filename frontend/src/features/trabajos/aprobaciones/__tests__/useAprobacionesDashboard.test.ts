@@ -25,9 +25,11 @@ const createDashboardPayload = (
         ([
             {
                 id: "trabajo-1",
+                trabajoId: "trabajo-1",
                 clienteNombre: "Cliente Demo",
                 anio: 2025,
                 estadoAprobacion: "EN_REVISION",
+                estadoRevision: "ENVIADO",
                 fechaActualizacion: new Date().toISOString(),
                 comentariosPendientes: 2,
             } satisfies AprobacionTrabajoResumen,
@@ -41,6 +43,7 @@ const createDashboardPayload = (
                 descripcion: "Se subió el reporte mensual",
                 fecha: new Date().toISOString(),
                 estadoAprobacion: "EN_REVISION",
+                estadoRevision: "ENVIADO",
             } satisfies AprobacionActividad,
         ]),
 });

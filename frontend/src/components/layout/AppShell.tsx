@@ -1,8 +1,16 @@
 import { ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Building2, Home, LogOut, SquareKanban, Users } from "lucide-react";
+import {
+  Building2,
+  Home,
+  LogOut,
+  ShieldCheck,
+  SquareKanban,
+  Users,
+} from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { DashboardRole } from "../../types";
+import { useAprobacionesDashboard } from "../../features/trabajos/aprobaciones";
 
 interface BreadcrumbItem {
   label: string;
@@ -28,6 +36,12 @@ interface NavLinkItem {
 const navLinks: NavLinkItem[] = [
   { to: "/dashboard", label: "Inicio", icon: Home },
   { to: "/trabajos", label: "Trabajos", icon: SquareKanban },
+  {
+    to: "/trabajos/aprobaciones",
+    label: "Aprobaciones",
+    icon: ShieldCheck,
+    roles: ["Admin", "Gestor"],
+  },
   {
     to: "/clientes",
     label: "Clientes",
@@ -57,6 +71,13 @@ export const AppShell = ({
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const role = user?.role;
+
+  // Hook para obtener el contador de aprobaciones pendientes (solo para Admins y Gestores)
+  const shouldFetchAprobaciones = role === "Admin" || role === "Gestor";
+  const { data: aprobacionesData } = useAprobacionesDashboard();
+  const pendientesCount = shouldFetchAprobaciones
+    ? aprobacionesData?.resumenEstados?.EN_REVISION || 0
+    : 0;
 
   const availableLinks = navLinks.filter((link) => {
     if (!link.roles || link.roles.length === 0) {
@@ -89,13 +110,16 @@ export const AppShell = ({
               <nav className="hidden md:flex items-center gap-1">
                 {availableLinks.map(({ to, label, icon: Icon }) => {
                   const active = location.pathname.startsWith(to);
+                  const isAprobaciones = to === "/trabajos/aprobaciones";
+                  const showBadge = isAprobaciones && pendientesCount > 0;
+
                   return (
                     <NavLink
                       key={to}
                       to={to}
                       className={({ isActive }) =>
                         cn(
-                          "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                          "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors relative",
                           (isActive || active) && "bg-blue-50 text-blue-600",
                           !(isActive || active) &&
                             "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
@@ -104,6 +128,11 @@ export const AppShell = ({
                     >
                       <Icon className="h-4 w-4" />
                       {label}
+                      {showBadge && (
+                        <span className="ml-auto inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-rose-500 px-1.5 text-xs font-bold text-white shadow-sm">
+                          {pendientesCount}
+                        </span>
+                      )}
                     </NavLink>
                   );
                 })}
@@ -135,20 +164,30 @@ export const AppShell = ({
           <nav className="flex items-center justify-around px-2 py-2 text-sm">
             {availableLinks.map(({ to, label, icon: Icon }) => {
               const active = location.pathname.startsWith(to);
+              const isAprobaciones = to === "/trabajos/aprobaciones";
+              const showBadge = isAprobaciones && pendientesCount > 0;
+
               return (
                 <NavLink
                   key={to}
                   to={to}
                   className={({ isActive }) =>
                     cn(
-                      "flex flex-col items-center gap-1 rounded-md px-2 py-1",
+                      "flex flex-col items-center gap-1 rounded-md px-2 py-1 relative",
                       (isActive || active) && "text-blue-600",
                       !(isActive || active) &&
                         "text-slate-500 hover:text-slate-900"
                     )
                   }
                 >
-                  <Icon className="h-5 w-5" />
+                  <div className="relative">
+                    <Icon className="h-5 w-5" />
+                    {showBadge && (
+                      <span className="absolute -top-1 -right-1 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white shadow-sm">
+                        {pendientesCount}
+                      </span>
+                    )}
+                  </div>
                   {label}
                 </NavLink>
               );

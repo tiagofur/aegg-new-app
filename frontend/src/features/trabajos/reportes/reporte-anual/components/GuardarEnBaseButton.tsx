@@ -10,7 +10,7 @@
 
 import { useState } from "react";
 import { Save, AlertCircle, CheckCircle } from "lucide-react";
-import { useReporteAnualUpdate } from "../hooks";
+import { useReporteAnualUpdate, useReporteBaseAnualUpdate } from "../hooks";
 
 interface GuardarEnBaseButtonProps {
   /** ID del trabajo actual */
@@ -46,6 +46,8 @@ export const GuardarEnBaseButton: React.FC<GuardarEnBaseButtonProps> = ({
   onSaveSuccess,
 }) => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [guardandoExcel, setGuardandoExcel] = useState(false);
+  const [errorExcel, setErrorExcel] = useState<string | null>(null);
 
   const totalsAvailable = hasAuxiliarData && totalAuxiliar !== null;
   const diferencia = totalsAvailable
@@ -53,20 +55,54 @@ export const GuardarEnBaseButton: React.FC<GuardarEnBaseButtonProps> = ({
     : null;
   const isMatch = diferencia !== null && diferencia < 0.1;
 
-  // Hook mutation para guardar
-  const { actualizarVentas, isLoading, isSuccess, isError, error } =
-    useReporteAnualUpdate({
-      trabajoId,
-      onSuccess: () => {
-        setShowConfirmDialog(false);
-        if (onSaveSuccess) {
-          onSaveSuccess();
-        }
-      },
-      onError: (err) => {
-        console.error("Error al guardar en base:", err);
-      },
-    });
+  // Hook mutation para guardar en tabla reportes_anuales (resumen)
+  const {
+    actualizarVentas,
+    isLoading: isLoadingResumen,
+    isSuccess: isSuccessResumen,
+    isError: isErrorResumen,
+    error: errorResumen,
+  } = useReporteAnualUpdate({
+    trabajoId,
+    onSuccess: () => {
+      console.log("✅ Ventas guardadas en tabla reportes_anuales");
+    },
+    onError: (err) => {
+      console.error("❌ Error al guardar en reportes_anuales:", err);
+    },
+  });
+
+  // Hook mutation para guardar en el Excel (reportes_base_anual)
+  const {
+    actualizarVentasEnExcel,
+    isLoading: isLoadingExcel,
+    isSuccess: isSuccessExcel,
+    isError: isErrorExcel,
+    error: errorExcelMutation,
+  } = useReporteBaseAnualUpdate({
+    trabajoId,
+    onSuccess: () => {
+      console.log("✅ Ventas guardadas en Excel (reportes_base_anual)");
+      setGuardandoExcel(false);
+      setShowConfirmDialog(false);
+      if (onSaveSuccess) {
+        onSaveSuccess();
+      }
+    },
+    onError: (err) => {
+      console.error("❌ Error al guardar en Excel:", err);
+      setErrorExcel(err.message || "Error al actualizar el Excel");
+      setGuardandoExcel(false);
+    },
+  });
+
+  const isLoading = isLoadingResumen || isLoadingExcel || guardandoExcel;
+  const isSuccess = isSuccessResumen && isSuccessExcel;
+  const isError = isErrorResumen || isErrorExcel || !!errorExcel;
+  const error =
+    errorResumen ||
+    errorExcelMutation ||
+    (errorExcel ? new Error(errorExcel) : null);
 
   // Determinar si el botón debe estar habilitado
   const isDisabled = !totalsAvailable || !isMatch || isDirty || isLoading;
@@ -81,20 +117,39 @@ export const GuardarEnBaseButton: React.FC<GuardarEnBaseButtonProps> = ({
     if (diferencia !== null && !isMatch)
       return `Totales no coinciden. Diferencia: $${diferencia.toFixed(2)}`;
     if (isLoading) return "Guardando en base...";
-    return "Guardar totales en Reporte Anual";
+    return "Guardar totales en Reporte Anual y actualizar Excel";
   };
 
-  // Handler para confirmar y guardar
-  const handleConfirm = () => {
+  // Handler para confirmar y guardar en ambos lugares
+  const handleConfirm = async () => {
     if (totalAuxiliar === null) {
       return;
     }
-    actualizarVentas({
-      anio,
-      mes,
-      ventas: totalMiAdmin,
-      ventasAuxiliar: totalAuxiliar,
-    });
+
+    setGuardandoExcel(true);
+    setErrorExcel(null);
+
+    try {
+      // 1. Guardar en tabla reportes_anuales (resumen/comparación)
+      console.log("📊 Guardando en tabla reportes_anuales...");
+      actualizarVentas({
+        anio,
+        mes,
+        ventas: totalMiAdmin,
+        ventasAuxiliar: totalAuxiliar,
+      });
+
+      // 2. Guardar en el Excel (reportes_base_anual)
+      console.log("📄 Guardando en Excel (reportes_base_anual)...");
+      actualizarVentasEnExcel({
+        mes,
+        ventas: totalMiAdmin,
+      });
+    } catch (err) {
+      console.error("Error en proceso de guardado:", err);
+      setErrorExcel("Error al guardar los datos");
+      setGuardandoExcel(false);
+    }
   };
 
   return (
@@ -135,8 +190,12 @@ export const GuardarEnBaseButton: React.FC<GuardarEnBaseButtonProps> = ({
                   Confirmar Guardado en Base
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
-                  Se guardarán los totales mensuales en el Reporte Anual
+                  Se guardarán los totales mensuales en:
                 </p>
+                <ul className="text-sm text-gray-600 mt-1 ml-4 list-disc">
+                  <li>Tabla de resumen anual (reportes_anuales)</li>
+                  <li>Excel del Reporte Base Anual (fila Ventas)</li>
+                </ul>
               </div>
             </div>
 
@@ -233,8 +292,18 @@ export const GuardarEnBaseButton: React.FC<GuardarEnBaseButtonProps> = ({
             {isSuccess && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
                 <p className="text-sm text-green-800">
-                  <strong>✅ Éxito:</strong> Totales guardados en Reporte Anual
+                  <strong>✅ Éxito:</strong> Totales guardados correctamente
                 </p>
+                <ul className="text-xs text-green-700 mt-1 ml-4 list-disc">
+                  <li>Tabla de resumen actualizada</li>
+                  <li>
+                    Excel actualizado (fila Ventas, columna{" "}
+                    {new Date(anio, mes - 1).toLocaleString("es-MX", {
+                      month: "long",
+                    })}
+                    )
+                  </li>
+                </ul>
               </div>
             )}
 

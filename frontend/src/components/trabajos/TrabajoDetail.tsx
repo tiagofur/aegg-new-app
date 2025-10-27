@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { CalendarDays } from "lucide-react";
 import { Trabajo, MESES_NOMBRES } from "../../types/trabajo";
 import { ReporteAnualHeader } from "./ReporteAnualHeader";
@@ -23,6 +23,7 @@ interface TrabajoDetailProps {
   onBack: () => void;
   onReload: () => void;
   canManage: boolean;
+  canManageReportesMensuales: boolean;
 }
 
 export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
@@ -31,8 +32,10 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
   onBack,
   onReload,
   canManage,
+  canManageReportesMensuales,
 }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [mesSeleccionado, setMesSeleccionado] = useState<string | undefined>(
     trabajo.meses[0]?.id
   );
@@ -75,6 +78,51 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
   // Encontrar el mes seleccionado
   const mesActual = trabajo.meses.find((m) => m.id === mesSeleccionado);
 
+  // Auto-expandir mes al llegar desde el dashboard de aprobaciones
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const mesIdParam = params.get("mes");
+
+    if (mesIdParam && trabajo.meses) {
+      // Buscar si el mes existe en este trabajo
+      const mesEncontrado = trabajo.meses.find((m) => m.id === mesIdParam);
+
+      if (mesEncontrado) {
+        // Establecer el mes seleccionado
+        setMesSeleccionado(mesEncontrado.id);
+
+        // Hacer scroll al mes después de un pequeño delay
+        setTimeout(() => {
+          const mesElement = document.getElementById(
+            `mes-card-${mesEncontrado.id}`
+          );
+          if (mesElement) {
+            mesElement.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+            // Agregar highlight temporal
+            mesElement.classList.add(
+              "ring-2",
+              "ring-blue-500",
+              "ring-offset-2"
+            );
+            setTimeout(() => {
+              mesElement.classList.remove(
+                "ring-2",
+                "ring-blue-500",
+                "ring-offset-2"
+              );
+            }, 2000);
+          }
+        }, 300);
+
+        // Limpiar el parámetro de la URL
+        navigate(location.pathname, { replace: true });
+      }
+    }
+  }, [trabajo.meses, location.search, navigate, location.pathname]);
+
   // Cuando cambia el mes, seleccionar el primer reporte automáticamente
   React.useEffect(() => {
     if (mesActual && mesActual.reportes && mesActual.reportes.length > 0) {
@@ -98,11 +146,15 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
         mesActual.estadoRevision === "APROBADO")
   );
 
+  // Los Miembros, Gestores y Admins pueden enviar a revisión
   const puedeEnviarMesManual = Boolean(
-    mesActual && !mesEstaBloqueado && (isAdmin || esGestorResponsable)
+    mesActual && !mesEstaBloqueado && canManageReportesMensuales
   );
 
-  const puedeEditarMesActual = Boolean(canEdit && !mesEstaBloqueado);
+  // Los Miembros, Gestores y Admins pueden gestionar reportes mensuales
+  const puedeGestionarReportesMensuales = Boolean(
+    canManageReportesMensuales && !mesEstaBloqueado
+  );
 
   // Encontrar el reporte seleccionado
   const reporteActual = mesActual?.reportes?.find(
@@ -163,21 +215,21 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
   };
 
   const handleImportarReporte = () => {
-    if (!puedeEditarMesActual) {
+    if (!puedeGestionarReportesMensuales) {
       return;
     }
     setMostrarImportReporteMensualDialog(true);
   };
 
   const handleReimportarReporte = () => {
-    if (!puedeEditarMesActual) {
+    if (!puedeGestionarReportesMensuales) {
       return;
     }
     setMostrarImportReporteMensualDialog(true);
   };
 
   const handleLimpiarDatos = async () => {
-    if (!puedeEditarMesActual) {
+    if (!puedeGestionarReportesMensuales) {
       return;
     }
     if (!reporteActual || !mesActual) return;
@@ -250,7 +302,8 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
 
     setEnviandoMes(true);
     try {
-      await mesesService.enviarRevisionManual(mesActual.id);
+      // Usar el endpoint que permite a Miembros enviar a revisión
+      await mesesService.enviarRevision(mesActual.id);
       alert("Mes enviado a revisión.");
       onReload();
     } catch (error: any) {
@@ -537,7 +590,10 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
 
       {/* Reportes Mensuales del mes seleccionado */}
       {mesActual ? (
-        <div className="mt-3">
+        <div
+          id={`mes-card-${mesActual.id}`}
+          className="mt-3 scroll-mt-20 transition-all duration-200"
+        >
           {/* Selector de pestañas de reportes */}
           {mesActual.reportes && mesActual.reportes.length > 0 ? (
             <>
@@ -560,7 +616,10 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
                   onImportarReporte={handleImportarReporte}
                   onReimportarReporte={handleReimportarReporte}
                   onLimpiarDatos={handleLimpiarDatos}
-                  canManage={puedeEditarMesActual}
+                  canManage={puedeGestionarReportesMensuales}
+                  mesEstadoRevision={mesActual.estadoRevision}
+                  gestorResponsableId={trabajo.gestorResponsableId}
+                  onMesUpdated={onReload}
                 />
               )}
             </>

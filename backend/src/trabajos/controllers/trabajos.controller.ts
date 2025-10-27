@@ -86,4 +86,25 @@ export class TrabajosController {
 
         return this.trabajosService.importarReporteBase(id, file.buffer, currentUser);
     }
+
+    @Post(':id/reporte-base/actualizar-ventas-mes')
+    @Roles(UserRole.ADMIN, UserRole.GESTOR, UserRole.MIEMBRO)
+    async actualizarVentasMes(
+        @Param('id') trabajoId: string,
+        @Body() body: { mes: number; ventas: number },
+        @CurrentUser() currentUser: CurrentUserPayload,
+    ) {
+        const { mes, ventas } = body;
+
+        if (mes === undefined || ventas === undefined) {
+            throw new BadRequestException('Los campos "mes" y "ventas" son requeridos');
+        }
+
+        return this.trabajosService.actualizarVentasMensualesEnExcel(
+            trabajoId,
+            mes,
+            ventas,
+            currentUser,
+        );
+    }
 }

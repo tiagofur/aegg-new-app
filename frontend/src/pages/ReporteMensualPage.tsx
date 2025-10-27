@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   MESES_NOMBRES,
   ReporteMensual,
   TIPOS_REPORTE_NOMBRES,
+  EstadoRevisionMes,
 } from "../types/trabajo";
 import { reportesMensualesService, trabajosService } from "../services";
 import { ReporteMensualViewer } from "../components/trabajos/ReporteMensualViewer";
@@ -34,7 +35,11 @@ export const ReporteMensualPage: React.FC = () => {
   const locationState =
     (location.state as ReporteMensualLocationState | undefined) ?? undefined;
   const { user } = useAuth();
-  const canManageReportes = user?.role === "Gestor" || user?.role === "Admin";
+  // Los Miembros pueden gestionar reportes mensuales (importar, editar, enviar)
+  const canManageReportes =
+    user?.role === "Miembro" ||
+    user?.role === "Gestor" ||
+    user?.role === "Admin";
 
   const [reportes, setReportes] = useState<ReporteMensual[]>(
     () => locationState?.reportes ?? []
@@ -51,6 +56,8 @@ export const ReporteMensualPage: React.FC = () => {
   const [mesNumber, setMesNumber] = useState<number | null>(
     () => locationState?.mesNumber ?? null
   );
+  const [mesEstadoRevision, setMesEstadoRevision] =
+    useState<EstadoRevisionMes>("EN_EDICION");
   const [trabajoNombre, setTrabajoNombre] = useState<string | null>(
     () => locationState?.trabajoNombre ?? null
   );
@@ -131,6 +138,7 @@ export const ReporteMensualPage: React.FC = () => {
       setReporteActual(reporteConDatos);
       setMesNombre(MESES_NOMBRES[mes.mes - 1] ?? "");
       setMesNumber(mes.mes);
+      setMesEstadoRevision(mes.estadoRevision || "EN_EDICION");
       setTrabajoYear(trabajo.anio);
       setTrabajoNombre(trabajo.clienteNombre || null);
     } catch (err: any) {
@@ -173,6 +181,10 @@ export const ReporteMensualPage: React.FC = () => {
       );
     }
   };
+
+  const handleMesUpdated = useCallback(() => {
+    cargarDetalle();
+  }, [cargarDetalle]);
 
   if (!trabajoId || !mesId || !reporteId || !tipo) {
     return (
@@ -277,6 +289,8 @@ export const ReporteMensualPage: React.FC = () => {
             onReimportarReporte={handleAbrirImportDialog}
             onLimpiarDatos={handleLimpiarDatos}
             canManage={canManageReportes}
+            mesEstadoRevision={mesEstadoRevision}
+            onMesUpdated={handleMesUpdated}
           />
         ) : null}
 
