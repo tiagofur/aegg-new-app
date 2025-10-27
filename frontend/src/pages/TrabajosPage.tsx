@@ -29,6 +29,11 @@ export const TrabajosPage: React.FC = () => {
   const [createTrabajoOpen, setCreateTrabajoOpen] = useState(false);
   const [createMesOpen, setCreateMesOpen] = useState(false);
   const canManageTrabajos = user?.role === "Gestor" || user?.role === "Admin";
+  // Los Miembros pueden gestionar reportes mensuales (importar, editar), pero no el Base Anual ni crear/eliminar trabajos
+  const canManageReportesMensuales =
+    user?.role === "Miembro" ||
+    user?.role === "Gestor" ||
+    user?.role === "Admin";
 
   // Detectar si estamos en una ruta anidada (reporte-base-anual, reporte-anual, reporte-mensual)
   // Esto asegura que el componente se re-renderice correctamente cuando la URL cambia
@@ -169,6 +174,7 @@ export const TrabajosPage: React.FC = () => {
               onBack={handleBackToList}
               onReload={handleReloadTrabajo}
               canManage={canManageTrabajos}
+              canManageReportesMensuales={canManageReportesMensuales}
             />
           )
         ) : (

@@ -23,6 +23,7 @@ interface TrabajoDetailProps {
   onBack: () => void;
   onReload: () => void;
   canManage: boolean;
+  canManageReportesMensuales: boolean;
 }
 
 export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
@@ -31,6 +32,7 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
   onBack,
   onReload,
   canManage,
+  canManageReportesMensuales,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -144,11 +146,15 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
         mesActual.estadoRevision === "APROBADO")
   );
 
+  // Los Miembros, Gestores y Admins pueden enviar a revisión
   const puedeEnviarMesManual = Boolean(
-    mesActual && !mesEstaBloqueado && (isAdmin || esGestorResponsable)
+    mesActual && !mesEstaBloqueado && canManageReportesMensuales
   );
 
-  const puedeEditarMesActual = Boolean(canEdit && !mesEstaBloqueado);
+  // Los Miembros, Gestores y Admins pueden gestionar reportes mensuales
+  const puedeGestionarReportesMensuales = Boolean(
+    canManageReportesMensuales && !mesEstaBloqueado
+  );
 
   // Encontrar el reporte seleccionado
   const reporteActual = mesActual?.reportes?.find(
@@ -209,21 +215,21 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
   };
 
   const handleImportarReporte = () => {
-    if (!puedeEditarMesActual) {
+    if (!puedeGestionarReportesMensuales) {
       return;
     }
     setMostrarImportReporteMensualDialog(true);
   };
 
   const handleReimportarReporte = () => {
-    if (!puedeEditarMesActual) {
+    if (!puedeGestionarReportesMensuales) {
       return;
     }
     setMostrarImportReporteMensualDialog(true);
   };
 
   const handleLimpiarDatos = async () => {
-    if (!puedeEditarMesActual) {
+    if (!puedeGestionarReportesMensuales) {
       return;
     }
     if (!reporteActual || !mesActual) return;
@@ -296,7 +302,8 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
 
     setEnviandoMes(true);
     try {
-      await mesesService.enviarRevisionManual(mesActual.id);
+      // Usar el endpoint que permite a Miembros enviar a revisión
+      await mesesService.enviarRevision(mesActual.id);
       alert("Mes enviado a revisión.");
       onReload();
     } catch (error: any) {
@@ -609,7 +616,7 @@ export const TrabajoDetail: React.FC<TrabajoDetailProps> = ({
                   onImportarReporte={handleImportarReporte}
                   onReimportarReporte={handleReimportarReporte}
                   onLimpiarDatos={handleLimpiarDatos}
-                  canManage={puedeEditarMesActual}
+                  canManage={puedeGestionarReportesMensuales}
                   mesEstadoRevision={mesActual.estadoRevision}
                   gestorResponsableId={trabajo.gestorResponsableId}
                   onMesUpdated={onReload}
