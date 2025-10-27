@@ -656,7 +656,7 @@ export class TrabajosService {
     ): Promise<ReporteBaseAnual> {
         // Los Miembros, Gestores y Admins pueden actualizar las ventas mensuales en el Excel
         // Esta validación se hace en el controlador con @Roles, aquí solo verificamos autenticación
-        
+
         // Validar mes
         if (mes < 1 || mes > 12) {
             throw new BadRequestException('Mes debe estar entre 1 y 12');
