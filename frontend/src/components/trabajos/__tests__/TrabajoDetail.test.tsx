@@ -70,6 +70,7 @@ describe("TrabajoDetail", () => {
     onBack: vi.fn(),
     onReload: vi.fn(),
     canManage: true,
+    canManageReportesMensuales: true,
   };
 
   beforeEach(() => {
