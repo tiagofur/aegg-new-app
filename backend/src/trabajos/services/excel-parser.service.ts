@@ -146,8 +146,9 @@ export class ExcelParserService {
             if (error instanceof BadRequestException) {
                 throw error;
             }
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             throw new BadRequestException(
-                `Error al parsear el archivo Excel: ${error.message}`,
+                `Error al parsear el archivo Excel: ${errorMessage}`,
             );
         }
     }

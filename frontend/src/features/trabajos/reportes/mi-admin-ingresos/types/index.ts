@@ -7,121 +7,121 @@
  */
 export interface MiAdminIngresosRow {
     /** ID único interno - Usa FOLIO como identificador */
-    id: string;
+    id: string
 
     /** FOLIO - Clave para comparación con Auxiliar Ingresos */
-    folio: string;
+    folio: string
 
     /** UUID del SAT (opcional, si existe en el Excel) */
-    uuid?: string;
+    uuid?: string
 
     /** Fecha de la factura */
-    fecha: string | null;
+    fecha: string | null
 
     /** RFC del cliente */
-    rfc: string | null;
+    rfc: string | null
 
     /** Razón social del cliente */
-    razonSocial: string | null;
+    razonSocial: string | null
 
     /** Subtotal original de Mi Admin (en moneda original) */
-    subtotal: number;
+    subtotal: number
 
     /** IVA (en moneda original) */
-    iva: number;
+    iva: number
 
     /** Total (en moneda original) */
-    total: number;
+    total: number
 
     /** Moneda de la factura (USD, EUR, MXN) */
-    moneda: string;
+    moneda: string
 
     /** Tipo de Cambio - EDITABLE (null si moneda === 'MXN') */
-    tipoCambio: number | null;
+    tipoCambio: number | null
 
     /** Estado SAT - EDITABLE */
-    estadoSat: 'Vigente' | 'Cancelada';
+    estadoSat: 'Vigente' | 'Cancelada'
 
     /** Subtotal AUX - Copiado desde Auxiliar Ingresos (por folio) */
-    subtotalAUX: number | null;
+    subtotalAUX: number | null
 
     /** Subtotal MXN - CALCULADO: subtotal * tipoCambio (o subtotal si MXN) */
-    subtotalMXN: number;
+    subtotalMXN: number
 
     /** TC Sugerido - CALCULADO: subtotalAUX / subtotal */
-    tcSugerido: number | null;
+    tcSugerido: number | null
 
     /** Indica si la fila es un resumen (Totales) */
-    isSummary?: boolean;
+    isSummary?: boolean
 
     /** Columnas adicionales del Excel */
-    [key: string]: any;
+    [key: string]: any
 }
 
 /**
  * Estado SAT de una factura
  */
-export type EstadoSat = 'Vigente' | 'Cancelada';
+export type EstadoSat = 'Vigente' | 'Cancelada'
 
 /**
  * Totales calculados del reporte Mi Admin Ingresos
  */
 export interface MiAdminIngresosTotales {
     /** Total de Subtotales (solo vigentes) */
-    totalSubtotal: number;
+    totalSubtotal: number
 
     /** Total de Subtotales AUX (solo vigentes) */
-    totalSubtotalAUX: number;
+    totalSubtotalAUX: number
 
     /** Total de Subtotales MXN (solo vigentes) */
-    totalSubtotalMXN: number;
+    totalSubtotalMXN: number
 
     /** Cantidad de facturas vigentes */
-    cantidadVigentes: number;
+    cantidadVigentes: number
 
     /** Cantidad de facturas canceladas */
-    cantidadCanceladas: number;
+    cantidadCanceladas: number
 
     /** Cantidad total de facturas */
-    cantidadTotal: number;
+    cantidadTotal: number
 
     /** Porcentaje de facturas vigentes */
-    porcentajeVigentes: number;
+    porcentajeVigentes: number
 
     /** Porcentaje de facturas canceladas */
-    porcentajeCanceladas: number;
+    porcentajeCanceladas: number
 }
 
 /**
  * Estado de comparación de una fila
  */
 export type ComparisonStatus =
-    | 'match'           // ✅ Coincide con Auxiliar
-    | 'mismatch'        // ❌ Discrepancia con Auxiliar
-    | 'only-miadmin'    // 🟣 Solo en Mi Admin
-    | 'only-auxiliar';  // 🟣 Solo en Auxiliar
+    | 'match' // ✅ Coincide con Auxiliar
+    | 'mismatch' // ❌ Discrepancia con Auxiliar
+    | 'only-miadmin' // 🟣 Solo en Mi Admin
+    | 'only-auxiliar' // 🟣 Solo en Auxiliar
 
 /**
  * Resultado de comparación de una fila
  */
 export interface MiAdminIngresosComparisonResult {
     /** Folio de la factura */
-    folio: string;
+    folio: string
 
     /** Estado de la comparación */
-    status: ComparisonStatus;
+    status: ComparisonStatus
 
     /** Subtotal MXN de Mi Admin */
-    miAdminSubtotal?: number;
+    miAdminSubtotal?: number
 
     /** Subtotal MXN de Auxiliar */
-    auxiliarSubtotal?: number;
+    auxiliarSubtotal?: number
 
     /** Diferencia absoluta entre subtotales */
-    difference?: number;
+    difference?: number
 
     /** Mensaje tooltip para el usuario */
-    tooltip: string;
+    tooltip: string
 }
 
 /**
@@ -129,22 +129,22 @@ export interface MiAdminIngresosComparisonResult {
  */
 export interface TotalesComparison {
     /** Si los totales coinciden (diferencia <= tolerancia) */
-    match: boolean;
+    match: boolean
 
     /** Alias para match para compatibilidad con componentes existentes */
-    isMatch: boolean;
+    isMatch: boolean
 
     /** Total de Mi Admin (solo vigentes) */
-    miAdminTotal: number;
+    miAdminTotal: number
 
     /** Total de Auxiliar (solo vigentes) */
-    auxiliarTotal: number;
+    auxiliarTotal: number
 
     /** Diferencia absoluta */
-    difference: number;
+    difference: number
 
     /** Mensaje descriptivo para tooltips */
-    tooltip: string;
+    tooltip: string
 }
 
 /**
@@ -152,13 +152,13 @@ export interface TotalesComparison {
  */
 export interface MiAdminIngresosEditState {
     /** Map de filas editadas por folio */
-    editedRows: Map<string, Partial<MiAdminIngresosRow>>;
+    editedRows: Map<string, Partial<MiAdminIngresosRow>>
 
     /** Si hay cambios sin guardar */
-    isDirty: boolean;
+    isDirty: boolean
 
     /** Si se está guardando */
-    isSaving: boolean;
+    isSaving: boolean
 }
 
 /**
@@ -173,4 +173,4 @@ export const MI_ADMIN_INGRESOS_CONFIG = {
 
     /** Decimales para formato de tipo de cambio */
     TC_DECIMALS: 4,
-} as const;
+} as const

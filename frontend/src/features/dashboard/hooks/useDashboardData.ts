@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from 'react'
 import {
     CreateAnnouncementInput,
     CreateEventInput,
@@ -6,63 +6,63 @@ import {
     DashboardRole,
     DashboardState,
     Task,
-} from "../../../types";
+} from '../../../types'
 
-const STORAGE_KEY = "dashboard-state:v1";
+const STORAGE_KEY = 'dashboard-state:v1'
 
-const LEGACY_ANNOUNCEMENT_IDS = new Set(["a1", "a2", "a3"]);
-const LEGACY_EVENT_IDS = new Set(["e1", "e2", "e3", "e4"]);
-const LEGACY_TASK_IDS = new Set(["t1", "t2", "t3"]);
+const LEGACY_ANNOUNCEMENT_IDS = new Set(['a1', 'a2', 'a3'])
+const LEGACY_EVENT_IDS = new Set(['e1', 'e2', 'e3', 'e4'])
+const LEGACY_TASK_IDS = new Set(['t1', 't2', 't3'])
 
 const generateId = () => {
-    if (typeof crypto !== "undefined" && crypto.randomUUID) {
-        return crypto.randomUUID();
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID()
     }
-    return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-};
+    return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`
+}
 
 const normalizeRole = (role: string | undefined | null): DashboardRole => {
-    const value = role ?? "";
-    if (value === "Admin" || value === "Gestor" || value === "Miembro") {
-        return value;
+    const value = role ?? ''
+    if (value === 'Admin' || value === 'Gestor' || value === 'Miembro') {
+        return value
     }
-    if (value === "Ejecutor" || value === "EJECUTOR") {
-        return "Miembro";
+    if (value === 'Ejecutor' || value === 'EJECUTOR') {
+        return 'Miembro'
     }
-    return "Miembro";
-};
+    return 'Miembro'
+}
 
 const createEmptyState = (): DashboardState => ({
     announcements: [],
     events: [],
     tasks: [],
     acknowledgements: {},
-});
+})
 
 const sanitizeState = (state?: Partial<DashboardState> | null): DashboardState => {
-    const base = createEmptyState();
+    const base = createEmptyState()
     const announcements = (state?.announcements ?? [])
         .filter((announcement) => announcement && !LEGACY_ANNOUNCEMENT_IDS.has(announcement.id))
         .map((announcement) => ({
             ...announcement,
-            audience: (announcement.audience ?? []).map((role) => normalizeRole(role)) as DashboardRole[],
-        }));
-    const events = (state?.events ?? []).filter(
-        (event) => event && !LEGACY_EVENT_IDS.has(event.id)
-    );
+            audience: (announcement.audience ?? []).map((role) =>
+                normalizeRole(role)
+            ) as DashboardRole[],
+        }))
+    const events = (state?.events ?? []).filter((event) => event && !LEGACY_EVENT_IDS.has(event.id))
     const tasks = (state?.tasks ?? [])
         .filter((task) => task && !LEGACY_TASK_IDS.has(task.id))
         .map((task) => ({
             ...task,
             ownerRole: normalizeRole(task.ownerRole),
-        }));
+        }))
 
-    const acknowledgements: Record<string, string[]> = {};
-    const sourceAcknowledgements = state?.acknowledgements ?? {};
+    const acknowledgements: Record<string, string[]> = {}
+    const sourceAcknowledgements = state?.acknowledgements ?? {}
     for (const [userId, ids] of Object.entries(sourceAcknowledgements)) {
-        const filtered = ids.filter((id) => !LEGACY_ANNOUNCEMENT_IDS.has(id));
+        const filtered = ids.filter((id) => !LEGACY_ANNOUNCEMENT_IDS.has(id))
         if (filtered.length) {
-            acknowledgements[userId] = filtered;
+            acknowledgements[userId] = filtered
         }
     }
 
@@ -72,42 +72,42 @@ const sanitizeState = (state?: Partial<DashboardState> | null): DashboardState =
         events,
         tasks,
         acknowledgements,
-    };
-};
+    }
+}
 
 const loadState = (): DashboardState => {
     try {
-        const raw = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
+        const raw = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null
         if (!raw) {
-            return createEmptyState();
+            return createEmptyState()
         }
-        const parsed = JSON.parse(raw) as Partial<DashboardState>;
-        return sanitizeState(parsed);
+        const parsed = JSON.parse(raw) as Partial<DashboardState>
+        return sanitizeState(parsed)
     } catch (error) {
-        console.warn("No fue posible cargar el estado del dashboard, se usará el default", error);
-        return createEmptyState();
+        console.warn('No fue posible cargar el estado del dashboard, se usará el default', error)
+        return createEmptyState()
     }
-};
+}
 
 export const useDashboardData = (currentUserId?: string | null) => {
-    const [state, setState] = useState<DashboardState>(() => loadState());
+    const [state, setState] = useState<DashboardState>(() => loadState())
 
     useEffect(() => {
-        if (typeof window === "undefined") return;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    }, [state]);
+        if (typeof window === 'undefined') return
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    }, [state])
 
     const acknowledgedIds = useMemo(() => {
-        if (!currentUserId) return [];
-        return state.acknowledgements[currentUserId] ?? [];
-    }, [state.acknowledgements, currentUserId]);
+        if (!currentUserId) return []
+        return state.acknowledgements[currentUserId] ?? []
+    }, [state.acknowledgements, currentUserId])
 
     const acknowledgeAnnouncement = (announcementId: string) => {
-        if (!currentUserId) return;
+        if (!currentUserId) return
         setState((prev) => {
-            const existing = prev.acknowledgements[currentUserId] ?? [];
+            const existing = prev.acknowledgements[currentUserId] ?? []
             if (existing.includes(announcementId)) {
-                return prev;
+                return prev
             }
             return {
                 ...prev,
@@ -115,23 +115,23 @@ export const useDashboardData = (currentUserId?: string | null) => {
                     ...prev.acknowledgements,
                     [currentUserId]: [...existing, announcementId],
                 },
-            };
-        });
-    };
+            }
+        })
+    }
 
     const toggleTaskStatus = (taskId: string) => {
         setState((prev) => ({
             ...prev,
             tasks: prev.tasks.map((task) => {
                 if (task.id !== taskId) {
-                    return task;
+                    return task
                 }
-                const nextStatus: Task["status"] =
-                    task.status === "completed" ? "in_progress" : "completed";
-                return { ...task, status: nextStatus };
+                const nextStatus: Task['status'] =
+                    task.status === 'completed' ? 'in_progress' : 'completed'
+                return { ...task, status: nextStatus }
             }),
-        }));
-    };
+        }))
+    }
 
     const addAnnouncement = (input: CreateAnnouncementInput) => {
         setState((prev) => ({
@@ -144,8 +144,8 @@ export const useDashboardData = (currentUserId?: string | null) => {
                 },
                 ...prev.announcements,
             ],
-        }));
-    };
+        }))
+    }
 
     const addTask = (input: CreateTaskInput) => {
         setState((prev) => ({
@@ -153,14 +153,14 @@ export const useDashboardData = (currentUserId?: string | null) => {
             tasks: [
                 {
                     id: generateId(),
-                    status: "pending",
+                    status: 'pending',
                     createdAt: new Date().toISOString(),
                     ...input,
                 },
                 ...prev.tasks,
             ],
-        }));
-    };
+        }))
+    }
 
     const addEvent = (input: CreateEventInput) => {
         setState((prev) => ({
@@ -172,15 +172,15 @@ export const useDashboardData = (currentUserId?: string | null) => {
                     ...input,
                 },
             ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
-        }));
-    };
+        }))
+    }
 
     const resetState = () => {
-        if (typeof window !== "undefined") {
-            localStorage.removeItem(STORAGE_KEY);
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem(STORAGE_KEY)
         }
-        setState(createEmptyState());
-    };
+        setState(createEmptyState())
+    }
 
     return {
         announcements: state.announcements,
@@ -193,5 +193,5 @@ export const useDashboardData = (currentUserId?: string | null) => {
         addTask,
         addEvent,
         resetState,
-    };
-};
+    }
+}

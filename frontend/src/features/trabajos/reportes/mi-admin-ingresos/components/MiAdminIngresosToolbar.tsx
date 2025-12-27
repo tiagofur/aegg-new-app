@@ -3,149 +3,147 @@
  * Incluye botones especiales: Aplicar TC Sugerido y Cancelar Folios Únicos
  */
 
-import { GitCompare, Save } from "lucide-react";
-import type { MiAdminIngresosTotales, TotalesComparison } from "../types";
-import { badgeStyles } from "../utils";
+import { GitCompare, Save } from 'lucide-react'
+import type { MiAdminIngresosTotales, TotalesComparison } from '../types'
+import { badgeStyles } from '../utils'
 
 interface MiAdminIngresosToolbarProps {
-  /** Si hay cambios sin guardar */
-  isDirty: boolean;
-  /** Callback para guardar cambios */
-  onSave: () => void;
-  /** Si se está guardando */
-  isSaving: boolean;
-  /** Si la comparación está activa */
-  isComparisonActive: boolean;
-  /** Callback para toggle de comparación */
-  onToggleComparison: () => void;
-  /** Totales calculados */
-  totales: MiAdminIngresosTotales;
-  /** Comparación de totales (null si no está activa) */
-  totalesComparison: TotalesComparison | null;
-  /** Si hay datos de Auxiliar disponibles */
-  hasAuxiliarData: boolean;
-  /** Compatibilidad con implementaciones previas */
-  trabajoId?: string;
-  anio?: number;
-  mes?: number;
-  /** Controla si se muestra el botón principal de guardar */
-  showSaveButton?: boolean;
-  /** Controla si se muestra el botón de sincronización */
-  showComparisonButton?: boolean;
-  /** Controla si se muestran los badges de estado */
-  showStatusBadges?: boolean;
+    /** Si hay cambios sin guardar */
+    isDirty: boolean
+    /** Callback para guardar cambios */
+    onSave: () => void
+    /** Si se está guardando */
+    isSaving: boolean
+    /** Si la comparación está activa */
+    isComparisonActive: boolean
+    /** Callback para toggle de comparación */
+    onToggleComparison: () => void
+    /** Totales calculados */
+    totales: MiAdminIngresosTotales
+    /** Comparación de totales (null si no está activa) */
+    totalesComparison: TotalesComparison | null
+    /** Si hay datos de Auxiliar disponibles */
+    hasAuxiliarData: boolean
+    /** Compatibilidad con implementaciones previas */
+    trabajoId?: string
+    anio?: number
+    mes?: number
+    /** Controla si se muestra el botón principal de guardar */
+    showSaveButton?: boolean
+    /** Controla si se muestra el botón de sincronización */
+    showComparisonButton?: boolean
+    /** Controla si se muestran los badges de estado */
+    showStatusBadges?: boolean
 }
 
 /**
  * Componente de barra de herramientas con acciones especiales
  */
 export const MiAdminIngresosToolbar: React.FC<MiAdminIngresosToolbarProps> = ({
-  isDirty,
-  onSave,
-  isSaving,
-  isComparisonActive,
-  onToggleComparison,
-  totales,
-  totalesComparison,
-  hasAuxiliarData,
-  showSaveButton = true,
-  showComparisonButton = true,
-  showStatusBadges = true,
+    isDirty,
+    onSave,
+    isSaving,
+    isComparisonActive,
+    onToggleComparison,
+    totales,
+    totalesComparison,
+    hasAuxiliarData,
+    showSaveButton = true,
+    showComparisonButton = true,
+    showStatusBadges = true,
 }) => {
-  return (
-    <div className="bg-white border-b border-gray-200 px-4 py-3">
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            {showSaveButton && (
-              <button
-                onClick={onSave}
-                disabled={!isDirty || isSaving}
-                className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 ${
-                  isDirty && !isSaving
-                    ? "border-blue-600 bg-blue-600 text-white hover:bg-blue-700"
-                    : "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
-                }`}
-                title={
-                  isDirty ? "Guardar cambios" : "No hay cambios para guardar"
-                }
-              >
-                <Save className="h-4 w-4" />
-                {isSaving ? "Guardando..." : "Guardar cambios"}
-              </button>
-            )}
+    return (
+        <div className="bg-white border-b border-gray-200 px-4 py-3">
+            <div className="flex flex-col gap-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                        {showSaveButton && (
+                            <button
+                                onClick={onSave}
+                                disabled={!isDirty || isSaving}
+                                className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 ${
+                                    isDirty && !isSaving
+                                        ? 'border-blue-600 bg-blue-600 text-white hover:bg-blue-700'
+                                        : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                                }`}
+                                title={isDirty ? 'Guardar cambios' : 'No hay cambios para guardar'}
+                            >
+                                <Save className="h-4 w-4" />
+                                {isSaving ? 'Guardando...' : 'Guardar cambios'}
+                            </button>
+                        )}
 
-            {showComparisonButton && (
-              <button
-                onClick={onToggleComparison}
-                disabled={!hasAuxiliarData}
-                className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-purple-500 ${
-                  !hasAuxiliarData
-                    ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : isComparisonActive
-                    ? "border-purple-600 bg-purple-50 text-purple-700 hover:bg-purple-100"
-                    : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
-                }`}
-                title={
-                  !hasAuxiliarData
-                    ? "No hay datos del Auxiliar para sincronizar"
-                    : isComparisonActive
-                    ? "Desactivar la sincronización con el Auxiliar"
-                    : "Activar la sincronización con el Auxiliar"
-                }
-              >
-                <GitCompare className="h-4 w-4" />
-                {isComparisonActive
-                  ? "Sincronización activa"
-                  : "Sincronizar con Auxiliar"}
-              </button>
-            )}
-          </div>
+                        {showComparisonButton && (
+                            <button
+                                onClick={onToggleComparison}
+                                disabled={!hasAuxiliarData}
+                                className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-purple-500 ${
+                                    !hasAuxiliarData
+                                        ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                                        : isComparisonActive
+                                          ? 'border-purple-600 bg-purple-50 text-purple-700 hover:bg-purple-100'
+                                          : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                                }`}
+                                title={
+                                    !hasAuxiliarData
+                                        ? 'No hay datos del Auxiliar para sincronizar'
+                                        : isComparisonActive
+                                          ? 'Desactivar la sincronización con el Auxiliar'
+                                          : 'Activar la sincronización con el Auxiliar'
+                                }
+                            >
+                                <GitCompare className="h-4 w-4" />
+                                {isComparisonActive
+                                    ? 'Sincronización activa'
+                                    : 'Sincronizar con Auxiliar'}
+                            </button>
+                        )}
+                    </div>
 
-          {showStatusBadges && (
-            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
-              {isDirty && (
-                <span
-                  className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 ${badgeStyles.unsavedChanges}`}
-                  title="Hay cambios sin guardar en el reporte"
-                >
-                  ⚠️ Cambios sin guardar
-                </span>
-              )}
+                    {showStatusBadges && (
+                        <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
+                            {isDirty && (
+                                <span
+                                    className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 ${badgeStyles.unsavedChanges}`}
+                                    title="Hay cambios sin guardar en el reporte"
+                                >
+                                    ⚠️ Cambios sin guardar
+                                </span>
+                            )}
 
-              {totales.cantidadCanceladas > 0 && (
-                <span
-                  className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 ${badgeStyles.canceladas}`}
-                  title={`${totales.cantidadCanceladas} facturas aparecen como canceladas`}
-                >
-                  🚫 {totales.cantidadCanceladas} canceladas
-                </span>
-              )}
+                            {totales.cantidadCanceladas > 0 && (
+                                <span
+                                    className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 ${badgeStyles.canceladas}`}
+                                    title={`${totales.cantidadCanceladas} facturas aparecen como canceladas`}
+                                >
+                                    🚫 {totales.cantidadCanceladas} canceladas
+                                </span>
+                            )}
 
-              {totalesComparison && (
-                <span
-                  className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 ${
-                    totalesComparison.match
-                      ? badgeStyles.totalesMatch
-                      : badgeStyles.totalesMismatch
-                  }`}
-                  title={
-                    totalesComparison.match
-                      ? "Los totales coinciden con el Auxiliar"
-                      : `Diferencia contra Auxiliar: $${totalesComparison.difference.toFixed(
-                          2
-                        )}`
-                  }
-                >
-                  {totalesComparison.match
-                    ? "✅ Totales conciliados"
-                    : "❌ Diferencia vs Auxiliar"}
-                </span>
-              )}
+                            {totalesComparison && (
+                                <span
+                                    className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 ${
+                                        totalesComparison.match
+                                            ? badgeStyles.totalesMatch
+                                            : badgeStyles.totalesMismatch
+                                    }`}
+                                    title={
+                                        totalesComparison.match
+                                            ? 'Los totales coinciden con el Auxiliar'
+                                            : `Diferencia contra Auxiliar: $${totalesComparison.difference.toFixed(
+                                                  2
+                                              )}`
+                                    }
+                                >
+                                    {totalesComparison.match
+                                        ? '✅ Totales conciliados'
+                                        : '❌ Diferencia vs Auxiliar'}
+                                </span>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
-          )}
         </div>
-      </div>
-    </div>
-  );
-};
+    )
+}

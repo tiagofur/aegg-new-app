@@ -1,78 +1,150 @@
-# 📚 Documentación - Sistema de Gestión de Trabajos Contables V2
+# 📚 Documentación - Sistema de Gestión de Trabajos Contables
 
-**Versión:** 1.1.0  
-**Fecha:** Octubre 2025  
-**Estado:** ✅ Producción
+**Versión**: 2.0.0  
+**Fecha**: 27/12/2025  
+**Estado**: ✅ Producción
 
 ---
 
-## 🎯 Inicio Rápido (5 minutos)
+## 🎯 ¿Qué es este proyecto?
 
-¿Nuevo en el proyecto? Empieza aquí:
+Sistema profesional para gestión de trabajos contables con:
+- ✅ Autenticación JWT segura
+- ✅ Gestión de trabajos, clientes y usuarios
+- ✅ 12 meses automáticos por trabajo
+- ✅ 3 tipos de reportes mensuales (Excel)
+- ✅ Reporte base anual con consolidación
+- ✅ Flujo de aprobaciones completo
+- ✅ Base de conocimiento
+- ✅ Roles y permisos granulares
+
+**Stack**: NestJS + React + PostgreSQL + Docker  
+**Frontend**: https://aegg.creapolis.mx  
+**Backend**: https://aegg-api.creapolis.mx  
+
+---
+
+## 📖 Documentación Simplificada (7 Archivos)
+
+Todo está organizado en 7 archivos simples y claros:
+
+| Archivo | Descripción | Para... |
+|---------|-------------|---------|
+| **[README.md](#)** | Este archivo | Índice principal |
+| **[DEPLOYMENT.md](DEPLOYMENT.md)** | Deployment completo | Deploy a VPS o local |
+| **[DEVELOPMENT.md](DEVELOPMENT.md)** | Guía de desarrollo | Setup, stack, tests |
+| **[ARCHITECTURE.md](ARCHITECTURE.md)** | Arquitectura técnica | Database, API, frontend |
+| **[FEATURES.md](FEATURES.md)** | Funcionalidades | Qué hace el sistema |
+| **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** | Solución de problemas | Debugging, errors |
+| **[CHANGELOG.md](CHANGELOG.md)** | Historial de cambios | Versiones, features |
+
+**Documentación antigua**: Ver `docs/archive/` (62 archivos archivados)
+
+---
+
+## 🚀 Inicio Rápido (5 minutos)
+
+### Nuevo en el proyecto?
 
 ```bash
 # 1. Clonar repositorio
 git clone https://github.com/tiagofur/aegg-new-app.git
 cd aegg-new-app
 
-# 2. Iniciar servicios
+# 2. Iniciar servicios Docker
 docker-compose up -d
 
-# 3. Abrir navegador
-# http://localhost:5173
+# 3. Verificar que todo corra
+docker ps
+# Deberías ver: postgres, pgadmin
+
+# 4. Abrir navegador
+# Frontend: http://localhost:5173
+# Backend API: http://localhost:3000
 ```
 
-📖 **Guía completa:** [`guias/INICIO-RAPIDO.md`](./guias/INICIO-RAPIDO.md)
+### Credenciales por defecto (local)
+
+- **Frontend**: Email en la BD (ver init-scripts/)
+- **Backend**: JWT generado automáticamente
+- **PostgreSQL**: `postgres` / `postgres`
+- **pgAdmin**: `admin@aegg.com` / `admin`
+
+**⚠️ IMPORTANTE**: Cambia las credenciales en producción
 
 ---
 
-## 📂 Estructura de Documentación
+## 📊 Diagrama de Arquitectura
 
-### 📘 Guías de Uso
-
-Para empezar a usar el sistema:
-
-- **[INICIO-RAPIDO.md](./guias/INICIO-RAPIDO.md)** - Setup y primera ejecución (10 min)
-- **[COMANDOS-RAPIDOS.md](./guias/COMANDOS-RAPIDOS.md)** - Comandos Docker, Git, PostgreSQL
-- **[GIT-WORKFLOW.md](./guias/GIT-WORKFLOW.md)** - Cómo hacer commits y push
-
-### 🔧 Documentación Técnica
-
-Para desarrolladores y arquitectura:
-
-- **[BACKEND-API.md](./tecnica/BACKEND-API.md)** - Referencia completa de endpoints (20+ endpoints)
-- **[SCHEMA-BASE-DATOS.md](./tecnica/SCHEMA-BASE-DATOS.md)** - Estructura de PostgreSQL (6 tablas)
-- **[PLAN-SISTEMA-TRABAJOS-V2.md](./tecnica/PLAN-SISTEMA-TRABAJOS-V2.md)** - Arquitectura completa del sistema
-
-### 💻 Desarrollo
-
-Para contribuir y desarrollar:
-
-- **[FUNCIONALIDADES.md](./desarrollo/FUNCIONALIDADES.md)** - Features implementadas y pendientes
-- **[HISTORIAL-FASES.md](./desarrollo/HISTORIAL-FASES.md)** - Historia completa (Fase 1-10)
-- **[TROUBLESHOOTING.md](./desarrollo/TROUBLESHOOTING.md)** - Solución de problemas comunes
-
-### 🛠️ Soluciones
-
-Fixes y mejoras implementadas:
-
-- **[FIXES-Y-MEJORAS.md](./soluciones/FIXES-Y-MEJORAS.md)** - Todos los bugs corregidos y optimizaciones
+```
+┌────────────────────────────────────────────────────┐
+│         Navegador (Frontend)              │
+│   React 18 + TypeScript + Vite           │
+└──────────────┬───────────────────────────────┘
+               │ HTTPS (443)
+               ▼
+┌────────────────────────────────────────────┐
+│         Nginx (VPS Reverse Proxy)     │
+│    https://aegg.creapolis.mx         │
+└──────────┬───────────────┬───────────┘
+           │ /api/*         │ Static files
+           ▼                 ▼
+┌─────────────────┐  ┌─────────────────┐
+│ NestJS Backend │  │ Frontend Build   │
+│ Node.js 20     │  │ (dist/)         │
+│ Port: 3000     │  │ /var/www/...    │
+├─────────────────┤  └─────────────────┘
+│ Auth (JWT)     │
+│ Trabajos CRUD   │
+│ Clientes CRUD   │
+│ Reportes        │
+└───────────┬─────┘
+            │ TypeORM
+            ▼
+┌─────────────────┐
+│  PostgreSQL   │
+│   (Docker)    │
+│   Port: 5440  │
+└─────────────────┘
+```
 
 ---
 
-## ✨ ¿Qué hace el sistema?
+## 👨‍💻 Por Rol
 
-Sistema profesional para gestión de trabajos contables con:
+### 👨‍💼 Usuario Final
 
-✅ **Autenticación JWT** - Login seguro  
-✅ **Gestión de Trabajos** - CRUD completo de proyectos contables  
-✅ **Gestión de Meses** - 12 meses automáticos por trabajo  
-✅ **Importación Excel** - 3 tipos de reportes por mes  
-✅ **Consolidación Automática** - Cálculos en tiempo real  
-✅ **Reporte Base Anual** - 3 hojas con datos consolidados  
-✅ **Nueva UX** - Selector horizontal, vista enfocada
+1. **[DEPLOYMENT.md](DEPLOYMENT.md)** → Si necesitas deploy
+2. **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** → Si tienes problemas
+3. **[FEATURES.md](FEATURES.md)** → Para ver qué puede hacer
 
-**📊 Ver detalles:** [`desarrollo/FUNCIONALIDADES.md`](./desarrollo/FUNCIONALIDADES.md)
+### 👨‍💻 Desarrollador Nuevo
+
+1. **[DEVELOPMENT.md](DEVELOPMENT.md)** → Setup del proyecto
+2. **[ARCHITECTURE.md](ARCHITECTURE.md)** → Arquitectura y stack
+3. **[FEATURES.md](FEATURES.md)** → Funcionalidades implementadas
+4. **[CHANGELOG.md](CHANGELOG.md)** → Historial de cambios
+
+### 🏗️ Arquitecto/Tech Lead
+
+1. **[ARCHITECTURE.md](ARCHITECTURE.md)** → Arquitectura completa
+2. **[DEVELOPMENT.md](DEVELOPMENT.md)** → Stack y herramientas
+3. **[CHANGELOG.md](CHANGELOG.md)** → Evolución técnica
+4. Ver `docs/archive/` para historial de decisiones
+
+---
+
+## 🔍 Búsqueda Rápida
+
+| Necesito... | Ver archivo |
+|--------------|-------------|
+| Deployar en VPS | [DEPLOYMENT.md](DEPLOYMENT.md) |
+| Setup inicial | [DEVELOPMENT.md](DEVELOPMENT.md#setup-inicial) |
+| Entender arquitectura | [ARCHITECTURE.md](ARCHITECTURE.md) |
+| Ver funcionalidades | [FEATURES.md](FEATURES.md) |
+| Solucionar error | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) |
+| Ver cambios recientes | [CHANGELOG.md](CHANGELOG.md#v200---27122025) |
+| Ver historial completo | docs/archive/ (62 archivos) |
 
 ---
 
@@ -80,143 +152,222 @@ Sistema profesional para gestión de trabajos contables con:
 
 ### Backend
 
-- **NestJS** 10.3.0 - Framework Node.js
-- **TypeORM** 0.3.20 - ORM para PostgreSQL
-- **PostgreSQL** 15 - Base de datos
-- **JWT** - Autenticación
-- **XLSX** 0.18.5 - Parser de Excel
+```
+Framework:    NestJS 10.3.0
+Lenguaje:     TypeScript 5.3.3
+ORM:          TypeORM 0.3.20
+Database:     PostgreSQL 15 (Docker)
+Auth:         JWT (7 días expiración)
+Excel:        ExcelJS 4.0.0 (sin vulnerabilidades)
+Security:     Helmet + Rate Limiting + Sanitization
+```
 
 ### Frontend
 
-- **React** 18 - Librería UI
-- **TypeScript** - Type safety
-- **Vite** 5.4 - Build tool
-- **Tailwind CSS** - Framework CSS
-- **Lucide React** - Iconos
+```
+Framework:    React 18.2.0
+Lenguaje:     TypeScript 5.3.3
+Build Tool:   Vite 7.3.0
+Styling:      Tailwind CSS 3.4.1
+Icons:        Lucide React 0.545.0
+HTTP Client:  Axios 1.6.5
+State:        React Context + TanStack Query 5.90.2
+Router:       React Router DOM 6.21.1
+Testing:      Vitest 3.2.4 + Testing Library
+Quality:      ESLint 8.57.0 + Prettier 3.7.4
+```
 
 ### DevOps
 
-- **Docker Compose** - Orquestación de servicios
-- Hot reload en desarrollo
+```
+Container:    Docker 20.10+
+Compose:      Docker Compose 2.20+
+Process Mgr:  PM2 (production)
+CI/CD:        GitHub Actions (automático)
+Version Ctrl:  Git 2.30+
+```
 
 ---
 
 ## 🚀 Comandos Principales
 
+### Desarrollo Local
+
 ```bash
-# Iniciar todo
+# Iniciar todo (Docker)
 docker-compose up -d
 
 # Ver logs
 docker-compose logs -f
 
-# Detener todo
-docker-compose down
+# Backend development
+cd backend && npm run start:dev
 
-# Reinicio completo (borra datos)
-docker-compose down -v && docker-compose up -d
+# Frontend development
+cd frontend && npm run dev
 ```
 
-**📖 Más comandos:** [`guias/COMANDOS-RAPIDOS.md`](./guias/COMANDOS-RAPIDOS.md)
+### Tests
 
----
+```bash
+# Backend tests
+cd backend && npm test
 
-## 📋 Guía de Lectura por Rol
+# Frontend tests
+cd frontend && npm test
 
-### 👨‍💼 Usuario Final
+# Con coverage
+npm test -- --coverage
+```
 
-1. Lee [`guias/INICIO-RAPIDO.md`](./guias/INICIO-RAPIDO.md) para levantar el sistema
-2. Explora [`desarrollo/FUNCIONALIDADES.md`](./desarrollo/FUNCIONALIDADES.md) para ver qué puedes hacer
-3. Consulta [`desarrollo/TROUBLESHOOTING.md`](./desarrollo/TROUBLESHOOTING.md) si algo no funciona
+### Build
 
-### 👨‍💻 Desarrollador Nuevo
+```bash
+# Backend
+cd backend && npm run build
 
-**Primer día:**
+# Frontend
+cd frontend && npm run build
+```
 
-1. [`guias/INICIO-RAPIDO.md`](./guias/INICIO-RAPIDO.md) - Setup del proyecto
-2. [`desarrollo/FUNCIONALIDADES.md`](./desarrollo/FUNCIONALIDADES.md) - Qué hace el sistema
-3. [`tecnica/BACKEND-API.md`](./tecnica/BACKEND-API.md) - Explora los endpoints
+### Deployment
 
-**Primera semana:**
+```bash
+# Automático (GitHub Actions)
+git push origin main
 
-1. [`tecnica/PLAN-SISTEMA-TRABAJOS-V2.md`](./tecnica/PLAN-SISTEMA-TRABAJOS-V2.md) - Arquitectura completa
-2. [`desarrollo/HISTORIAL-FASES.md`](./desarrollo/HISTORIAL-FASES.md) - Evolución del proyecto
-3. [`guias/GIT-WORKFLOW.md`](./guias/GIT-WORKFLOW.md) - Workflow de commits
+# Manual local
+bash prepare-deployment.sh
 
-### 🏗️ Arquitecto/Tech Lead
-
-1. [`tecnica/PLAN-SISTEMA-TRABAJOS-V2.md`](./tecnica/PLAN-SISTEMA-TRABAJOS-V2.md) - Arquitectura y decisiones
-2. [`tecnica/SCHEMA-BASE-DATOS.md`](./tecnica/SCHEMA-BASE-DATOS.md) - Modelo de datos
-3. [`desarrollo/HISTORIAL-FASES.md`](./desarrollo/HISTORIAL-FASES.md) - Historia técnica
-4. [`soluciones/FIXES-Y-MEJORAS.md`](./soluciones/FIXES-Y-MEJORAS.md) - Lecciones aprendidas
-
----
-
-## 🔍 Buscar Información Rápida
-
-| Necesito...             | Ver documento...                                                               |
-| ----------------------- | ------------------------------------------------------------------------------ |
-| Levantar el proyecto    | [`guias/INICIO-RAPIDO.md`](./guias/INICIO-RAPIDO.md)                           |
-| Ver un endpoint         | [`tecnica/BACKEND-API.md`](./tecnica/BACKEND-API.md)                           |
-| Entender una feature    | [`desarrollo/FUNCIONALIDADES.md`](./desarrollo/FUNCIONALIDADES.md)             |
-| Saber qué falta         | [`desarrollo/FUNCIONALIDADES.md`](./desarrollo/FUNCIONALIDADES.md) (Pendiente) |
-| Hacer un commit         | [`guias/GIT-WORKFLOW.md`](./guias/GIT-WORKFLOW.md)                             |
-| Solucionar error        | [`desarrollo/TROUBLESHOOTING.md`](./desarrollo/TROUBLESHOOTING.md)             |
-| Ver arquitectura DB     | [`tecnica/SCHEMA-BASE-DATOS.md`](./tecnica/SCHEMA-BASE-DATOS.md)               |
-| Ver historial           | [`desarrollo/HISTORIAL-FASES.md`](./desarrollo/HISTORIAL-FASES.md)             |
-| Ver fixes implementados | [`soluciones/FIXES-Y-MEJORAS.md`](./soluciones/FIXES-Y-MEJORAS.md)             |
+# Ver [DEPLOYMENT.md](DEPLOYMENT.md) para más detalles
+```
 
 ---
 
 ## 📊 Estado del Proyecto
 
-### ✅ Completado (Fase 1-10)
+### ✅ Completado (Fase 1-10, Mejoras 2025-12-27)
 
-- Autenticación JWT
-- CRUD completo de trabajos
-- Gestión avanzada de meses (crear, editar, eliminar, reabrir)
-- Importación de 3 tipos de reportes Excel
-- Consolidación automática con cálculos reales
-- Reporte base anual con 3 hojas
-- Visualización completa de reportes
-- Nueva UX con selector horizontal
-- Creación automática de 12 meses
-- Vista enfocada por mes
+- ✅ Autenticación JWT segura
+- ✅ CRUD de trabajos, clientes, usuarios
+- ✅ 12 meses automáticos por trabajo
+- ✅ 3 tipos de reportes mensuales
+- ✅ Importación de reporte base anual
+- ✅ Procesamiento automático con cálculos
+- ✅ Flujo de aprobaciones (4 estados)
+- ✅ Dashboard de aprobaciones
+- ✅ Base de conocimiento
+- ✅ **0 vulnerabilidades** (backend + frontend)
+- ✅ **TypeScript strict mode**
+- ✅ **GitHub Actions** (deployment automático)
+- ✅ **Seguridad completa** (Helmet, Rate Limiting, Sanitization)
+- ✅ **100% de tests pasando** (23/23)
 
 ### ⏳ Pendiente (Fase 11+)
 
-- Importación desde nueva UI
-- Edición de celdas en reportes
-- Exportación a Excel/PDF
-- Gráficas y análisis
-- Navegación con teclado
-- Colaboración entre usuarios
+- ⏳ Importación mejorada con drag & drop
+- ⏳ Edición de celdas en la UI
+- ⏳ Exportación a Excel/PDF
+- ⏳ Gráficas y análisis
+- ⏳ Navegación con teclado
+- ⏳ Colaboración entre usuarios
+- ⏳ Notificaciones push
+- ⏳ Dashboard avanzado con KPIs
+- ⏳ App móvil
 
-**📊 Ver lista completa:** [`desarrollo/FUNCIONALIDADES.md`](./desarrollo/FUNCIONALIDADES.md)
+**Ver lista completa**: [FEATURES.md](FEATURES.md#pendientes)
 
 ---
 
-## 🎓 Contribuir al Proyecto
+## 🛡️ Seguridad
 
-### Workflow Recomendado
+### Implementado (v2.0.0)
 
-1. **Pull del main:**
+```
+✅ JWT Authentication (Bearer tokens)
+✅ Role-based Access Control (RBAC)
+✅ Rate Limiting (100 req/60s)
+✅ Helmet Security Headers
+✅ Input Sanitization (sanitize-html + dompurify)
+✅ Password Hashing (bcrypt)
+✅ File Upload Limits (1mb)
+✅ Database Connection Pooling (5-20 conexiones)
+✅ CORS (orígenes específicos)
+✅ TypeScript Strict Mode
+✅ 0 Vulnerabilidades (npm audit)
+```
 
-   ```bash
-   git pull origin main
-   ```
+### Headers de Seguridad
 
-2. **Trabajar en features:**
+```
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+X-XSS-Protection: 1; mode=block
+Strict-Transport-Security: max-age=31536000
+Content-Security-Policy: default-src 'self'; ...
+Referrer-Policy: strict-origin-when-cross-origin
+```
 
-   - Hacer commit después de cada funcionalidad completada
-   - Mensajes descriptivos: `feat: agregar X`, `fix: corregir Y`
+---
 
-3. **Push al final del día:**
-   ```bash
-   git push origin main
-   ```
+## 📈 Métricas de Calidad
 
-**📖 Guía completa:** [`guias/GIT-WORKFLOW.md`](./guias/GIT-WORKFLOW.md)
+### Código
+
+```
+Backend Tests:   ✅ Pasando
+Frontend Tests:  ✅ 23/23 (100%)
+TypeScript:       ✅ Strict mode habilitado
+ESLint:          ✅ Configurado (backend + frontend)
+Prettier:        ✅ Configurado
+Vulnerabilidades: ✅ 0 en backend, 0 en frontend
+```
+
+### Documentación
+
+```
+Archivos principales:  7 (organizados y simples)
+Archivos archivados:  62 (docs/archive/)
+Cobertura:         Completa
+Legibilidad:        Alta
+```
+
+---
+
+## 📝 Workflow de Desarrollo
+
+### 1. Pull from main
+```bash
+git checkout main
+git pull origin main
+```
+
+### 2. Crear branch de feature
+```bash
+git checkout -b feat/nueva-funcionalidad
+```
+
+### 3. Hacer commits frecuentes
+```bash
+git add .
+git commit -m "feat: agregar funcionalidad X"
+```
+
+### 4. Push y crear PR
+```bash
+git push origin feat/nueva-funcionalidad
+# Crear PR en GitHub
+```
+
+### 5. Merge a main
+```bash
+# Después de aprobación del PR:
+git checkout main
+git pull
+git branch -d feat/nueva-funcionalidad
+```
+
+**Deployment automático** al hacer push a main ✅
 
 ---
 
@@ -224,58 +375,70 @@ docker-compose down -v && docker-compose up -d
 
 Si encuentras un problema:
 
-1. **Verifica primero:** [`desarrollo/TROUBLESHOOTING.md`](./desarrollo/TROUBLESHOOTING.md)
-2. **Incluye:**
+1. **Verificar primero**: [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+2. **Incluye en el issue**:
    - Descripción clara del problema
    - Pasos para reproducir
    - Mensaje de error completo
    - Logs del backend/frontend
-3. **Crea issue en GitHub** con toda la información
+   - Entorno (OS, Node.js versión, etc.)
+3. **Crear issue en GitHub** con toda la información
 
 ---
 
-## 📈 Versiones
+## 📈 Roadmap
 
-### v1.1.0 (Actual) - Octubre 2025
+### v2.1.0 (Q1 2026)
 
-- ✨ Nueva UX con selector horizontal
-- ✨ Creación automática de 12 meses
-- ✨ Vista enfocada por mes
-- 🔧 Múltiples optimizaciones
+- [ ] Importación mejorada con drag & drop
+- [ ] Edición de celdas en la UI
+- [ ] Exportación a Excel/PDF
+- [ ] Gráficas y análisis de datos
 
-### v1.0.0 - Octubre 2025
+### v2.2.0 (Q2 2026)
 
-- 🎉 Release inicial
-- ✅ Fases 1-9 completadas
+- [ ] Navegación con teclado
+- [ ] Colaboración entre usuarios
+- [ ] Notificaciones push
+- [ ] Dashboard avanzado con KPIs
 
-**📋 Historial completo:** [`desarrollo/HISTORIAL-FASES.md`](./desarrollo/HISTORIAL-FASES.md)
+### v3.0.0 (Q3 2026)
+
+- [ ] App móvil (React Native)
+- [ ] Integración con otros sistemas contables
+- [ ] API para terceros
+- [ ] Webhooks
 
 ---
 
 ## 🔗 Enlaces Útiles
 
-- **Frontend:** http://localhost:5173
-- **Backend API:** http://localhost:3001
-- **PostgreSQL:** localhost:5432
-- **Repositorio:** https://github.com/tiagofur/aegg-new-app
+- **Frontend (Producción)**: https://aegg.creapolis.mx
+- **Backend API (Producción)**: https://aegg-api.creapolis.mx
+- **Repositorio**: https://github.com/tiagofur/aegg-new-app
+- **GitHub Actions**: Ver Actions tab en el repositorio
+- **Issues**: https://github.com/tiagofur/aegg-new-app/issues
 
 ---
 
 ## 💡 Tips
 
-✅ **No leer todo de una vez** - Usa este índice según necesidad  
-✅ **FUNCIONALIDADES.md es tu mapa** - Consulta frecuentemente  
-✅ **HISTORIAL-FASES.md es referencia** - No modificar, solo consultar  
-✅ **Commitea frecuente** - Sigue GIT-WORKFLOW.md  
-✅ **Documenta tus cambios** - Actualiza FUNCIONALIDADES.md si agregas features
+✅ **Empezar aquí**: Lee este README primero  
+✅ **7 archivos principales**: Todo lo que necesitas  
+✅ **DEPLOYMENT.md**: Para deployment automático y manual  
+✅ **DEVELOPMENT.md**: Para setup y desarrollo  
+✅ **FEATURES.md**: Para ver funcionalidades  
+✅ **TROUBLESHOOTING.md**: Para solucionar problemas  
+✅ **ARCHITECTURE.md**: Para entender la arquitectura  
+✅ **docs/archive/**: Para historial completo (62 archivos)  
 
 ---
 
 ## 📞 Soporte
 
-- **Issues en GitHub:** Para bugs y features
-- **TROUBLESHOOTING.md:** Para problemas comunes
-- **Equipo de desarrollo:** Para consultas técnicas
+- **Issues en GitHub**: Para bugs y features
+- **TROUBLESHOOTING.md**: Para problemas comunes
+- **Equipo de desarrollo**: Para consultas técnicas
 
 ---
 
@@ -285,11 +448,11 @@ Este proyecto es privado y está bajo desarrollo activo.
 
 ---
 
-**Última actualización:** Octubre 2025  
-**Versión:** 1.1.0  
-**Total de documentos:** 10 archivos principales  
-**Estado:** ✅ Organizado y actualizado
+**Última actualización**: 27/12/2025  
+**Versión**: 2.0.0  
+**Total de archivos**: 7 principales + 62 archivados  
+**Estado**: ✅ Reorganizado, simplificado y actualizado
 
 ---
 
-_Documentación generada y mantenida por el equipo de desarrollo_
+_Documentación simplificada y mantenida por el equipo de desarrollo_

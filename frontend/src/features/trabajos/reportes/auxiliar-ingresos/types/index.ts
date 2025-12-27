@@ -5,44 +5,44 @@
 /**
  * Estado SAT de una factura
  */
-export type EstadoSat = 'Vigente' | 'Cancelada';
+export type EstadoSat = 'Vigente' | 'Cancelada'
 
 /**
  * Fila de datos del reporte Auxiliar de Ingresos
  */
 export interface AuxiliarIngresosRow {
     /** UUID de la factura (identificador único, opcional) */
-    id: string;
+    id: string
 
     /** Folio de la factura - CAMPO CLAVE para comparación con Mi Admin */
-    folio: string;
+    folio: string
 
     /** Fecha de emisión de la factura */
-    fecha: string | null;
+    fecha: string | null
 
     /** RFC del receptor */
-    rfc: string | null;
+    rfc: string | null
 
     /** Razón social del receptor */
-    razonSocial: string | null;
+    razonSocial: string | null
 
     /** Subtotal en MXN (ya viene convertido en el Excel) */
-    subtotal: number;
+    subtotal: number
 
     /** Código de moneda original (USD, EUR, MXN) - solo informativo */
-    moneda: string;
+    moneda: string
 
     /** Tipo de cambio aplicado (solo informativo, no se usa para cálculos) */
-    tipoCambio: number | null;
+    tipoCambio: number | null
 
     /** Estado SAT de la factura (editable) */
-    estadoSat: EstadoSat;
+    estadoSat: EstadoSat
 
     /** Indica si la fila es de resumen (Totales) */
-    isSummary?: boolean;
+    isSummary?: boolean
 
     /** Otras columnas dinámicas del Excel */
-    [key: string]: any;
+    [key: string]: any
 }
 
 /**
@@ -50,60 +50,60 @@ export interface AuxiliarIngresosRow {
  */
 export interface AuxiliarIngresosTotales {
     /** Suma de subtotales en MXN (solo vigentes) */
-    totalSubtotal: number;
+    totalSubtotal: number
 
     /** Cantidad de facturas vigentes */
-    cantidadVigentes: number;
+    cantidadVigentes: number
 
     /** Cantidad de facturas canceladas */
-    cantidadCanceladas: number;
+    cantidadCanceladas: number
 
     /** Cantidad total de facturas */
-    cantidadTotal: number;
+    cantidadTotal: number
 
     /** Porcentaje de facturas vigentes */
-    porcentajeVigentes: number;
+    porcentajeVigentes: number
 
     /** Porcentaje de facturas canceladas */
-    porcentajeCanceladas: number;
+    porcentajeCanceladas: number
 
     /** Promedio del subtotal de facturas vigentes */
-    promedioSubtotalVigentes: number;
+    promedioSubtotalVigentes: number
 
     /** Indica si el total es viable (sin canceladas) */
-    totalViable: boolean;
+    totalViable: boolean
 }
 
 /**
  * Estado de comparación entre Auxiliar y Mi Admin
  */
 export type ComparisonStatus =
-    | 'match'           // UUID existe en ambos y valores coinciden
-    | 'mismatch'        // UUID existe en ambos pero valores discrepan
-    | 'only-auxiliar'   // UUID solo existe en Auxiliar
-    | 'only-miadmin';   // UUID solo existe en Mi Admin
+    | 'match' // UUID existe en ambos y valores coinciden
+    | 'mismatch' // UUID existe en ambos pero valores discrepan
+    | 'only-auxiliar' // UUID solo existe en Auxiliar
+    | 'only-miadmin' // UUID solo existe en Mi Admin
 
 /**
  * Resultado de comparación de una fila
  */
 export interface ComparisonResult {
     /** UUID de la factura */
-    uuid: string;
+    uuid: string
 
     /** Estado de la comparación */
-    status: ComparisonStatus;
+    status: ComparisonStatus
 
     /** Subtotal del Auxiliar (si existe) */
-    auxiliarSubtotal?: number;
+    auxiliarSubtotal?: number
 
     /** Subtotal de Mi Admin (si existe) */
-    miadminSubtotal?: number;
+    miadminSubtotal?: number
 
     /** Diferencia absoluta entre subtotales */
-    difference?: number;
+    difference?: number
 
     /** Mensaje descriptivo para tooltip */
-    tooltip: string;
+    tooltip: string
 }
 
 /**
@@ -111,13 +111,13 @@ export interface ComparisonResult {
  */
 export interface AuxiliarIngresosEditState {
     /** Mapa de ediciones por UUID */
-    editedRows: Map<string, Partial<AuxiliarIngresosRow>>;
+    editedRows: Map<string, Partial<AuxiliarIngresosRow>>
 
     /** Indica si hay cambios sin guardar */
-    isDirty: boolean;
+    isDirty: boolean
 
     /** Indica si se está guardando */
-    isSaving: boolean;
+    isSaving: boolean
 }
 
 /**
@@ -125,16 +125,16 @@ export interface AuxiliarIngresosEditState {
  */
 export interface TotalesComparison {
     /** Indica si los totales coinciden */
-    match: boolean;
+    match: boolean
 
     /** Total del Auxiliar */
-    auxiliarTotal: number;
+    auxiliarTotal: number
 
     /** Total de Mi Admin */
-    miadminTotal: number;
+    miadminTotal: number
 
     /** Diferencia absoluta */
-    difference: number;
+    difference: number
 }
 
 /**
@@ -142,25 +142,25 @@ export interface TotalesComparison {
  */
 export interface MiAdminIngresosRow {
     /** Identificador único (id del registro en Mi Admin) */
-    id: string;
+    id: string
 
     /** Folio de la factura (para comparación) */
-    folio: string;
+    folio: string
 
     /** Estado SAT de la factura */
-    estadoSat: 'Vigente' | 'Cancelada';
+    estadoSat: 'Vigente' | 'Cancelada'
 
     /** Subtotal calculado en MXN */
-    subtotalMXN: number;
+    subtotalMXN: number
 
     /** Subtotal AUX vinculado (si existe) */
-    subtotalAUX?: number | null;
+    subtotalAUX?: number | null
 
     /** Indica si la fila es de totales */
-    isSummary?: boolean;
+    isSummary?: boolean
 
     /** Otras propiedades opcionales */
-    [key: string]: any;
+    [key: string]: any
 }
 
 /**
@@ -181,4 +181,4 @@ export const AUXILIAR_INGRESOS_CONFIG = {
 
     /** Tipo de cambio por defecto para MXN */
     DEFAULT_MXN_EXCHANGE_RATE: 1.0,
-} as const;
+} as const

@@ -1,3 +1,0 @@
-# Changelog
-
-...existing content...

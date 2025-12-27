@@ -3,15 +3,15 @@
  * Hook para actualizar ventas con React Query Mutation
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { reporteAnualService, trabajosService } from '@/services';
-import type { ActualizarVentasRequest, ReporteAnual } from '../types';
-import type { ReporteBaseAnual } from '@/types/trabajo';
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { reporteAnualService, trabajosService } from '@/services'
+import type { ActualizarVentasRequest, ReporteAnual } from '../types'
+import type { ReporteBaseAnual } from '@/types/trabajo'
 
 interface UseReporteAnualUpdateProps {
-    trabajoId: string;
-    onSuccess?: (data: ReporteAnual) => void;
-    onError?: (error: Error) => void;
+    trabajoId: string
+    onSuccess?: (data: ReporteAnual) => void
+    onError?: (error: Error) => void
 }
 
 /**
@@ -23,41 +23,36 @@ export const useReporteAnualUpdate = ({
     onSuccess,
     onError,
 }: UseReporteAnualUpdateProps) => {
-    const queryClient = useQueryClient();
+    const queryClient = useQueryClient()
 
     const mutation = useMutation({
         mutationFn: async (request: ActualizarVentasRequest) => {
-            return reporteAnualService.actualizarVentas(trabajoId, request);
+            return reporteAnualService.actualizarVentas(trabajoId, request)
         },
         onSuccess: (data: ReporteAnual) => {
             // Invalidar queries relacionadas para refrescar datos
             queryClient.invalidateQueries({
                 queryKey: ['reporte-anual', trabajoId, data.anio],
-            });
+            })
             queryClient.invalidateQueries({
                 queryKey: ['reporte-anual-resumen', trabajoId, data.anio],
-            });
+            })
             queryClient.invalidateQueries({
-                queryKey: [
-                    'reporte-mensual',
-                    trabajoId,
-                    data.anio,
-                    data.mes,
-                ],
-            });
+                queryKey: ['reporte-mensual', trabajoId, data.anio, data.mes],
+            })
 
             // Callback personalizado
             if (onSuccess) {
-                onSuccess(data);
+                onSuccess(data)
             }
         },
         onError: (error: Error) => {
-            console.error('Error al actualizar ventas:', error);
+            console.error('Error al actualizar ventas:', error)
             if (onError) {
-                onError(error);
+                onError(error)
             }
         },
-    });
+    })
 
     return {
         actualizarVentas: mutation.mutate,
@@ -68,13 +63,13 @@ export const useReporteAnualUpdate = ({
         error: mutation.error,
         data: mutation.data,
         reset: mutation.reset,
-    };
-};
+    }
+}
 
 interface UseReporteBaseAnualUpdateProps {
-    trabajoId: string;
-    onSuccess?: (data: ReporteBaseAnual) => void;
-    onError?: (error: Error) => void;
+    trabajoId: string
+    onSuccess?: (data: ReporteBaseAnual) => void
+    onError?: (error: Error) => void
 }
 
 /**
@@ -86,7 +81,7 @@ export const useReporteBaseAnualUpdate = ({
     onSuccess,
     onError,
 }: UseReporteBaseAnualUpdateProps) => {
-    const queryClient = useQueryClient();
+    const queryClient = useQueryClient()
 
     const mutation = useMutation({
         mutationFn: async (request: { mes: number; ventas: number }) => {
@@ -94,29 +89,29 @@ export const useReporteBaseAnualUpdate = ({
                 trabajoId,
                 request.mes,
                 request.ventas
-            );
+            )
         },
         onSuccess: (data: ReporteBaseAnual) => {
             // Invalidar queries del trabajo para refrescar el reporte base
             queryClient.invalidateQueries({
                 queryKey: ['trabajo', trabajoId],
-            });
+            })
             queryClient.invalidateQueries({
                 queryKey: ['reporte-base-anual', trabajoId],
-            });
+            })
 
             // Callback personalizado
             if (onSuccess) {
-                onSuccess(data);
+                onSuccess(data)
             }
         },
         onError: (error: Error) => {
-            console.error('Error al actualizar ventas en Excel:', error);
+            console.error('Error al actualizar ventas en Excel:', error)
             if (onError) {
-                onError(error);
+                onError(error)
             }
         },
-    });
+    })
 
     return {
         actualizarVentasEnExcel: mutation.mutate,
@@ -127,5 +122,5 @@ export const useReporteBaseAnualUpdate = ({
         error: mutation.error,
         data: mutation.data,
         reset: mutation.reset,
-    };
-};
+    }
+}

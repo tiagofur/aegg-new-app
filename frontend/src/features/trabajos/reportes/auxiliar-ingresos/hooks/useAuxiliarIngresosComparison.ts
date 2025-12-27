@@ -3,47 +3,47 @@
  * Compara por FOLIO (no por UUID) y detecta coincidencias, discrepancias y diferencias
  */
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import {
     AuxiliarIngresosRow,
     MiAdminIngresosRow,
     ComparisonResult,
     TotalesComparison,
     AUXILIAR_INGRESOS_CONFIG,
-} from '../types';
-import { normalizeFolio } from '../../shared/utils/folio';
+} from '../types'
+import { normalizeFolio } from '../../shared/utils/folio'
 
 interface UseAuxiliarIngresosComparisonProps {
     /** Datos del Auxiliar de Ingresos */
-    auxiliarData: AuxiliarIngresosRow[];
+    auxiliarData: AuxiliarIngresosRow[]
     /** Datos de Mi Admin (opcional) */
-    miadminData?: MiAdminIngresosRow[];
+    miadminData?: MiAdminIngresosRow[]
     /** Estado controlado de comparación */
-    comparisonActive?: boolean;
+    comparisonActive?: boolean
     /** Notificación cuando cambia el estado de comparación */
-    onComparisonActiveChange?: (active: boolean) => void;
+    onComparisonActiveChange?: (active: boolean) => void
 }
 
 interface UseAuxiliarIngresosComparisonReturn {
     /** Si la comparación está activa */
-    isActive: boolean;
+    isActive: boolean
     /** Toggle para activar/desactivar comparación */
-    toggle: () => void;
+    toggle: () => void
     /** Setter para definir el estado de comparación */
-    setComparisonActive: (active: boolean) => void;
+    setComparisonActive: (active: boolean) => void
     /** Mapa de resultados de comparación por ID (para renderizado) */
-    comparisonMap: Map<string, ComparisonResult>;
+    comparisonMap: Map<string, ComparisonResult>
     /** Comparación de totales */
-    totalesComparison: TotalesComparison | null;
+    totalesComparison: TotalesComparison | null
     /** Estadísticas de comparación */
     stats: {
-        totalMatches: number;
-        totalMismatches: number;
-        totalOnlyAuxiliar: number;
-        totalOnlyMiAdmin: number;
-    };
+        totalMatches: number
+        totalMismatches: number
+        totalOnlyAuxiliar: number
+        totalOnlyMiAdmin: number
+    }
     /** Si hay datos de Mi Admin disponibles */
-    hasComparisonData: boolean;
+    hasComparisonData: boolean
 }
 
 /**
@@ -57,42 +57,40 @@ export const useAuxiliarIngresosComparison = ({
     onComparisonActiveChange,
 }: UseAuxiliarIngresosComparisonProps): UseAuxiliarIngresosComparisonReturn => {
     // Estado: Si la comparación está activa
-    const isControlled = typeof comparisonActive === 'boolean';
-    const [internalActive, setInternalActive] = useState<boolean>(
-        comparisonActive ?? false
-    );
+    const isControlled = typeof comparisonActive === 'boolean'
+    const [internalActive, setInternalActive] = useState<boolean>(comparisonActive ?? false)
 
     useEffect(() => {
         if (isControlled) {
-            setInternalActive(comparisonActive!);
+            setInternalActive(comparisonActive!)
         }
-    }, [comparisonActive, isControlled]);
+    }, [comparisonActive, isControlled])
 
     const setActive = useCallback(
         (next: boolean) => {
             if (!isControlled) {
-                setInternalActive(next);
+                setInternalActive(next)
             }
-            onComparisonActiveChange?.(next);
+            onComparisonActiveChange?.(next)
         },
         [isControlled, onComparisonActiveChange]
-    );
+    )
 
-    const isActive = isControlled ? comparisonActive! : internalActive;
+    const isActive = isControlled ? comparisonActive! : internalActive
 
     /**
      * Toggle para activar/desactivar la comparación
      */
     const toggle = useCallback(() => {
-        setActive(!isActive);
-    }, [isActive, setActive]);
+        setActive(!isActive)
+    }, [isActive, setActive])
 
     /**
      * Verifica si hay datos de Mi Admin disponibles
      */
     const hasComparisonData = useMemo(() => {
-        return !!miadminData && miadminData.length > 0;
-    }, [miadminData]);
+        return !!miadminData && miadminData.length > 0
+    }, [miadminData])
 
     /**
      * Genera el mapa de comparación por FOLIO
@@ -100,11 +98,11 @@ export const useAuxiliarIngresosComparison = ({
      * Solo se calcula cuando la comparación está activa
      */
     const comparisonMap = useMemo(() => {
-        const map = new Map<string, ComparisonResult>();
+        const map = new Map<string, ComparisonResult>()
 
         // Si no está activa o no hay datos, retornar mapa vacío
         if (!isActive || !hasComparisonData) {
-            return map;
+            return map
         }
 
         // Crear lookup de Mi Admin por FOLIO para búsqueda rápida
@@ -112,7 +110,7 @@ export const useAuxiliarIngresosComparison = ({
             miadminData!
                 .filter((row) => row.estadoSat === 'Vigente' && !row.isSummary)
                 .map((row) => {
-                    const normalizedFolio = normalizeFolio(row.folio);
+                    const normalizedFolio = normalizeFolio(row.folio)
                     return [
                         normalizedFolio,
                         {
@@ -120,15 +118,15 @@ export const useAuxiliarIngresosComparison = ({
                             id: row.id,
                             rawFolio: row.folio,
                         },
-                    ];
+                    ]
                 })
-        );
+        )
 
         // Comparar cada fila del Auxiliar
         auxiliarData.forEach((auxRow) => {
             // Ignorar facturas canceladas en la comparación
             if (auxRow.estadoSat === 'Cancelada') {
-                return;
+                return
             }
 
             // Si no tiene folio, no se puede comparar
@@ -138,13 +136,13 @@ export const useAuxiliarIngresosComparison = ({
                     status: 'only-auxiliar',
                     auxiliarSubtotal: auxRow.subtotal,
                     tooltip: `🔵 Solo en Auxiliar (sin folio) - Subtotal: $${auxRow.subtotal.toFixed(2)}`,
-                };
-                map.set(auxRow.id, result);
-                return;
+                }
+                map.set(auxRow.id, result)
+                return
             }
 
-            const normalizedFolio = normalizeFolio(auxRow.folio);
-            const miadminRow = miadminLookup.get(normalizedFolio);
+            const normalizedFolio = normalizeFolio(auxRow.folio)
+            const miadminRow = miadminLookup.get(normalizedFolio)
 
             // Caso 1: FOLIO solo existe en Auxiliar
             if (!miadminRow) {
@@ -153,16 +151,16 @@ export const useAuxiliarIngresosComparison = ({
                     status: 'only-auxiliar',
                     auxiliarSubtotal: auxRow.subtotal,
                     tooltip: `🔵 Solo en Auxiliar - Folio: ${auxRow.folio} - Subtotal: $${auxRow.subtotal.toFixed(2)}`,
-                };
-                map.set(auxRow.id, result);
-                return;
+                }
+                map.set(auxRow.id, result)
+                return
             }
 
             // Caso 2 y 3: FOLIO existe en ambos, comparar valores
-            const auxiliarSubtotal = auxRow.subtotal ?? 0;
-            const miadminSubtotal = miadminRow.subtotalMXN ?? 0;
-            const difference = Math.abs(auxiliarSubtotal - miadminSubtotal);
-            const isMatch = difference <= AUXILIAR_INGRESOS_CONFIG.COMPARISON_TOLERANCE;
+            const auxiliarSubtotal = auxRow.subtotal ?? 0
+            const miadminSubtotal = miadminRow.subtotalMXN ?? 0
+            const difference = Math.abs(auxiliarSubtotal - miadminSubtotal)
+            const isMatch = difference <= AUXILIAR_INGRESOS_CONFIG.COMPARISON_TOLERANCE
 
             if (isMatch) {
                 // Coincide (dentro de tolerancia)
@@ -173,8 +171,8 @@ export const useAuxiliarIngresosComparison = ({
                     miadminSubtotal,
                     difference,
                     tooltip: `✅ Coincide - Folio: ${auxRow.folio} - Diferencia MXN: $${difference.toFixed(2)}`,
-                };
-                map.set(auxRow.id, result);
+                }
+                map.set(auxRow.id, result)
             } else {
                 // Discrepancia
                 const result: ComparisonResult = {
@@ -184,13 +182,13 @@ export const useAuxiliarIngresosComparison = ({
                     miadminSubtotal,
                     difference,
                     tooltip: `❌ Discrepancia - Folio: ${auxRow.folio} - Auxiliar: $${auxiliarSubtotal.toFixed(2)} vs Mi Admin MXN: $${miadminSubtotal.toFixed(2)} (Dif: $${difference.toFixed(2)})`,
-                };
-                map.set(auxRow.id, result);
+                }
+                map.set(auxRow.id, result)
             }
 
             // Marcar como procesado
-            miadminLookup.delete(normalizedFolio);
-        });
+            miadminLookup.delete(normalizedFolio)
+        })
 
         // Caso 4: FOLIOs que solo existen en Mi Admin
         miadminLookup.forEach((rowData, folio) => {
@@ -199,77 +197,77 @@ export const useAuxiliarIngresosComparison = ({
                 status: 'only-miadmin',
                 miadminSubtotal: rowData.subtotalMXN,
                 tooltip: `🟣 Solo en Mi Admin - Folio: ${rowData.rawFolio ?? folio} - Subtotal MXN: $${rowData.subtotalMXN.toFixed(2)}`,
-            };
+            }
             // Usamos el UUID de Mi Admin como key ya que no existe en Auxiliar
-            map.set(rowData.id, result);
-        });
+            map.set(rowData.id, result)
+        })
 
-        return map;
-    }, [isActive, hasComparisonData, auxiliarData, miadminData]);
+        return map
+    }, [isActive, hasComparisonData, auxiliarData, miadminData])
 
     /**
      * Calcula la comparación de totales
      */
     const totalesComparison = useMemo((): TotalesComparison | null => {
         if (!isActive || !hasComparisonData) {
-            return null;
+            return null
         }
 
         // Sumar totales de Auxiliar (solo vigentes)
         const auxiliarTotal = auxiliarData
             .filter((row) => row.estadoSat === 'Vigente')
-            .reduce((sum, row) => sum + row.subtotal, 0);
+            .reduce((sum, row) => sum + row.subtotal, 0)
 
         // Sumar totales de Mi Admin
         const miadminTotal = miadminData!
             .filter((row) => row.estadoSat === 'Vigente' && !row.isSummary)
-            .reduce((sum, row) => sum + (row.subtotalMXN ?? 0), 0);
+            .reduce((sum, row) => sum + (row.subtotalMXN ?? 0), 0)
 
         // Calcular diferencia
-        const difference = Math.abs(auxiliarTotal - miadminTotal);
-        const match = difference <= AUXILIAR_INGRESOS_CONFIG.COMPARISON_TOLERANCE;
+        const difference = Math.abs(auxiliarTotal - miadminTotal)
+        const match = difference <= AUXILIAR_INGRESOS_CONFIG.COMPARISON_TOLERANCE
 
         return {
             match,
             auxiliarTotal,
             miadminTotal,
             difference,
-        };
-    }, [isActive, hasComparisonData, auxiliarData, miadminData]);
+        }
+    }, [isActive, hasComparisonData, auxiliarData, miadminData])
 
     /**
      * Calcula estadísticas de la comparación
      */
     const stats = useMemo(() => {
-        let totalMatches = 0;
-        let totalMismatches = 0;
-        let totalOnlyAuxiliar = 0;
-        let totalOnlyMiAdmin = 0;
+        let totalMatches = 0
+        let totalMismatches = 0
+        let totalOnlyAuxiliar = 0
+        let totalOnlyMiAdmin = 0
 
         comparisonMap.forEach((result) => {
             switch (result.status) {
                 case 'match':
-                    totalMatches++;
-                    break;
+                    totalMatches++
+                    break
                 case 'mismatch':
-                    totalMismatches++;
-                    break;
+                    totalMismatches++
+                    break
                 case 'only-auxiliar':
-                    totalOnlyAuxiliar++;
-                    break;
+                    totalOnlyAuxiliar++
+                    break
                 case 'only-miadmin':
-                    totalOnlyMiAdmin++;
-                    break;
+                    totalOnlyMiAdmin++
+                    break
             }
-        });
+        })
 
         return {
             totalMatches,
             totalMismatches,
             totalOnlyAuxiliar,
             totalOnlyMiAdmin,
-        };
-    }, [comparisonMap]);
+        }
+    }, [comparisonMap])
 
     return {
         isActive,
@@ -279,5 +277,5 @@ export const useAuxiliarIngresosComparison = ({
         stats,
         hasComparisonData,
         setComparisonActive: setActive,
-    };
-};
+    }
+}

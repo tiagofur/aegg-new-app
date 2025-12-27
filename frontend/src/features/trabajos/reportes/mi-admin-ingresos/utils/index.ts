@@ -3,10 +3,10 @@
  */
 
 // Cálculos y transformaciones
-export * from './mi-admin-ingresos-calculations';
+export * from './mi-admin-ingresos-calculations'
 
 // Estilos y clases CSS
-export * from './mi-admin-ingresos-styles';
+export * from './mi-admin-ingresos-styles'
 
 // Fábrica de columnas
-export * from './column-factory';
+export * from './column-factory'

@@ -3,20 +3,20 @@
  * Calcula totales con memoización para optimizar performance
  */
 
-import { useMemo } from 'react';
-import { AuxiliarIngresosRow, AuxiliarIngresosTotales } from '../types';
-import { calculateTotales } from '../utils';
+import { useMemo } from 'react'
+import { AuxiliarIngresosRow, AuxiliarIngresosTotales } from '../types'
+import { calculateTotales } from '../utils'
 
 interface UseAuxiliarIngresosCalculationsProps {
     /** Datos del reporte */
-    data: AuxiliarIngresosRow[];
+    data: AuxiliarIngresosRow[]
 }
 
 interface UseAuxiliarIngresosCalculationsReturn {
     /** Totales calculados */
-    totales: AuxiliarIngresosTotales;
+    totales: AuxiliarIngresosTotales
     /** Datos con fila de totales incluida */
-    dataWithTotals: AuxiliarIngresosRow[];
+    dataWithTotals: AuxiliarIngresosRow[]
 }
 
 /**
@@ -31,20 +31,20 @@ export const useAuxiliarIngresosCalculations = ({
      * Solo recalcula cuando cambian los datos
      */
     const totales = useMemo(() => {
-        return calculateTotales(data);
-    }, [data]);
+        return calculateTotales(data)
+    }, [data])
 
     const dataWithTotals = useMemo(() => {
         if (!data || data.length === 0) {
-            return data;
+            return data
         }
 
         const alreadyHasSummary = data.some(
             (row) => row.id === '__auxiliar_totals__' || row.folio?.toLowerCase() === 'totales'
-        );
+        )
 
         if (alreadyHasSummary) {
-            return data;
+            return data
         }
 
         const totalsRow: AuxiliarIngresosRow = {
@@ -58,13 +58,13 @@ export const useAuxiliarIngresosCalculations = ({
             tipoCambio: null,
             estadoSat: 'Vigente',
             isSummary: true,
-        };
+        }
 
-        return [...data, totalsRow];
-    }, [data, totales]);
+        return [...data, totalsRow]
+    }, [data, totales])
 
     return {
         totales,
         dataWithTotals,
-    };
-};
+    }
+}

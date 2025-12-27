@@ -31,54 +31,54 @@ export const NOMBRES_MESES: Record<MesEnum, string> = {
     [MesEnum.OCTUBRE]: 'Octubre',
     [MesEnum.NOVIEMBRE]: 'Noviembre',
     [MesEnum.DICIEMBRE]: 'Diciembre',
-};
+}
 
 /**
  * Entity ReporteAnual - Representa un mes de ventas en el reporte anual
  */
 export interface ReporteAnual {
-    id: string;
-    trabajoId: string;
-    anio: number;
-    mes: number;
-    ventas: number | null;
-    ventasAuxiliar: number | null;
-    diferencia: number | null;
-    confirmado: boolean;
-    fechaCreacion: string;
-    fechaActualizacion: string;
+    id: string
+    trabajoId: string
+    anio: number
+    mes: number
+    ventas: number | null
+    ventasAuxiliar: number | null
+    diferencia: number | null
+    confirmado: boolean
+    fechaCreacion: string
+    fechaActualizacion: string
 }
 
 /**
  * DTO para actualizar ventas de un mes
  */
 export interface ActualizarVentasDto {
-    trabajoId: string;
-    anio: number;
-    mes: number;
-    ventas: number;
-    ventasAuxiliar: number;
+    trabajoId: string
+    anio: number
+    mes: number
+    ventas: number
+    ventasAuxiliar: number
 }
 
 /**
  * Resumen anual con totales y estadísticas
  */
 export interface ResumenAnual {
-    anio: number;
-    totalVentas: number;
-    totalVentasAuxiliar: number;
-    totalDiferencia: number;
-    mesesConfirmados: number;
-    mesesPendientes: number;
-    reportes: ReporteAnual[];
+    anio: number
+    totalVentas: number
+    totalVentasAuxiliar: number
+    totalDiferencia: number
+    mesesConfirmados: number
+    mesesPendientes: number
+    reportes: ReporteAnual[]
 }
 
 /**
  * Request para crear/actualizar reporte
  */
 export interface ActualizarVentasRequest {
-    anio: number;
-    mes: number;
-    ventas: number;
-    ventasAuxiliar: number;
+    anio: number
+    mes: number
+    ventas: number
+    ventasAuxiliar: number
 }

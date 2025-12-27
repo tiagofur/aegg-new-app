@@ -1,125 +1,155 @@
-import { render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Trabajo } from "../../../types/trabajo";
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Trabajo } from '../../../types/trabajo'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MemoryRouter } from 'react-router-dom'
 
-global.alert = vi.fn();
+global.alert = vi.fn()
 
-const navigateMock = vi.fn();
-const updateMock = vi.fn();
-const deleteMock = vi.fn();
-const limpiarDatosMock = vi.fn();
+const navigateMock = vi.fn()
+const updateMock = vi.fn()
+const deleteMock = vi.fn()
+const limpiarDatosMock = vi.fn()
+
+const mockUser = { id: 'gestor-1', email: 'gestor@example.com', role: 'Admin' }
 
 function servicesMock() {
-  return {
-    trabajosService: {
-      delete: deleteMock,
-      update: updateMock,
-    },
-    reportesMensualesService: {
-      limpiarDatos: limpiarDatosMock,
-      procesarYGuardar: vi.fn(),
-    },
-  };
+    return {
+        trabajosService: {
+            delete: deleteMock,
+            update: updateMock,
+        },
+        reportesMensualesService: {
+            limpiarDatos: limpiarDatosMock,
+            procesarYGuardar: vi.fn(),
+        },
+    }
 }
 
-vi.mock("react-router-dom", async () => {
-  const actual = await vi.importActual<typeof import("react-router-dom")>(
-    "react-router-dom"
-  );
-  return {
-    ...actual,
-    useNavigate: () => navigateMock,
-  };
-});
+vi.mock('react-router-dom', async () => {
+    const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
+    return {
+        ...actual,
+        useNavigate: () => navigateMock,
+        useLocation: () => ({
+            pathname: '/trabajos',
+            search: '',
+            hash: '',
+            state: null,
+            key: 'default',
+        }),
+    }
+})
 
-vi.mock("../../services", servicesMock);
-vi.mock("@/services", servicesMock);
+vi.mock('../../../context/AuthContext', () => ({
+    useAuth: () => ({
+        user: mockUser,
+        token: 'test-token',
+        login: vi.fn(),
+        register: vi.fn(),
+        logout: vi.fn(),
+        isLoading: false,
+    }),
+}))
 
-let TrabajoDetail: typeof import("../TrabajoDetail").TrabajoDetail;
+vi.mock('../../services', servicesMock)
+vi.mock('@/services', servicesMock)
+
+let TrabajoDetail: typeof import('../TrabajoDetail').TrabajoDetail
 
 beforeAll(async () => {
-  ({ TrabajoDetail } = await import("../TrabajoDetail"));
-});
+    ;({ TrabajoDetail } = await import('../TrabajoDetail'))
+})
 
-describe("TrabajoDetail", () => {
-  const baseTrabajo: Trabajo = {
-    id: "trabajo-aprobado",
-    clienteId: "cliente-1",
-    clienteNombre: "Cliente Demo",
-    clienteRfc: "RFC123456",
-    anio: 2024,
-    estado: "ACTIVO",
-    estadoAprobacion: "APROBADO",
-    visibilidadEquipo: true,
-    miembroAsignadoId: "user-1",
-    gestorResponsableId: "gestor-1",
-    fechaCreacion: new Date().toISOString(),
-    fechaActualizacion: new Date().toISOString(),
-    meses: [],
-    miembroAsignado: { id: "user-1", email: "user@example.com" },
-    aprobadoPor: { id: "gestor-1", email: "gestor@example.com" },
-    gestorResponsable: {
-      id: "gestor-1",
-      email: "gestor@example.com",
-    },
-  };
+const renderWithProviders = (component: React.ReactElement) => {
+    const queryClient = new QueryClient({
+        defaultOptions: {
+            queries: {
+                retry: false,
+            },
+        },
+    })
 
-  const defaultProps = {
-    onAddMes: vi.fn(),
-    onBack: vi.fn(),
-    onReload: vi.fn(),
-    canManage: true,
-    canManageReportesMensuales: true,
-  };
+    return render(
+        <QueryClientProvider client={queryClient}>
+            <MemoryRouter>{component}</MemoryRouter>
+        </QueryClientProvider>
+    )
+}
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+describe('TrabajoDetail', () => {
+    const baseTrabajo: Trabajo = {
+        id: 'trabajo-aprobado',
+        clienteId: 'cliente-1',
+        clienteNombre: 'Cliente Demo',
+        clienteRfc: 'RFC123456',
+        anio: 2024,
+        estado: 'ACTIVO',
+        estadoAprobacion: 'APROBADO',
+        visibilidadEquipo: true,
+        miembroAsignadoId: 'user-1',
+        gestorResponsableId: 'gestor-1',
+        fechaCreacion: new Date().toISOString(),
+        fechaActualizacion: new Date().toISOString(),
+        meses: [],
+        miembroAsignado: { id: 'user-1', email: 'user@example.com' },
+        aprobadoPor: { id: 'gestor-1', email: 'gestor@example.com' },
+        gestorResponsable: {
+            id: 'gestor-1',
+            email: 'gestor@example.com',
+        },
+    }
 
-  it("bloquea acciones de edición cuando el trabajo está aprobado", () => {
-    render(<TrabajoDetail trabajo={baseTrabajo} {...defaultProps} />);
+    const defaultProps = {
+        onAddMes: vi.fn(),
+        onBack: vi.fn(),
+        onReload: vi.fn(),
+        canManage: true,
+        canManageReportesMensuales: true,
+    }
 
-    expect(screen.queryByRole("button", { name: /editar/i })).toBeNull();
-    expect(screen.queryByRole("button", { name: /eliminar/i })).toBeNull();
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
 
-    const reopenButton = screen.getByRole("button", {
-      name: /reabrir trabajo/i,
-    });
-    expect(reopenButton).toBeEnabled();
+    it('bloquea acciones de edición cuando el trabajo está aprobado', () => {
+        renderWithProviders(<TrabajoDetail trabajo={baseTrabajo} {...defaultProps} />)
 
-    const importButton = screen.getByRole("button", { name: /importar/i });
-    expect(importButton).toBeDisabled();
-  });
+        expect(screen.queryByRole('button', { name: /editar/i })).toBeNull()
+        expect(screen.queryByRole('button', { name: /eliminar/i })).toBeNull()
 
-  it("reabre el trabajo aprobado cuando el Gestor lo confirma", async () => {
-    const user = userEvent.setup();
-    const onReload = vi.fn();
-    const confirmSpy = vi
-      .spyOn(window, "confirm")
-      .mockImplementation(() => true);
+        const reopenButton = screen.getByRole('button', {
+            name: /reabrir trabajo/i,
+        })
+        expect(reopenButton).toBeEnabled()
 
-    render(
-      <TrabajoDetail
-        trabajo={baseTrabajo}
-        {...defaultProps}
-        onReload={onReload}
-      />
-    );
+        const importButton = screen.getByRole('button', { name: /importar/i })
+        expect(importButton).toBeDisabled()
+    })
 
-    const reopenButton = screen.getByRole("button", {
-      name: /reabrir trabajo/i,
-    });
+    it('reabre el trabajo aprobado cuando el Gestor lo confirma', async () => {
+        const user = userEvent.setup()
+        const onReload = vi.fn()
+        const confirmSpy = vi.spyOn(window, 'confirm').mockImplementation(() => true)
 
-    await user.click(reopenButton);
+        renderWithProviders(
+            <TrabajoDetail trabajo={baseTrabajo} {...defaultProps} onReload={onReload} />
+        )
 
-    expect(updateMock).toHaveBeenCalledWith("trabajo-aprobado", {
-      estadoAprobacion: "REABIERTO",
-      aprobadoPorId: null,
-    });
+        const reopenButton = screen.getByRole('button', {
+            name: /reabrir trabajo/i,
+        })
 
-    await waitFor(() => expect(onReload).toHaveBeenCalled());
+        await user.click(reopenButton)
 
-    confirmSpy.mockRestore();
-  });
-});
+        expect(updateMock).toHaveBeenCalledWith('trabajo-aprobado', {
+            estadoAprobacion: 'REABIERTO',
+            aprobadoPorId: null,
+        })
+
+        await waitFor(() => expect(onReload).toHaveBeenCalled())
+
+        confirmSpy.mockRestore()
+    })
+})

@@ -25,8 +25,10 @@ export default defineConfig({
         rollupOptions: {
             output: {
                 manualChunks: {
-                    react: ['react', 'react-dom', 'react-router-dom'],
-                    vendor: ['axios', '@tanstack/react-query'],
+                    'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+                    'query-vendor': ['@tanstack/react-query', '@tanstack/react-table'],
+                    'axios': ['axios'],
+                    'ui-vendor': ['lucide-react'],
                 },
             },
         },

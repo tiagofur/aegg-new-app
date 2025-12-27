@@ -355,7 +355,7 @@ export class TrabajosService {
             }
 
             // Extraer todas las hojas
-            const hojas = workbook.SheetNames.map((sheetName) => {
+            const hojas = workbook.SheetNames.map((sheetName: string) => {
                 const worksheet = workbook.Sheets[sheetName];
                 const datos = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
@@ -374,8 +374,9 @@ export class TrabajosService {
             if (error instanceof BadRequestException) {
                 throw error;
             }
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             throw new BadRequestException(
-                `Error al procesar el archivo Excel: ${error.message}`,
+                `Error al procesar el archivo Excel: ${errorMessage}`,
             );
         }
     }
@@ -400,6 +401,7 @@ export class TrabajosService {
     /**
      * Crea los 12 meses del año automáticamente para un trabajo
      * Cada mes tiene 3 reportes mensuales vacíos (INGRESOS, INGRESOS_AUXILIAR, INGRESOS_MI_ADMIN)
+     * @deprecated Usar crearMesesAutomaticosEnTransaccion en su lugar
      */
     private async crearMesesAutomaticos(trabajoId: string): Promise<void> {
         console.log(`[TrabajosService] Creando meses automáticos para trabajo: ${trabajoId}`);
@@ -652,7 +654,7 @@ export class TrabajosService {
         trabajoId: string,
         mes: number,
         ventas: number,
-        currentUser: CurrentUserPayload,
+        _currentUser: CurrentUserPayload,
     ): Promise<ReporteBaseAnual> {
         // Los Miembros, Gestores y Admins pueden actualizar las ventas mensuales en el Excel
         // Esta validación se hace en el controlador con @Roles, aquí solo verificamos autenticación
@@ -688,7 +690,7 @@ export class TrabajosService {
         }
 
         console.log(`[TrabajosService] Reporte Base tiene ${reporte.hojas.length} hojas`);
-        console.log(`[TrabajosService] Nombres de hojas:`, reporte.hojas.map(h => h.nombre));
+        console.log(`[TrabajosService] Nombres de hojas:`, reporte.hojas.map((h: any) => h.nombre));
 
         // Trabajar con la hoja 0 (PRIMERA HOJA del Excel importado)
         const hoja0 = reporte.hojas[0];
@@ -767,7 +769,7 @@ export class TrabajosService {
         if (mesColumnIndex === -1) {
             console.log('[TrabajosService] ❌ No se encontró la columna del mes');
             console.log(`[TrabajosService] Mes buscado: "${mesNombre}"`);
-            console.log(`[TrabajosService] Columnas normalizadas:`, headerRow.map((c, i) => `[${i}]="${normalize(c)}"`));
+            console.log(`[TrabajosService] Columnas normalizadas:`, headerRow.map((c: string, i: number) => `[${i}]="${normalize(c)}"`));
             throw new BadRequestException(
                 `No se encontró la columna del mes "${mesesNombres[mes - 1].toUpperCase()}"`,
             );

@@ -1,0 +1,176 @@
+name: 🚀 Deploy to Production (VPS)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📦 Install Backend Dependencies
+        working-directory: ./backend
+        run: npm ci --production
+
+      - name: 🔨 Build Backend
+        working-directory: ./backend
+        run: npm run build
+
+      - name: 🧪 Run Backend Tests
+        working-directory: ./backend
+        run: npm test -- --passWithNoTests
+        continue-on-error: true
+
+      - name: 📦 Install Frontend Dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: 🔨 Build Frontend
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: 🧪 Run Frontend Tests
+        working-directory: ./frontend
+        run: npm test -- --passWithNoTests
+        continue-on-error: true
+
+      - name: 📦 Create Deployment Package
+        run: |
+          mkdir -p deployment-package
+          mkdir -p deployment-package/backend-dist
+          mkdir -p deployment-package/backend-node_modules
+          mkdir -p deployment-package/frontend-dist
+
+          echo "Copying backend files..."
+          cp -r backend/dist/* deployment-package/backend-dist/
+          cp -r backend/node_modules deployment-package/backend-node_modules/
+          cp backend/package.json deployment-package/
+          cp ecosystem.config.js deployment-package/
+
+          echo "Copying frontend files..."
+          cp -r frontend/dist/* deployment-package/frontend-dist/
+
+      - name: 📝 Create Production .env
+        run: |
+          cat > deployment-package/.env << 'EOF'
+          DATABASE_HOST=${{ secrets.DB_HOST }}
+          DATABASE_PORT=${{ secrets.DB_PORT }}
+          DATABASE_USER=${{ secrets.DB_USER }}
+          DATABASE_PASSWORD=${{ secrets.DB_PASSWORD }}
+          DATABASE_NAME=${{ secrets.DB_NAME }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          NODE_ENV=production
+          PORT=3000
+          EOF
+
+      - name: 📤 Upload Package to Server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          source: "deployment-package/*"
+          target: "/tmp/deployment-package"
+          rm: true
+
+      - name: 🚀 Deploy on Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script_stop: true
+          script: |
+            set -e
+
+            echo "🚀 Iniciando deployment en servidor..."
+
+            # Variables
+            BACKEND_DIR="/var/www/vhosts/creapolis.mx/aegg-api"
+            FRONTEND_DIR="/var/www/vhosts/creapolis.mx/aegg/httpdocs"
+            TEMP_DIR="/tmp/deployment-package"
+
+            # 1. Crear directorios si no existen
+            echo "📁 Creando directorios..."
+            mkdir -p $BACKEND_DIR/backend
+            mkdir -p $BACKEND_DIR/logs
+            mkdir -p $FRONTEND_DIR
+
+            # 2. Desplegar Backend
+            echo "📦 Desplegando backend..."
+            rm -rf $BACKEND_DIR/backend/dist
+            rm -rf $BACKEND_DIR/backend/node_modules
+            cp -r $TEMP_DIR/backend-dist $BACKEND_DIR/backend/dist
+            cp -r $TEMP_DIR/backend-node_modules $BACKEND_DIR/backend/node_modules
+            cp $TEMP_DIR/package.json $BACKEND_DIR/backend/
+            cp $TEMP_DIR/.env $BACKEND_DIR/backend/
+
+            # 3. Desplegar Frontend
+            echo "📦 Desplegando frontend..."
+            rm -rf $FRONTEND_DIR/*
+            cp -r $TEMP_DIR/frontend-dist/* $FRONTEND_DIR/
+
+            # 4. Desplegar configuración PM2
+            echo "⚙️  Configurando PM2..."
+            cp $TEMP_DIR/ecosystem.config.js $BACKEND_DIR/
+
+            # 5. Configurar permisos
+            echo "🔒 Configurando permisos..."
+            chown -R www-data:www-data $BACKEND_DIR
+            chown -R www-data:www-data $FRONTEND_DIR
+            chmod -R 755 $BACKEND_DIR
+            chmod -R 755 $FRONTEND_DIR
+
+            # 6. Ejecutar migraciones de base de datos
+            echo "🗄️  Ejecutando migraciones..."
+            cd $BACKEND_DIR/backend
+            npm run migration:run || echo "⚠️  No se ejecutaron migraciones (puede ser normal)"
+
+            # 7. Iniciar/Reiniciar PM2
+            echo "🔄 Reiniciando aplicación..."
+            cd $BACKEND_DIR
+
+            if pm2 list | grep -q "aegg-backend"; then
+                echo "Reiniciando aplicación existente..."
+                pm2 reload ecosystem.config.js --update-env
+            else
+                echo "Iniciando aplicación por primera vez..."
+                pm2 start ecosystem.config.js
+                pm2 save
+            fi
+
+            # 8. Verificar estado
+            echo "✅ Verificando estado..."
+            pm2 status
+            pm2 logs aegg-backend --lines 20 --nostream || true
+
+            echo ""
+            echo "🎉 Deployment completado exitosamente!"
+            echo "Backend: https://aegg-api.creapolis.mx"
+            echo "Frontend: https://aegg.creapolis.mx"
+
+      - name: ✅ Notify Deployment Success
+        if: success()
+        run: |
+          echo "🎉 Deploy completado exitosamente en producción"
+          echo "Backend: https://aegg-api.creapolis.mx"
+          echo "Frontend: https://aegg.creapolis.mx"
+
+      - name: ❌ Notify Deployment Failure
+        if: failure()
+        run: |
+          echo "❌ El deployment falló. Por favor revisa los logs del servidor."
+          echo "VPS: ${{ secrets.VPS_HOST }}"

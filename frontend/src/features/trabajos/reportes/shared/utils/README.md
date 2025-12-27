@@ -18,82 +18,79 @@ Sistema robusto y flexible para detectar columnas en reportes de Excel con múlt
 
 ```typescript
 import {
-  findHeaderRow,
-  normalizeHeader,
-  findColumnIndex,
-  COLUMN_KEYWORDS,
-  validateRequiredColumns,
-  parseTipoCambio,
-  parseFecha,
-  parseAmount,
-  parseMoneda,
-} from "./column-parser";
+    findHeaderRow,
+    normalizeHeader,
+    findColumnIndex,
+    COLUMN_KEYWORDS,
+    validateRequiredColumns,
+    parseTipoCambio,
+    parseFecha,
+    parseAmount,
+    parseMoneda,
+} from './column-parser'
 ```
 
 ### Ejemplo: Parsing de Auxiliar de Ingresos
 
 ```typescript
 export const parseExcelToAuxiliarIngresos = (excelData: any[][]) => {
-  // 0. Buscar fila del header dinámicamente (primera con 8+ columnas)
-  const headerRowIndex = findHeaderRow(excelData, 8);
-  if (headerRowIndex === -1) {
-    throw new Error("No se encontró la fila de headers en el Excel");
-  }
+    // 0. Buscar fila del header dinámicamente (primera con 8+ columnas)
+    const headerRowIndex = findHeaderRow(excelData, 8)
+    if (headerRowIndex === -1) {
+        throw new Error('No se encontró la fila de headers en el Excel')
+    }
 
-  const headers = excelData[headerRowIndex];
-  const dataStartRow = headerRowIndex + 1;
+    const headers = excelData[headerRowIndex]
+    const dataStartRow = headerRowIndex + 1
 
-  console.log(`Headers encontrados en fila ${headerRowIndex + 1}:`, headers);
+    console.log(`Headers encontrados en fila ${headerRowIndex + 1}:`, headers)
 
-  // 1. Definir columnas obligatorias
-  const requiredColumns = {
-    UUID: COLUMN_KEYWORDS.UUID,
-    Subtotal: COLUMN_KEYWORDS.SUBTOTAL,
-    Moneda: COLUMN_KEYWORDS.MONEDA,
-    "Tipo Cambio": COLUMN_KEYWORDS.TIPO_CAMBIO,
-  };
+    // 1. Definir columnas obligatorias
+    const requiredColumns = {
+        UUID: COLUMN_KEYWORDS.UUID,
+        Subtotal: COLUMN_KEYWORDS.SUBTOTAL,
+        Moneda: COLUMN_KEYWORDS.MONEDA,
+        'Tipo Cambio': COLUMN_KEYWORDS.TIPO_CAMBIO,
+    }
 
-  // 2. Validar columnas
-  const { missing, found, normalized } = validateRequiredColumns(
-    headers,
-    requiredColumns
-  );
+    // 2. Validar columnas
+    const { missing, found, normalized } = validateRequiredColumns(headers, requiredColumns)
 
-  // 3. Verificar si hay columnas faltantes
-  if (missing.length > 0) {
-    throw new Error(
-      `Columnas obligatorias faltantes:\n` +
-        `${missing.map((col) => `  • ${col}`).join("\n")}\n\n` +
-        `Headers detectados:\n` +
-        `${headers.map((h, i) => `  ${i + 1}. ${h}`).join("\n")}`
-    );
-  }
+    // 3. Verificar si hay columnas faltantes
+    if (missing.length > 0) {
+        throw new Error(
+            `Columnas obligatorias faltantes:\n` +
+                `${missing.map((col) => `  • ${col}`).join('\n')}\n\n` +
+                `Headers detectados:\n` +
+                `${headers.map((h, i) => `  ${i + 1}. ${h}`).join('\n')}`
+        )
+    }
 
-  // 4. Obtener índices
-  const uuidIndex = found["UUID"];
-  const subtotalIndex = found["Subtotal"];
-  const monedaIndex = found["Moneda"];
-  const tipoCambioIndex = found["Tipo Cambio"];
+    // 4. Obtener índices
+    const uuidIndex = found['UUID']
+    const subtotalIndex = found['Subtotal']
+    const monedaIndex = found['Moneda']
+    const tipoCambioIndex = found['Tipo Cambio']
 
-  // 5. Parsear filas (desde dataStartRow)
-  const rows = [];
-  for (let i = dataStartRow; i < excelData.length; i++) {
-    const row = excelData[i];
+    // 5. Parsear filas (desde dataStartRow)
+    const rows = []
+    for (let i = dataStartRow; i < excelData.length; i++) {
+        const row = excelData[i]
 
-    const moneda = parseMoneda(row[monedaIndex]);
-    const tipoCambio = parseTipoCambio(row[tipoCambioIndex], moneda);
-    const subtotal = parseAmount(row[subtotalIndex]);
+        const moneda = parseMoneda(row[monedaIndex])
+        const tipoCambio = parseTipoCambio(row[tipoCambioIndex], moneda)
+        const subtotal = parseAmount(row[subtotalIndex])
 
-    rows.push({
-      uuid: row[uuidIndex],
-      subtotal,
-      moneda,
-      tipoCambio,
-    });
-  }
+        rows.push({
+            uuid: row[uuidIndex],
+            subtotal,
+            moneda,
+            tipoCambio,
+        })
+    }
 
-  return rows;
-};
+    return rows
+}
 ```
 
 ## 🔑 Keywords Disponibles
@@ -192,10 +189,10 @@ Normaliza un header removiendo espacios, mayúsculas, acentos.
 **Ejemplos:**
 
 ```typescript
-normalizeHeader("Tipo Cambio"); // "tipocambio"
-normalizeHeader("TipoCambio"); // "tipocambio"
-normalizeHeader("Estatus Sat"); // "estatussat"
-normalizeHeader("Estado SAT"); // "estadosat"
+normalizeHeader('Tipo Cambio') // "tipocambio"
+normalizeHeader('TipoCambio') // "tipocambio"
+normalizeHeader('Estatus Sat') // "estatussat"
+normalizeHeader('Estado SAT') // "estadosat"
 ```
 
 ### `findColumnIndex(headers: string[], keywords: string[]): number`
@@ -248,12 +245,12 @@ Normaliza códigos de moneda.
 
 ```typescript
 // Estos headers se detectan como la misma columna:
-"Tipo Cambio";
-"TipoCambio";
-"Tipo de Cambio";
-"tipo_cambio";
-"TIPO CAMBIO";
-"TC";
+'Tipo Cambio'
+'TipoCambio'
+'Tipo de Cambio'
+'tipo_cambio'
+'TIPO CAMBIO'
+'TC'
 
 // Todos se normalizan y detectan correctamente
 ```
@@ -261,13 +258,13 @@ Normaliza códigos de moneda.
 ### Validación de Columnas
 
 ```typescript
-const headers = ["UUID", "Fecha", "RFC"];
+const headers = ['UUID', 'Fecha', 'RFC']
 const required = {
-  UUID: COLUMN_KEYWORDS.UUID,
-  Subtotal: COLUMN_KEYWORDS.SUBTOTAL, // ❌ Falta
-};
+    UUID: COLUMN_KEYWORDS.UUID,
+    Subtotal: COLUMN_KEYWORDS.SUBTOTAL, // ❌ Falta
+}
 
-const result = validateRequiredColumns(headers, required);
+const result = validateRequiredColumns(headers, required)
 // result.missing = ["Subtotal"]
 // result.found = { "UUID": 0 }
 ```
@@ -279,17 +276,17 @@ Para agregar nuevos keywords:
 ```typescript
 // En column-parser.ts
 export const COLUMN_KEYWORDS = {
-  // ...existing keywords...
+    // ...existing keywords...
 
-  // Nuevo keyword
-  MI_CAMPO: ["micampo", "mi campo", "mi_campo", "MiCampo"],
-};
+    // Nuevo keyword
+    MI_CAMPO: ['micampo', 'mi campo', 'mi_campo', 'MiCampo'],
+}
 ```
 
 Luego úsalo en tu parser:
 
 ```typescript
-const miCampoIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.MI_CAMPO);
+const miCampoIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.MI_CAMPO)
 ```
 
 ## 📝 Notas Importantes
@@ -301,15 +298,15 @@ const miCampoIndex = findColumnIndex(normalized, COLUMN_KEYWORDS.MI_CAMPO);
 **Solución:** Usar `parseTipoCambio()` que detecta este caso y permite corrección posterior usando datos del Auxiliar de Ingresos.
 
 ```typescript
-let tc = parseTipoCambio(row[tcIndex], moneda);
+let tc = parseTipoCambio(row[tcIndex], moneda)
 
 // Si TC sospechoso y tenemos Auxiliar
-if ((tc === 1 || tc === 0) && moneda !== "MXN" && auxiliarData) {
-  const auxiliar = auxiliarData.find((a) => a.uuid === uuid);
-  if (auxiliar && auxiliar.tipoCambio > 1) {
-    console.warn(`⚠️ TC corregido: ${tc} → ${auxiliar.tipoCambio}`);
-    tc = auxiliar.tipoCambio;
-  }
+if ((tc === 1 || tc === 0) && moneda !== 'MXN' && auxiliarData) {
+    const auxiliar = auxiliarData.find((a) => a.uuid === uuid)
+    if (auxiliar && auxiliar.tipoCambio > 1) {
+        console.warn(`⚠️ TC corregido: ${tc} → ${auxiliar.tipoCambio}`)
+        tc = auxiliar.tipoCambio
+    }
 }
 ```
 
@@ -317,35 +314,34 @@ if ((tc === 1 || tc === 0) && moneda !== "MXN" && auxiliarData) {
 
 1. **Siempre valida columnas obligatorias primero**
 
-   ```typescript
-   const { missing, found } = validateRequiredColumns(...);
-   if (missing.length > 0) throw new Error(...);
-   ```
+    ```typescript
+    const { missing, found } = validateRequiredColumns(...);
+    if (missing.length > 0) throw new Error(...);
+    ```
 
 2. **Usa las funciones de parsing especializadas**
 
-   ```typescript
-   const fecha = parseFecha(row[fechaIndex]);
-   const monto = parseAmount(row[montoIndex]);
-   const moneda = parseMoneda(row[monedaIndex]);
-   ```
+    ```typescript
+    const fecha = parseFecha(row[fechaIndex])
+    const monto = parseAmount(row[montoIndex])
+    const moneda = parseMoneda(row[monedaIndex])
+    ```
 
 3. **Agrega logs de debug**
 
-   ```typescript
-   console.log("✅ Columnas detectadas:", found);
-   console.log(`✅ ${rows.length} registros parseados`);
-   ```
+    ```typescript
+    console.log('✅ Columnas detectadas:', found)
+    console.log(`✅ ${rows.length} registros parseados`)
+    ```
 
 4. **Maneja errores claramente**
-   ```typescript
-   if (missing.length > 0) {
-     throw new Error(
-       `Columnas faltantes: ${missing.join(", ")}\n` +
-         `Headers: ${headers.join(", ")}`
-     );
-   }
-   ```
+    ```typescript
+    if (missing.length > 0) {
+        throw new Error(
+            `Columnas faltantes: ${missing.join(', ')}\n` + `Headers: ${headers.join(', ')}`
+        )
+    }
+    ```
 
 ## 📊 Performance
 

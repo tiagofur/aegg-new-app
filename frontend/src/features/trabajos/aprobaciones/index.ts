@@ -1,2 +1,2 @@
-export * from "./useAprobacionesDashboard";
-export * from "./components/AprobacionesDashboard";
+export * from './useAprobacionesDashboard'
+export * from './components/AprobacionesDashboard'
