@@ -11,23 +11,23 @@ import { User } from './user.entity';
 @Entity('equipos')
 export class Equipo {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column({ length: 120 })
-    nombre: string;
+    nombre!: string;
 
     @Column({ default: true })
-    activo: boolean;
+    activo!: boolean;
 
     @Column({ name: 'gestor_id', type: 'uuid', nullable: true })
     gestorId?: string | null;
 
     @CreateDateColumn({ name: 'created_at' })
-    createdAt: Date;
+    createdAt!: Date;
 
     @UpdateDateColumn({ name: 'updated_at' })
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @OneToMany(() => User, (user) => user.equipo)
-    miembros: User[];
+    miembros!: User[];
 }

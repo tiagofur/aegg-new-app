@@ -14,13 +14,13 @@ import {
 @Index('IDX_clientes_rfc', ['rfc'], { unique: true })
 export class Cliente {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column({ length: 150 })
-    nombre: string;
+    nombre!: string;
 
     @Column({ length: 13 })
-    rfc: string;
+    rfc!: string;
 
     @Column({ name: 'razon_social', length: 200, nullable: true })
     razonSocial?: string | null;
@@ -32,16 +32,16 @@ export class Cliente {
     contactoPrincipal?: Record<string, unknown> | null;
 
     @Column({ type: 'jsonb', default: () => "'{}'::jsonb" })
-    metadata: Record<string, unknown>;
+    metadata!: Record<string, unknown>;
 
     @Column({ name: 'created_by', type: 'uuid', nullable: true })
     createdBy?: string | null;
 
     @CreateDateColumn({ name: 'created_at' })
-    createdAt: Date;
+    createdAt!: Date;
 
     @UpdateDateColumn({ name: 'updated_at' })
-    updatedAt: Date;
+    updatedAt!: Date;
 
     @BeforeInsert()
     @BeforeUpdate()

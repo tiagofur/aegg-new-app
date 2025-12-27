@@ -17,30 +17,30 @@ export interface HojaReporteBase {
 @Entity('reportes_base_anual')
 export class ReporteBaseAnual {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column({ unique: true })
-    trabajoId: string;
+    trabajoId!: string;
 
     @Column({ nullable: true })
-    archivoUrl: string;
+    archivoUrl!: string;
 
     @Column('int', { array: true, default: [] })
-    mesesCompletados: number[];
+    mesesCompletados!: number[];
 
     @Column('jsonb')
-    hojas: HojaReporteBase[];
+    hojas!: HojaReporteBase[];
 
     @CreateDateColumn()
-    fechaCreacion: Date;
+    fechaCreacion!: Date;
 
     @UpdateDateColumn()
-    ultimaActualizacion: Date;
+    ultimaActualizacion!: Date;
 
     // Relación
     @OneToOne(() => Trabajo, (trabajo) => trabajo.reporteBaseAnual, {
         onDelete: 'CASCADE',
     })
     @JoinColumn({ name: 'trabajoId' })
-    trabajo: Trabajo;
+    trabajo!: Trabajo;
 }

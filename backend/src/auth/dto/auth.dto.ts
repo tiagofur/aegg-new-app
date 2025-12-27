@@ -12,16 +12,16 @@ import { UserRole } from '../entities/user.entity';
 export class RegisterDto {
     @IsEmail()
     @IsNotEmpty()
-    email: string;
+    email!: string;
 
     @IsString()
     @IsNotEmpty()
     @MinLength(6)
-    password: string;
+    password!: string;
 
     @IsString()
     @IsNotEmpty()
-    name: string;
+    name!: string;
 
     @IsOptional()
     @IsEnum(UserRole)
@@ -35,9 +35,9 @@ export class RegisterDto {
 export class LoginDto {
     @IsEmail()
     @IsNotEmpty()
-    email: string;
+    email!: string;
 
     @IsString()
     @IsNotEmpty()
-    password: string;
+    password!: string;
 }
