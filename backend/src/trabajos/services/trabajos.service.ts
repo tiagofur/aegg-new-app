@@ -16,7 +16,7 @@ import {
     EstadoAprobacion,
 } from '../entities';
 import { CreateTrabajoDto, UpdateTrabajoDto } from '../dto';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'exceljs';
 import { Cliente } from '../../clientes/entities';
 import { CurrentUserPayload } from '../../auth/decorators/current-user.decorator';
 import { UserRole, User } from '../../auth/entities/user.entity';
