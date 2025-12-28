@@ -1,11 +1,12 @@
 import { NestFactory } from '@nestjs/core';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import helmet from 'helmet';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
+    const logger = new Logger('Bootstrap');
 
     app.use(helmet({
         contentSecurityPolicy: {
@@ -55,6 +56,6 @@ async function bootstrap() {
     }));
 
     await app.listen(3000);
-    console.log('🚀 Backend running on http://localhost:3000');
+    logger.log('🚀 Backend running on http://localhost:3000');
 }
 bootstrap();

@@ -1,77 +1,34 @@
 # 📊 Sistema de Gestión de Trabajos Contables V2
 
-Sistema fullstack completo para importar, procesar, consolidar y visualizar reportes contables desde archivos Excel. Construido con NestJS, React, TypeScript y PostgreSQL.
+> **Sistema fullstack para gestión de trabajos contables con importación Excel, reportes mensuales y consolidación anual.**
 
-> **🎉 Versión 1.1.0 - Nueva UX Implementada** ([Ver Historial](./docs/desarrollo/HISTORIAL-FASES.md))
+**Versión**: 1.1.0 | **Stack**: NestJS + React + PostgreSQL + Docker
+
+---
 
 ## ✨ Características Principales
 
-### ✅ **Implementado (Fases 1-10)**
-
-- 🔐 **Autenticación JWT** - Login/registro seguro con bcrypt
-- 📁 **Gestión de Trabajos** - CRUD completo (crear, editar, eliminar)
-- 📅 **Gestión de Meses** - Automática: 12 meses pre-creados al crear trabajo
-- 📄 **Reportes Mensuales** - 3 tipos automáticos por mes (Ingresos, Auxiliar, MI Admin)
+- 🔐 **Autenticación JWT** - Login/registro seguro con roles (Admin, Gestor, Miembro)
+- 📁 **Gestión de Trabajos** - CRUD completo para trabajos contables anuales
+- 📅 **Gestión de Meses** - 12 meses automáticos por trabajo con estados
+- 📄 **Reportes Mensuales** - 3 tipos: Ingresos, Auxiliar, MI Admin (Excel)
 - 📤 **Importación Excel** - Soporte multi-hoja con validaciones
-- 🎨 **Nueva UX (Fase 10)** - Selector horizontal de meses con pills visuales
-- 🎯 **Vista Enfocada** - Un mes a la vez, sin scroll innecesario
-- 💾 **Almacenamiento JSONB** - Flexible y escalable en PostgreSQL
-- 🔄 **Consolidación Automática** - Cálculos reales + estimación IVA
 - 📊 **Reporte Base Anual** - 3 hojas consolidadas (Resumen, Ingresos, Comparativas)
 - 👁️ **Visualización Completa** - Tabs, tablas responsive, contadores
 - ✏️ **Edición de Trabajos** - Modificar cliente, RFC, estado
 - 🔄 **Reabrir Meses** - Correcciones en meses completados
-- 🗑️ **Eliminación Segura** - Confirmación doble para meses y proyectos
-- 📈 **Progreso Visual** - Estados claros: ○ Pendiente, ⏳ En proceso, ✓ Completado
+- 👥 **Roles y Permisos** - Admin, Gestor, Miembro con accesos granulares
 
-### 🚧 **Próximamente (Fase 11+)**
-
-- 📥 Importación de reportes mensuales desde la nueva UI
-- ✏️ Edición de celdas individuales
-- 📥 Exportación a Excel/PDF
-- 📈 Gráficas y análisis avanzado
-- 👥 Colaboración entre usuarios
-- 🔍 Búsqueda y filtros avanzados
-- ⌨️ Navegación con teclado (← → entre meses)
-- 🎬 Animaciones y transiciones suaves
-
-## 🏗️ Stack Tecnológico
-
-### **Backend**
-
-- NestJS 10.3.0
-- TypeORM 0.3.20
-- PostgreSQL 15
-- JWT Authentication
-- XLSX 0.18.5
-- Bcrypt
-- Class-validator
-
-### **Frontend**
-
-- React 18
-- TypeScript
-- Vite 5.4.20
-- React Router DOM
-- Axios + React Query
-- Tailwind CSS
-- Lucide React Icons
-- React Modal
-
-### **DevOps**
-
-- Docker Compose
-- PostgreSQL Alpine
-- Hot reload en desarrollo
+---
 
 ## 🚀 Inicio Rápido (5 minutos)
 
-### **Requisitos Previos**
+### Requisitos Previos
 
 - Docker Desktop instalado y corriendo
 - Git
 
-### **1. Clonar y Levantar**
+### 1. Clonar y Levantar
 
 ```bash
 git clone https://github.com/tiagofur/aegg-new-app.git
@@ -79,351 +36,210 @@ cd aegg-new-app
 docker-compose up -d
 ```
 
-### **2. Verificar**
-
-```bash
-docker-compose ps
-```
-
-Deberías ver 3 containers corriendo:
-
-- `nestjs_backend` - Puerto 3001
-- `postgres_db` - Puerto 5432
-- `react_frontend` - Puerto 5173
-
-### **3. Acceder**
+### 2. Acceder
 
 ```
 Frontend:  http://localhost:5173
-Backend:   http://localhost:3001
+Backend:   http://localhost:3000
+PostgreSQL: localhost:5440
 ```
 
-### **4. Crear Usuario**
+### 3. Crear Usuario
 
 1. Ir a http://localhost:5173
 2. Click "Registrarse"
 3. Completar formulario
 4. ¡Listo para usar!
 
+---
+
 ## 📁 Estructura del Proyecto
 
 ```
-new-app/
-├── backend/                    # NestJS Backend
-│   ├── src/
-│   │   ├── auth/              # Autenticación JWT
-│   │   ├── trabajos/          # Trabajos y Reportes
-│   │   │   ├── controllers/
-│   │   │   ├── services/
-│   │   │   │   ├── excel-parser.service.ts    # Parser Excel
-│   │   │   │   ├── reporte.service.ts         # Lógica reportes
-│   │   │   │   └── formula.service.ts         # Cálculos
-│   │   │   └── entities/
-│   │   ├── app.module.ts
-│   │   └── main.ts
-│   └── package.json
-├── frontend/                   # React Frontend
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── FileUpload.tsx           # Drag & Drop
-│   │   │   └── ImportExcel.tsx          # Importación
-│   │   ├── pages/
-│   │   │   ├── Trabajos.tsx             # Lista trabajos
-│   │   │   ├── TrabajoDetail.tsx        # Detalle + Import
-│   │   │   ├── Dashboard.tsx
-│   │   │   ├── Login.tsx
-│   │   │   └── Register.tsx
-│   │   ├── services/
-│   │   │   └── api.ts                   # APIs
-│   │   └── App.tsx
-│   └── package.json
-├── docs/                       # 📚 Documentación completa
-│   ├── README.md              # Índice principal
-│   ├── guias/                 # Guías de uso
-│   ├── tecnica/               # Documentación técnica
-│   ├── desarrollo/            # Para desarrolladores
-│   └── soluciones/            # Fixes y mejoras
-├── docker-compose.yml
-└── README.md                        # Este archivo
+aegg-new-app/
+├── backend/           # NestJS Backend (TypeORM + PostgreSQL)
+├── frontend/          # React + Vite Frontend
+├── docs/             # 📚 Documentación completa
+├── scripts/          # 🚀 Scripts de desarrollo y deployment
+├── config/           # ⚙️ Configuraciones (PM2, etc.)
+└── docker-compose.yml # PostgreSQL + pgAdmin
 ```
 
-## 🎯 Flujo de Uso Completo
+---
 
-### **1. Crear Trabajo**
+## 📖 Documentación Completa
 
-```
-Dashboard → Mis Trabajos → Nuevo Trabajo
-Complete: Nombre, Cliente, RFC, Año
-→ Se crea automáticamente el Reporte Base Anual
-```
+Toda la documentación detallada está en [`docs/`](./docs/):
 
-### **2. Agregar Mes**
+| Documento | Descripción |
+|-----------|-------------|
+| **[README](./docs/README.md)** | Índice completo de documentación |
+| **[DEVELOPMENT](./docs/DEVELOPMENT.md)** | Guía de desarrollo (setup, stack, tests) |
+| **[ARCHITECTURE](./docs/ARCHITECTURE.md)** | Arquitectura técnica (DB, API, frontend) |
+| **[DEPLOYMENT](./docs/DEPLOYMENT.md)** | Deployment completo a VPS o local |
+| **[FEATURES](./docs/FEATURES.md)** | Lista completa de funcionalidades |
+| **[TROUBLESHOOTING](./docs/TROUBLESHOOTING.md)** | Solución de problemas |
+| **[CHANGELOG](./docs/CHANGELOG.md)** | Historial de cambios y versiones |
 
-```
-Detalle del Trabajo → Agregar Mes → Seleccionar mes (1-12)
-→ Se crean automáticamente 3 reportes mensuales:
-  - Ingresos
-  - Ingresos Auxiliar
-  - Ingresos Mi Admin
-```
+---
 
-### **3. Importar Reportes del Mes**
+## 🛠️ Comandos Útiles
 
-```
-Expandir Mes → Importar en cada reporte → Upload Excel
-Validaciones:
-- ✅ Máximo 10MB
-- ✅ Solo .xlsx y .xls
-- ✅ Formato válido
-```
-
-### **4. Procesar y Guardar Mes**
-
-```
-Cuando los 3 reportes estén importados:
-→ Click "Procesar y Guardar Mes"
-→ Backend consolida datos reales
-→ Actualiza Reporte Base Anual (3 hojas)
-→ Mes marcado como COMPLETADO
-```
-
-### **5. Ver Reporte Base Consolidado**
-
-```
-Click "Ver Reporte" en Reporte Base Anual
-→ Navegación por tabs (3 hojas)
-→ Tabla con datos consolidados
-→ Comparativa mes vs mes
-```
-
-## 📡 API Endpoints
-
-Ver documentación completa en [`docs/BACKEND-API.md`](./docs/BACKEND-API.md)
-
-### **Principales Endpoints:**
-
-```
-# Autenticación
-POST   /auth/register
-POST   /auth/login
-
-# Trabajos
-GET    /trabajos
-POST   /trabajos
-PATCH  /trabajos/:id
-DELETE /trabajos/:id
-
-# Meses
-POST   /trabajos/:trabajoId/meses
-POST   /meses/:id/procesar
-POST   /meses/:id/reabrir
-DELETE /meses/:id
-
-# Reportes Mensuales
-POST   /trabajos/:trabajoId/reportes/:id/importar
-GET    /trabajos/:trabajoId/reportes/:id/datos
-
-# Reporte Base Anual
-POST   /trabajos/:id/reporte-base/importar
-GET    /trabajos/:id/reporte-base
-```
-
-## 🔧 Comandos Útiles
-
-### **Docker**
+### Docker
 
 ```bash
-# Iniciar todo
+# Iniciar todos los servicios
 docker-compose up -d
-
-# Detener todo
-docker-compose down
-
-# Reiniciar servicio específico
-docker-compose restart backend
-docker-compose restart frontend
 
 # Ver logs
 docker-compose logs -f backend
 docker-compose logs -f frontend
 
-# Reconstruir
-docker-compose up -d --build
+# Detener todos
+docker-compose down
 
-# Limpiar todo (⚠️ borra DB)
-docker-compose down -v
-```
-
-### **Base de Datos**
-
-```bash
-# Conectar a PostgreSQL
-docker-compose exec postgres psql -U postgres -d nestjs_app
-
-# Queries útiles
-\dt                          # Listar tablas
-SELECT * FROM trabajos;      # Ver trabajos
-SELECT * FROM reportes;      # Ver reportes
-\q                           # Salir
-```
-
-## 📚 Documentación
-
-### **🎯 Empezar Aquí:**
-
-- � [`docs/README.md`](./docs/README.md) - **Índice completo de documentación**
-- ⚡ [`docs/guias/INICIO-RAPIDO.md`](./docs/guias/INICIO-RAPIDO.md) - Setup en 5 minutos
-- 📖 [`docs/desarrollo/FUNCIONALIDADES.md`](./docs/desarrollo/FUNCIONALIDADES.md) - Lista de todas las features
-- 🔌 [`docs/tecnica/BACKEND-API.md`](./docs/tecnica/BACKEND-API.md) - Referencia de API
-
-### **Para Desarrolladores:**
-
-- 🏗️ [`docs/tecnica/PLAN-SISTEMA-TRABAJOS-V2.md`](./docs/tecnica/PLAN-SISTEMA-TRABAJOS-V2.md) - Arquitectura completa
-- 📜 [`docs/desarrollo/HISTORIAL-FASES.md`](./docs/desarrollo/HISTORIAL-FASES.md) - Historia del desarrollo (Fase 1-10)
-- 🔄 [`docs/guias/GIT-WORKFLOW.md`](./docs/guias/GIT-WORKFLOW.md) - Guía de commits
-- 🐛 [`docs/desarrollo/TROUBLESHOOTING.md`](./docs/desarrollo/TROUBLESHOOTING.md) - Solución de problemas
-- 🔧 [`docs/guias/COMANDOS-RAPIDOS.md`](./docs/guias/COMANDOS-RAPIDOS.md) - Comandos útiles
-
-### **Fixes y Mejoras:**
-
-- 🛠️ [`docs/soluciones/FIXES-Y-MEJORAS.md`](./docs/soluciones/FIXES-Y-MEJORAS.md) - Todas las soluciones implementadas
-
-## 🐛 Troubleshooting
-
-### **Backend no inicia**
-
-```bash
-docker-compose logs backend --tail 50
+# Reiniciar servicio específico
 docker-compose restart backend
 ```
 
-### **Frontend muestra pantalla en blanco**
+### Desarrollo
 
 ```bash
-docker-compose logs frontend --tail 50
-docker-compose restart frontend
+# Backend
+cd backend
+npm run start:dev     # Modo desarrollo con hot reload
+
+# Frontend
+cd frontend
+npm run dev           # Modo desarrollo con hot reload
 ```
 
-### **Puerto ocupado**
+### Scripts Organizados
+
+```powershell
+# Iniciar todo (Windows)
+.\scripts\start.ps1
+
+# Iniciar solo base de datos
+.\scripts\start-database.ps1
+
+# Detener todo
+.\scripts\stop.ps1
+```
+
+---
+
+## 🌐 URLs de Producción
+
+- **Frontend**: https://aegg.creapolis.mx
+- **Backend API**: https://aegg-api.creapolis.mx
+
+---
+
+## 🏗️ Stack Tecnológico
+
+### Backend
+
+- NestJS 10.3.0
+- TypeORM 0.3.20
+- PostgreSQL 15
+- JWT Authentication
+- ExcelJS 4.0.0
+- Class-validator
+
+### Frontend
+
+- React 18
+- TypeScript
+- Vite 5.4.20
+- React Router DOM
+- Axios + TanStack Query
+- Tailwind CSS
+- Lucide React Icons
+
+---
+
+## 📚 Flujo de Uso del Sistema
+
+### 1. Crear Trabajo
+```
+Dashboard → Mis Trabajos → Nuevo Trabajo
+→ Se crean automáticamente 12 meses + Reporte Base Anual
+```
+
+### 2. Agregar/Ver Meses
+```
+Detalle del Trabajo → Selector de meses (1-12)
+→ Cada mes tiene 3 reportes mensuales
+```
+
+### 3. Importar Reportes
+```
+Mes → Reporte → Importar Excel
+→ Validaciones automáticas (max 10MB, .xlsx/.xls)
+```
+
+### 4. Procesar Mes
+```
+Cuando los 3 reportes estén importados
+→ Click "Procesar y Guardar Mes"
+→ Backend consolida datos
+→ Mes marcado como COMPLETADO
+```
+
+---
+
+## 🔒 Seguridad
+
+- ✅ JWT Authentication (Bearer tokens)
+- ✅ Role-based Access Control (RBAC)
+- ✅ Rate Limiting (100 req/60s)
+- ✅ Helmet Security Headers
+- ✅ CORS (orígenes específicos)
+- ✅ Input Sanitization (sanitize-html)
+- ✅ Password Hashing (bcrypt)
+- ✅ File Upload Limits (1MB)
+
+---
+
+## 🐛 Troubleshooting
+
+Ver [`docs/TROUBLESHOOTING.md`](./docs/TROUBLESHOOTING.md) para solución detallada de problemas.
+
+**Problemas comunes:**
 
 ```bash
-# Windows
+# Backend no inicia
+docker-compose logs backend --tail 50
+docker-compose restart backend
+
+# Frontend muestra pantalla en blanco
+docker-compose logs frontend --tail 50
+
+# Puerto ocupado (Windows)
 netstat -ano | findstr :5173
 taskkill /PID <PID> /F
 
-# Cambiar puerto en docker-compose.yml si es necesario
-```
-
-### **Empezar de cero**
-
-```bash
+# Empezar de cero
 docker-compose down -v
 docker-compose up -d --build
 ```
 
-## 🎯 Roadmap
-
-### **✅ Fase 1-10: COMPLETADO**
-
-- [x] Backend de importación y procesamiento
-- [x] Parser Excel multi-hoja
-- [x] Endpoints API completos (20+)
-- [x] Frontend completo de importación
-- [x] Gestión de trabajos (CRUD + editar + eliminar)
-- [x] Gestión de meses (crear, eliminar, reabrir, procesar)
-- [x] Consolidación automática con cálculos reales
-- [x] Reporte base anual con 3 hojas
-- [x] Visualización completa de reportes
-- [x] UI/UX profesional y responsive
-- [x] **Nueva UX (Fase 10)** - Selector horizontal, creación automática de 12 meses
-
-### **📋 Fase 11+: Futuro**
-
-- [ ] Importación de reportes desde nueva UI
-- [ ] Edición de celdas individuales
-- [ ] Exportación a Excel/PDF
-- [ ] Gráficas y análisis (Chart.js)
-- [ ] Colaboración y comentarios
-- [ ] Sistema de roles y permisos
-- [ ] Búsqueda y filtros avanzados
-- [ ] Navegación con teclado (← → entre meses)
-- [ ] Dark mode y personalización
-
-## 👥 Equipo
-
-**Desarrollado por:** [Tu Nombre]  
-**Repositorio:** https://github.com/tiagofur/aegg-new-app
+---
 
 ## 📄 Licencia
 
 Este proyecto está bajo la Licencia MIT.
 
-## � Deployment a Producción
+---
 
-### 📋 Guías Completas Disponibles
+## 👥 Equipo
 
-Este proyecto incluye documentación exhaustiva para deployment en VPS con Plesk Obsidian:
-
-- **[DEPLOYMENT-README.md](./DEPLOYMENT-README.md)** - 🎯 **EMPIEZA AQUÍ** - Índice completo de todas las guías
-- **[PLESK-QUICK-START.md](./PLESK-QUICK-START.md)** - Inicio rápido con Plesk (45 minutos)
-- **[DEPLOYMENT-CHECKLIST.md](./DEPLOYMENT-CHECKLIST.md)** - Checklist interactivo paso a paso (90 minutos)
-- **[DEPLOYMENT-GUIDE.md](./DEPLOYMENT-GUIDE.md)** - Guía detallada completa
-- **[DEPLOYMENT-UTILS.md](./DEPLOYMENT-UTILS.md)** - Scripts y utilidades de mantenimiento
-- **[DEPLOYMENT-GIT.md](./DEPLOYMENT-GIT.md)** - Deployment con Git y CI/CD (avanzado)
-
-### 🎯 Inicio Rápido (5 pasos)
-
-```powershell
-# 1. Preparar deployment
-.\prepare-deployment.ps1
-
-# 2. Configurar .env.production con credenciales reales
-notepad .env.production
-
-# 3. Subir al servidor
-scp deployment-package.zip root@74.208.234.244:/tmp/
-
-# 4. SSH y desplegar
-ssh root@74.208.234.244
-cd /tmp && unzip deployment-package.zip
-chmod +x deploy-on-server.sh && ./deploy-on-server.sh
-
-# 5. Configurar dominios en Plesk
-# Ver DEPLOYMENT-CHECKLIST.md para detalles
-```
-
-### 🌐 URLs de Producción
-
-- **Frontend:** https://aegg.creapolis.mx
-- **Backend API:** https://aegg-api.creapolis.mx
-
-### 📦 Stack de Producción
-
-- **Backend:** NestJS + PM2 (cluster mode)
-- **Frontend:** React SPA (Apache/Nginx)
-- **Base de Datos:** PostgreSQL 15
-- **Servidor Web:** Nginx (proxy reverso) + Apache
-- **SSL:** Let's Encrypt
-- **VPS:** Plesk Obsidian
+**Desarrollado por:** [Tiago Furquim](https://github.com/tiagofur)
+**Repositorio:** https://github.com/tiagofur/aegg-new-app
 
 ---
 
-## �🙏 Agradecimientos
-
-Construido con:
-
-- [NestJS](https://nestjs.com/)
-- [React](https://react.dev/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Lucide Icons](https://lucide.dev/)
-- [TypeORM](https://typeorm.io/)
-
----
-
-**Estado actual:** ✅ Fase 1-10 completadas - Sistema completamente funcional  
-**Siguiente paso:** 🎯 Fase 11+ según necesidad del proyecto  
-**Última actualización:** Octubre 2025  
+**Estado actual:** ✅ Fase 1-10 completadas - Sistema completamente funcional
+**Última actualización:** Diciembre 2025
 **Versión:** 1.1.0
-
-**📚 Documentación completa:** [`docs/README.md`](./docs/README.md)  
-**🚀 Guías de Deployment:** [`DEPLOYMENT-README.md`](./DEPLOYMENT-README.md)

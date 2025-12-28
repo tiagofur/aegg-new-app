@@ -6,6 +6,7 @@ import {
     IsString,
     IsUUID,
     MinLength,
+    Matches,
 } from 'class-validator';
 import { UserRole } from '../entities/user.entity';
 
@@ -16,7 +17,13 @@ export class RegisterDto {
 
     @IsString()
     @IsNotEmpty()
-    @MinLength(6)
+    @MinLength(8, { message: 'La contraseña debe tener al menos 8 caracteres' })
+    @Matches(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+        {
+            message: 'La contraseña debe contener al menos una mayúscula, una minúscula, un número y un carácter especial (@$!%*?&)',
+        },
+    )
     password!: string;
 
     @IsString()

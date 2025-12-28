@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import * as XLSX from 'xlsx';
+import * as ExcelJS from 'exceljs';
+import * as sanitizeHtml from 'sanitize-html';
 
 export interface DatosHoja {
     nombre: string;
@@ -30,7 +31,7 @@ export class ExcelParserService {
      * @param opciones - Opciones de parseo
      * @returns Datos parseados del Excel
      */
-    parsearExcel(
+    async parsearExcel(
         buffer: Buffer,
         opciones: {
             nombreArchivo?: string;
@@ -38,7 +39,7 @@ export class ExcelParserService {
             maxFilas?: number;
             maxColumnas?: number;
         } = {},
-    ): ResultadoParser {
+    ): Promise<ResultadoParser> {
         try {
             // Configuración por defecto
             const {
@@ -48,16 +49,12 @@ export class ExcelParserService {
                 maxColumnas = 100,
             } = opciones;
 
-            // Leer el workbook
-            const workbook = XLSX.read(buffer, {
-                type: 'buffer',
-                cellDates: true,
-                cellNF: false,
-                cellText: false,
-            });
+            // Leer el workbook con ExcelJS
+            const workbook = new ExcelJS.Workbook();
+            await workbook.xlsx.load(buffer as any);
 
             // Validar que tenga hojas
-            if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+            if (!workbook.worksheets || workbook.worksheets.length === 0) {
                 throw new BadRequestException('El archivo Excel no contiene hojas');
             }
 
@@ -65,23 +62,20 @@ export class ExcelParserService {
 
             // Determinar qué hojas procesar
             const hojasAProcesar = todasLasHojas
-                ? workbook.SheetNames
-                : [workbook.SheetNames[0]];
+                ? workbook.worksheets
+                : [workbook.worksheets[0]];
 
             // Procesar cada hoja
-            for (const nombreHoja of hojasAProcesar) {
-                const worksheet = workbook.Sheets[nombreHoja];
-
+            for (const worksheet of hojasAProcesar) {
                 if (!worksheet) {
                     continue;
                 }
 
-                // Obtener el rango de la hoja
-                const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+                const nombreHoja = worksheet.name;
 
                 // Validar límites
-                const totalFilas = range.e.r - range.s.r + 1;
-                const totalColumnas = range.e.c - range.s.c + 1;
+                const totalFilas = worksheet.rowCount;
+                const totalColumnas = worksheet.columnCount;
 
                 if (totalFilas > maxFilas) {
                     throw new BadRequestException(
@@ -96,11 +90,26 @@ export class ExcelParserService {
                 }
 
                 // Convertir a array de arrays (matriz)
-                const datosCompletos: any[][] = XLSX.utils.sheet_to_json(worksheet, {
-                    header: 1,
-                    raw: false,
-                    defval: null,
-                    blankrows: true,
+                const datosCompletos: any[][] = [];
+                worksheet.eachRow({ includeEmpty: true }, (row) => {
+                    const rowValues: any[] = [];
+                    row.eachCell({ includeEmpty: true }, (cell) => {
+                        // Obtener el valor de la celda
+                        let value = cell.value;
+
+                        // Si es una fórmula, obtener el resultado
+                        if (cell.type === ExcelJS.ValueType.Formula && cell.result !== undefined) {
+                            value = cell.result;
+                        }
+
+                        // Si es fecha, convertir a Date
+                        if (cell.type === ExcelJS.ValueType.Date) {
+                            value = cell.value as Date;
+                        }
+
+                        rowValues.push(value);
+                    });
+                    datosCompletos.push(rowValues);
                 });
 
                 // Si está vacía, continuar
@@ -123,7 +132,9 @@ export class ExcelParserService {
                     metadata: {
                         totalFilas: filas.length,
                         totalColumnas: headers.length,
-                        rangoOriginal: worksheet['!ref'] || 'A1',
+                        rangoOriginal: worksheet.dimensions
+                            ? `${worksheet.dimensions.tl}:${worksheet.dimensions.br}`
+                            : 'A1',
                     },
                 });
             }
@@ -188,6 +199,7 @@ export class ExcelParserService {
 
     /**
      * Limpia y normaliza una celda individual
+     * Aplica sanitización para prevenir inyección de scripts y fórmulas maliciosas
      */
     private limpiarCelda(celda: any): any {
         // null y undefined se quedan como null
@@ -195,10 +207,30 @@ export class ExcelParserService {
             return null;
         }
 
-        // Si es string, limpiar espacios
+        // Si es string, limpiar espacios y sanitizar HTML
         if (typeof celda === 'string') {
             const limpio = celda.trim();
-            return limpio === '' ? null : limpio;
+
+            // Si está vacío después de limpiar, retornar null
+            if (limpio === '') {
+                return null;
+            }
+
+            // Sanitizar HTML/scripts potencialmente peligrosos
+            const sanitizado = sanitizeHtml(limpio, {
+                allowedTags: [], // No permitir ningún tag HTML
+                allowedAttributes: {}, // No permitir ningún atributo
+                disallowedTagsMode: 'recursiveEscape', // Escapar tags no permitidos
+            });
+
+            // Prevenir fórmulas de Excel potencialmente maliciosas
+            // Las fórmulas comienzan con =, +, -, @
+            if (sanitizado.length > 0 && /^[=+\-@]/.test(sanitizado)) {
+                // Agregar comilla simple al inicio para desactivar la fórmula
+                return `'${sanitizado}`;
+            }
+
+            return sanitizado;
         }
 
         // Números y booleanos se quedan como están
@@ -211,8 +243,15 @@ export class ExcelParserService {
             return celda.toISOString();
         }
 
-        // Cualquier otro tipo lo convertimos a string
-        return String(celda);
+        // Cualquier otro tipo lo convertimos a string y sanitizamos
+        const stringValue = String(celda);
+        const sanitizado = sanitizeHtml(stringValue, {
+            allowedTags: [],
+            allowedAttributes: {},
+            disallowedTagsMode: 'recursiveEscape',
+        });
+
+        return sanitizado;
     }
 
     /**
@@ -259,14 +298,14 @@ export class ExcelParserService {
         tamanoArchivo: number;
     }> {
         try {
-            const workbook = XLSX.read(buffer, {
-                type: 'buffer',
-                bookSheets: true, // Solo leer nombres de hojas
-            });
+            const workbook = new ExcelJS.Workbook();
+            await workbook.xlsx.load(buffer as any);
+
+            const nombreHojas = workbook.worksheets.map(ws => ws.name);
 
             return {
-                nombreHojas: workbook.SheetNames,
-                totalHojas: workbook.SheetNames.length,
+                nombreHojas,
+                totalHojas: workbook.worksheets.length,
                 tamanoArchivo: buffer.length,
             };
         } catch (error) {
@@ -277,19 +316,37 @@ export class ExcelParserService {
     /**
      * Extrae solo una hoja específica por nombre
      */
-    parsearHojaEspecifica(buffer: Buffer, nombreHoja: string): DatosHoja {
+    async parsearHojaEspecifica(buffer: Buffer, nombreHoja: string): Promise<DatosHoja> {
         try {
-            const workbook = XLSX.read(buffer, { type: 'buffer' });
+            const workbook = new ExcelJS.Workbook();
+            await workbook.xlsx.load(buffer as any);
 
-            if (!workbook.SheetNames.includes(nombreHoja)) {
+            const worksheet = workbook.getWorksheet(nombreHoja);
+
+            if (!worksheet) {
                 throw new BadRequestException(`La hoja "${nombreHoja}" no existe en el archivo`);
             }
 
-            const worksheet = workbook.Sheets[nombreHoja];
-            const datosCompletos: any[][] = XLSX.utils.sheet_to_json(worksheet, {
-                header: 1,
-                raw: false,
-                defval: null,
+            // Convertir a array de arrays
+            const datosCompletos: any[][] = [];
+            worksheet.eachRow({ includeEmpty: true }, (row) => {
+                const rowValues: any[] = [];
+                row.eachCell({ includeEmpty: true }, (cell) => {
+                    let value = cell.value;
+
+                    // Si es una fórmula, obtener el resultado
+                    if (cell.type === ExcelJS.ValueType.Formula && cell.result !== undefined) {
+                        value = cell.result;
+                    }
+
+                    // Si es fecha, convertir a Date
+                    if (cell.type === ExcelJS.ValueType.Date) {
+                        value = cell.value as Date;
+                    }
+
+                    rowValues.push(value);
+                });
+                datosCompletos.push(rowValues);
             });
 
             const headers = this.limpiarHeaders(datosCompletos[0] || []);
@@ -304,7 +361,9 @@ export class ExcelParserService {
                 metadata: {
                     totalFilas: filas.length,
                     totalColumnas: headers.length,
-                    rangoOriginal: worksheet['!ref'] || 'A1',
+                    rangoOriginal: worksheet.dimensions
+                        ? `${worksheet.dimensions.tl}:${worksheet.dimensions.br}`
+                        : 'A1',
                 },
             };
         } catch (error) {
