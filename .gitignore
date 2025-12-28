@@ -41,6 +41,10 @@ pnpm-debug.log*
 *.swo
 *~
 
+# Claude AI settings (contains tokens and secrets)
+.claude/settings.local.json
+.claude/settings.json
+
 # Logs
 logs
 *.log
