@@ -45,7 +45,7 @@ export class FormulaService {
             return resultado.result;
         } catch (error) {
             throw new BadRequestException(
-                `Error evaluando fórmula: ${error.message}`,
+                `Error evaluando fórmula: ${(error as Error).message}`,
             );
         }
     }

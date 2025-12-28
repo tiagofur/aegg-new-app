@@ -3,38 +3,38 @@
  * Maneja fetch, guardado y sincronización con la API
  */
 
-import { useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { reportesMensualesService } from '@/services';
-import { parseExcelToAuxiliarIngresos } from '../utils';
-import { AuxiliarIngresosRow } from '../types';
+import { useCallback } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { reportesMensualesService } from '@/services'
+import { parseExcelToAuxiliarIngresos } from '../utils'
+import { AuxiliarIngresosRow } from '../types'
 
 interface UseAuxiliarIngresosDataProps {
     /** ID del mes */
-    mesId: string;
+    mesId: string
     /** ID del reporte */
-    reporteId: string;
+    reporteId: string
     /** Versionado del reporte (fecha de importación/actualización) */
-    version?: string | number | null;
+    version?: string | number | null
     /** Si debe hacer fetch automáticamente */
-    enabled?: boolean;
+    enabled?: boolean
 }
 
 interface UseAuxiliarIngresosDataReturn {
     /** Datos del reporte parseados */
-    data: AuxiliarIngresosRow[];
+    data: AuxiliarIngresosRow[]
     /** Si está cargando datos */
-    isLoading: boolean;
+    isLoading: boolean
     /** Error al cargar datos */
-    error: Error | null;
+    error: Error | null
     /** Función para guardar cambios */
-    saveChanges: (updatedData: AuxiliarIngresosRow[]) => Promise<void>;
+    saveChanges: (updatedData: AuxiliarIngresosRow[]) => Promise<void>
     /** Si está guardando cambios */
-    isSaving: boolean;
+    isSaving: boolean
     /** Error al guardar */
-    saveError: Error | null;
+    saveError: Error | null
     /** Refetch manual */
-    refetch: () => void;
+    refetch: () => void
 }
 
 /**
@@ -46,7 +46,7 @@ export const useAuxiliarIngresosData = ({
     version,
     enabled = true,
 }: UseAuxiliarIngresosDataProps): UseAuxiliarIngresosDataReturn => {
-    const queryClient = useQueryClient();
+    const queryClient = useQueryClient()
 
     // Query para obtener datos del reporte
     const {
@@ -57,52 +57,48 @@ export const useAuxiliarIngresosData = ({
     } = useQuery({
         queryKey: ['reporte-auxiliar-ingresos', mesId, reporteId, version ?? null],
         queryFn: async () => {
-            const response = await reportesMensualesService.obtenerDatos(mesId, reporteId);
-            return response;
+            const response = await reportesMensualesService.obtenerDatos(mesId, reporteId)
+            return response
         },
         enabled: enabled && !!mesId && !!reporteId,
         staleTime: 5 * 60 * 1000, // 5 minutos
         placeholderData: (previousData) => previousData,
         select: (response) => {
             // Transformar datos del Excel a formato tipado
-            if (!response?.datos) return [];
-            return parseExcelToAuxiliarIngresos(response.datos);
+            if (!response?.datos) return []
+            return parseExcelToAuxiliarIngresos(response.datos)
         },
-    });
+    })
 
     // Mutation para guardar cambios
     const saveChangesMutation = useMutation({
         mutationFn: async (updatedData: AuxiliarIngresosRow[]) => {
             // Convertir de vuelta a formato de Excel (array bidimensional)
-            const excelData = convertToExcelFormat(updatedData);
+            const excelData = convertToExcelFormat(updatedData)
 
-            return await reportesMensualesService.actualizarDatos(
-                mesId,
-                reporteId,
-                excelData
-            );
+            return await reportesMensualesService.actualizarDatos(mesId, reporteId, excelData)
         },
         onSuccess: () => {
             // Invalidar queries relacionadas
             queryClient.invalidateQueries({
                 queryKey: ['reporte-auxiliar-ingresos', mesId, reporteId],
-            });
+            })
             queryClient.invalidateQueries({
                 queryKey: ['reporte-anual'],
-            });
+            })
             queryClient.invalidateQueries({
                 queryKey: ['mes', mesId],
-            });
+            })
         },
-    });
+    })
 
     // Memoizar saveChanges para evitar re-renders infinitos
     const saveChanges = useCallback(
         async (updatedData: AuxiliarIngresosRow[]) => {
-            await saveChangesMutation.mutateAsync(updatedData);
+            await saveChangesMutation.mutateAsync(updatedData)
         },
         [saveChangesMutation]
-    );
+    )
 
     return {
         data: (rawData as AuxiliarIngresosRow[]) || [],
@@ -112,8 +108,8 @@ export const useAuxiliarIngresosData = ({
         isSaving: saveChangesMutation.isPending,
         saveError: saveChangesMutation.error as Error | null,
         refetch,
-    };
-};
+    }
+}
 
 /**
  * Convierte datos tipados de vuelta a formato Excel (array bidimensional)
@@ -121,7 +117,7 @@ export const useAuxiliarIngresosData = ({
  * @returns Array bidimensional para Excel
  */
 const convertToExcelFormat = (data: AuxiliarIngresosRow[]): any[][] => {
-    if (data.length === 0) return [];
+    if (data.length === 0) return []
 
     // Construir headers a partir de las keys del primer objeto
     const headers = [
@@ -134,7 +130,7 @@ const convertToExcelFormat = (data: AuxiliarIngresosRow[]): any[][] => {
         'Moneda',
         'Tipo de Cambio',
         'Estado SAT',
-    ];
+    ]
 
     // Construir filas de datos
     const rows = data.map((row) => [
@@ -147,8 +143,8 @@ const convertToExcelFormat = (data: AuxiliarIngresosRow[]): any[][] => {
         row.moneda,
         row.tipoCambio || '',
         row.estadoSat,
-    ]);
+    ])
 
     // Retornar headers + datos
-    return [headers, ...rows];
-};
+    return [headers, ...rows]
+}

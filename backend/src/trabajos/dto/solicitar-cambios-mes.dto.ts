@@ -4,5 +4,5 @@ export class SolicitarCambiosMesDto {
     @IsString()
     @IsNotEmpty()
     @MaxLength(2000)
-    comentario: string;
+    comentario!: string;
 }

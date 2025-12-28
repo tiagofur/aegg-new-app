@@ -4,6 +4,7 @@ import {
     ConflictException,
     BadRequestException,
     ForbiddenException,
+    Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, FindOptionsWhere } from 'typeorm';
@@ -16,13 +17,15 @@ import {
     EstadoAprobacion,
 } from '../entities';
 import { CreateTrabajoDto, UpdateTrabajoDto } from '../dto';
-import * as XLSX from 'xlsx';
+import * as ExcelJS from 'exceljs';
 import { Cliente } from '../../clientes/entities';
 import { CurrentUserPayload } from '../../auth/decorators/current-user.decorator';
 import { UserRole, User } from '../../auth/entities/user.entity';
 
 @Injectable()
 export class TrabajosService {
+    private readonly logger = new Logger(TrabajosService.name);
+
     constructor(
         @InjectRepository(Trabajo)
         private trabajoRepository: Repository<Trabajo>,
@@ -44,7 +47,7 @@ export class TrabajosService {
         currentUser: CurrentUserPayload,
     ): Promise<Trabajo> {
         this.assertCanManage(currentUser);
-        console.log('[TrabajosService] Iniciando creación de trabajo:', createTrabajoDto);
+        this.logger.log('Iniciando creación de trabajo', createTrabajoDto);
 
         if (!createTrabajoDto.clienteId) {
             throw new BadRequestException('clienteId es requerido para crear un trabajo.');
@@ -140,7 +143,7 @@ export class TrabajosService {
             });
             trabajo.gestorResponsable = gestorResponsable;
             const trabajoGuardado = await queryRunner.manager.save(trabajo);
-            console.log('[TrabajosService] Trabajo guardado:', trabajoGuardado.id);
+            this.logger.log('Trabajo guardado', { id: trabajoGuardado.id });
 
             // Crear reporte base anual inicial
             const reporteBase = this.reporteBaseRepository.create({
@@ -149,27 +152,27 @@ export class TrabajosService {
                 hojas: this.getHojasIniciales(),
             });
             await queryRunner.manager.save(reporteBase);
-            console.log('[TrabajosService] Reporte base anual creado');
+            this.logger.log('Reporte base anual creado');
 
             // Crear los 12 meses automáticamente
-            console.log('[TrabajosService] Iniciando creación de meses automáticos...');
+            this.logger.log('Iniciando creación de meses automáticos...');
             await this.crearMesesAutomaticosEnTransaccion(trabajoGuardado.id, queryRunner);
-            console.log('[TrabajosService] Meses automáticos creados');
+            this.logger.log('Meses automáticos creados');
 
             // Confirmar transacción
             await queryRunner.commitTransaction();
-            console.log('[TrabajosService] Transacción confirmada');
+            this.logger.log('Transacción confirmada');
 
             // Retornar trabajo con reporte base y meses
             const trabajoCompleto = await this.findOne(trabajoGuardado.id, currentUser);
-            console.log('[TrabajosService] Trabajo completo con meses:', {
+            this.logger.log('Trabajo completo con meses', {
                 id: trabajoCompleto.id,
                 cantidadMeses: trabajoCompleto.meses?.length || 0,
             });
             return trabajoCompleto;
         } catch (error) {
             // Revertir transacción en caso de error
-            console.error('[TrabajosService] Error en transacción, revirtiendo:', error);
+            this.logger.error('Error en transacción, revirtiendo', error);
             await queryRunner.rollbackTransaction();
             throw error;
         } finally {
@@ -346,21 +349,41 @@ export class TrabajosService {
         }
 
         try {
-            // Leer el archivo Excel
-            const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+            // Leer el archivo Excel con ExcelJS
+            const workbook = new ExcelJS.Workbook();
+            await workbook.xlsx.load(fileBuffer as any);
 
             // Validar que tenga al menos una hoja
-            if (workbook.SheetNames.length === 0) {
+            if (!workbook.worksheets || workbook.worksheets.length === 0) {
                 throw new BadRequestException('El archivo Excel no contiene hojas');
             }
 
             // Extraer todas las hojas
-            const hojas = workbook.SheetNames.map((sheetName) => {
-                const worksheet = workbook.Sheets[sheetName];
-                const datos = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            const hojas = workbook.worksheets.map((worksheet) => {
+                const datos: any[][] = [];
+
+                worksheet.eachRow({ includeEmpty: true }, (row) => {
+                    const rowValues: any[] = [];
+                    row.eachCell({ includeEmpty: true }, (cell) => {
+                        let value = cell.value;
+
+                        // Si es una fórmula, obtener el resultado
+                        if (cell.type === ExcelJS.ValueType.Formula && cell.result !== undefined) {
+                            value = cell.result;
+                        }
+
+                        // Si es fecha, convertir a Date
+                        if (cell.type === ExcelJS.ValueType.Date) {
+                            value = cell.value as Date;
+                        }
+
+                        rowValues.push(value);
+                    });
+                    datos.push(rowValues);
+                });
 
                 return {
-                    nombre: sheetName,
+                    nombre: worksheet.name,
                     datos: datos,
                 };
             });
@@ -374,8 +397,9 @@ export class TrabajosService {
             if (error instanceof BadRequestException) {
                 throw error;
             }
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             throw new BadRequestException(
-                `Error al procesar el archivo Excel: ${error.message}`,
+                `Error al procesar el archivo Excel: ${errorMessage}`,
             );
         }
     }
@@ -398,70 +422,10 @@ export class TrabajosService {
     }
 
     /**
-     * Crea los 12 meses del año automáticamente para un trabajo
-     * Cada mes tiene 3 reportes mensuales vacíos (INGRESOS, INGRESOS_AUXILIAR, INGRESOS_MI_ADMIN)
-     */
-    private async crearMesesAutomaticos(trabajoId: string): Promise<void> {
-        console.log(`[TrabajosService] Creando meses automáticos para trabajo: ${trabajoId}`);
-        const mesesCreados: Mes[] = [];
-
-        // Crear los 12 meses
-        for (let mes = 1; mes <= 12; mes++) {
-            const nuevoMes = this.mesRepository.create({
-                trabajoId,
-                mes,
-            });
-            mesesCreados.push(nuevoMes);
-        }
-
-        console.log(`[TrabajosService] ${mesesCreados.length} meses creados en memoria, guardando...`);
-        // Guardar todos los meses
-        const mesesGuardados = await this.mesRepository.save(mesesCreados);
-        console.log(`[TrabajosService] ${mesesGuardados.length} meses guardados en BD`);
-
-        // Crear los 3 reportes mensuales para cada mes
-        const reportes: ReporteMensual[] = [];
-
-        for (const mes of mesesGuardados) {
-            // Reporte Ingresos
-            reportes.push(
-                this.reporteMensualRepository.create({
-                    mesId: mes.id,
-                    tipo: TipoReporteMensual.INGRESOS,
-                    datos: [],
-                }),
-            );
-
-            // Reporte Ingresos Auxiliar
-            reportes.push(
-                this.reporteMensualRepository.create({
-                    mesId: mes.id,
-                    tipo: TipoReporteMensual.INGRESOS_AUXILIAR,
-                    datos: [],
-                }),
-            );
-
-            // Reporte MI Admin Ingresos
-            reportes.push(
-                this.reporteMensualRepository.create({
-                    mesId: mes.id,
-                    tipo: TipoReporteMensual.INGRESOS_MI_ADMIN,
-                    datos: [],
-                }),
-            );
-        }
-
-        console.log(`[TrabajosService] ${reportes.length} reportes mensuales creados en memoria, guardando...`);
-        // Guardar todos los reportes
-        await this.reporteMensualRepository.save(reportes);
-        console.log(`[TrabajosService] Reportes mensuales guardados en BD`);
-    }
-
-    /**
      * Versión con transacción explícita para crear los 12 meses del año automáticamente
      */
     private async crearMesesAutomaticosEnTransaccion(trabajoId: string, queryRunner: any): Promise<void> {
-        console.log(`[TrabajosService] Creando meses automáticos para trabajo (con transacción): ${trabajoId}`);
+        this.logger.log(`Creando meses automáticos para trabajo (con transacción): ${trabajoId}`);
         const mesesCreados: Mes[] = [];
 
         // Crear los 12 meses
@@ -473,10 +437,10 @@ export class TrabajosService {
             mesesCreados.push(nuevoMes);
         }
 
-        console.log(`[TrabajosService] ${mesesCreados.length} meses creados en memoria, guardando...`);
+        this.logger.log(`${mesesCreados.length} meses creados en memoria, guardando...`);
         // Guardar todos los meses usando el queryRunner
         const mesesGuardados = await queryRunner.manager.save(mesesCreados);
-        console.log(`[TrabajosService] ${mesesGuardados.length} meses guardados en BD`);
+        this.logger.log(`${mesesGuardados.length} meses guardados en BD`);
 
         // Crear los 3 reportes mensuales para cada mes
         const reportes: ReporteMensual[] = [];
@@ -510,10 +474,10 @@ export class TrabajosService {
             );
         }
 
-        console.log(`[TrabajosService] ${reportes.length} reportes mensuales creados en memoria, guardando...`);
+        this.logger.log(`${reportes.length} reportes mensuales creados en memoria, guardando...`);
         // Guardar todos los reportes usando el queryRunner
         await queryRunner.manager.save(reportes);
-        console.log(`[TrabajosService] Reportes mensuales guardados en BD`);
+        this.logger.log('Reportes mensuales guardados en BD');
     }
 
     private buildListadoWhere(
@@ -652,7 +616,7 @@ export class TrabajosService {
         trabajoId: string,
         mes: number,
         ventas: number,
-        currentUser: CurrentUserPayload,
+        _currentUser: CurrentUserPayload,
     ): Promise<ReporteBaseAnual> {
         // Los Miembros, Gestores y Admins pueden actualizar las ventas mensuales en el Excel
         // Esta validación se hace en el controlador con @Roles, aquí solo verificamos autenticación
@@ -687,8 +651,8 @@ export class TrabajosService {
             );
         }
 
-        console.log(`[TrabajosService] Reporte Base tiene ${reporte.hojas.length} hojas`);
-        console.log(`[TrabajosService] Nombres de hojas:`, reporte.hojas.map(h => h.nombre));
+        this.logger.log(`Reporte Base tiene ${reporte.hojas.length} hojas`);
+        this.logger.log('Nombres de hojas', reporte.hojas.map((h: any) => h.nombre));
 
         // Trabajar con la hoja 0 (PRIMERA HOJA del Excel importado)
         const hoja0 = reporte.hojas[0];
@@ -697,8 +661,8 @@ export class TrabajosService {
             throw new BadRequestException('La hoja 0 no contiene datos');
         }
 
-        console.log(`[TrabajosService] Trabajando con hoja: "${hoja0.nombre}"`);
-        console.log(`[TrabajosService] La hoja tiene ${hoja0.datos.length} filas`);
+        this.logger.log(`Trabajando con hoja: "${hoja0.nombre}"`);
+        this.logger.log(`La hoja tiene ${hoja0.datos.length} filas`);
 
         const datos = hoja0.datos;
 
@@ -734,19 +698,19 @@ export class TrabajosService {
 
         if (headerRowIndex === -1) {
             // Log de diagnóstico: mostrar primeras 10 filas
-            console.log('[TrabajosService] ❌ No se encontró el encabezado. Mostrando primeras 10 filas:');
+            this.logger.warn('No se encontró el encabezado. Mostrando primeras 10 filas:');
             for (let i = 0; i < Math.min(datos.length, 10); i++) {
-                console.log(`Fila ${i}:`, datos[i]);
+                this.logger.debug(`Fila ${i}:`, datos[i]);
             }
             throw new BadRequestException(
                 'No se encontró la fila de encabezado con los nombres de los meses',
             );
         }
 
-        console.log(`[TrabajosService] ✅ Encabezado encontrado en fila ${headerRowIndex}`);
+        this.logger.log(`Encabezado encontrado en fila ${headerRowIndex}`);
 
         const headerRow = datos[headerRowIndex];
-        console.log(`[TrabajosService] Contenido del encabezado:`, headerRow);
+        this.logger.debug('Contenido del encabezado', headerRow);
 
         // 2. Buscar la columna del mes
         const mesesNombres = [
@@ -765,15 +729,15 @@ export class TrabajosService {
         }
 
         if (mesColumnIndex === -1) {
-            console.log('[TrabajosService] ❌ No se encontró la columna del mes');
-            console.log(`[TrabajosService] Mes buscado: "${mesNombre}"`);
-            console.log(`[TrabajosService] Columnas normalizadas:`, headerRow.map((c, i) => `[${i}]="${normalize(c)}"`));
+            this.logger.warn('No se encontró la columna del mes');
+            this.logger.debug(`Mes buscado: "${mesNombre}"`);
+            this.logger.debug('Columnas normalizadas', headerRow.map((c: string, i: number) => `[${i}]="${normalize(c)}"`));
             throw new BadRequestException(
                 `No se encontró la columna del mes "${mesesNombres[mes - 1].toUpperCase()}"`,
             );
         }
 
-        console.log(`[TrabajosService] ✅ Columna del mes "${mesNombre.toUpperCase()}" encontrada en índice ${mesColumnIndex}`);
+        this.logger.log(`Columna del mes "${mesNombre.toUpperCase()}" encontrada en índice ${mesColumnIndex}`);
 
         // 3. Buscar la fila "Ventas" (después del encabezado)
         // Buscar en la columna de CONCEPTO (normalmente índice 1)
@@ -791,12 +755,12 @@ export class TrabajosService {
         }
 
         if (ventasRowIndex === -1) {
-            console.log('[TrabajosService] ❌ No se encontró la fila de Ventas');
-            console.log('[TrabajosService] Buscando filas después del encabezado:');
+            this.logger.warn('No se encontró la fila de Ventas');
+            this.logger.debug('Buscando filas después del encabezado:');
             for (let i = headerRowIndex + 1; i < Math.min(datos.length, headerRowIndex + 20); i++) {
                 const row = datos[i];
                 if (Array.isArray(row) && row.length > 1) {
-                    console.log(`Fila ${i}: [0]="${normalize(row[0])}" [1]="${normalize(row[1])}"`);
+                    this.logger.debug(`Fila ${i}: [0]="${normalize(row[0])}" [1]="${normalize(row[1])}"`);
                 }
             }
             throw new BadRequestException(
@@ -804,10 +768,10 @@ export class TrabajosService {
             );
         }
 
-        console.log(`[TrabajosService] ✅ Fila de Ventas encontrada en índice ${ventasRowIndex}`);
+        this.logger.log(`Fila de Ventas encontrada en índice ${ventasRowIndex}`);
 
         // 4. Actualizar la celda en la intersección
-        console.log(`[TrabajosService] Actualizando celda en Excel:`, {
+        this.logger.log('Actualizando celda en Excel', {
             trabajoId,
             mes: mesesNombres[mes - 1],
             ventas,
@@ -825,7 +789,7 @@ export class TrabajosService {
 
         const reporteActualizado = await this.reporteBaseRepository.save(reporte);
 
-        console.log(`[TrabajosService] ✅ Ventas actualizadas en Excel para ${mesesNombres[mes - 1]}`);
+        this.logger.log(`Ventas actualizadas en Excel para ${mesesNombres[mes - 1]}`);
 
         return reporteActualizado;
     }

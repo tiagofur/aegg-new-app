@@ -3,5 +3,5 @@
  * Exportaciones centralizadas de componentes
  */
 
-export * from './GuardarEnBaseButton';
-export * from './ReporteAnualTable';
+export * from './GuardarEnBaseButton'
+export * from './ReporteAnualTable'

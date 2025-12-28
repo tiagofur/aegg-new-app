@@ -9,9 +9,9 @@ export type {
     ComparisonStatus,
     MiAdminIngresosComparisonResult,
     TotalesComparison,
-} from './types';
+} from './types'
 
-export { MI_ADMIN_INGRESOS_CONFIG } from './types';
+export { MI_ADMIN_INGRESOS_CONFIG } from './types'
 
 // Utils
 export {
@@ -34,13 +34,13 @@ export {
     getFooterBackgroundColor,
     getEstadoSatCellClasses,
     getComparisonBadgeVariant,
-} from './utils';
+} from './utils'
 
 // Hooks
-export { useMiAdminIngresosData } from './hooks/useMiAdminIngresosData';
-export { useMiAdminIngresosEdit } from './hooks/useMiAdminIngresosEdit';
-export { useMiAdminIngresosCalculations } from './hooks/useMiAdminIngresosCalculations';
-export { useMiAdminIngresosComparison } from './hooks/useMiAdminIngresosComparison';
+export { useMiAdminIngresosData } from './hooks/useMiAdminIngresosData'
+export { useMiAdminIngresosEdit } from './hooks/useMiAdminIngresosEdit'
+export { useMiAdminIngresosCalculations } from './hooks/useMiAdminIngresosCalculations'
+export { useMiAdminIngresosComparison } from './hooks/useMiAdminIngresosComparison'
 
 // Components
 export {
@@ -50,4 +50,4 @@ export {
     TCSugeridoCell,
     EditableTipoCambioCell,
     EditableEstadoSatCell,
-} from './components';
+} from './components'

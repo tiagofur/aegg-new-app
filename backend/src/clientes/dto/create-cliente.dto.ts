@@ -11,7 +11,7 @@ export class CreateClienteDto {
     @IsString()
     @IsNotEmpty()
     @MaxLength(150)
-    nombre: string;
+    nombre!: string;
 
     @IsString()
     @IsNotEmpty()
@@ -19,7 +19,7 @@ export class CreateClienteDto {
     @Matches(/^[A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3}$/i, {
         message: 'RFC inválido',
     })
-    rfc: string;
+    rfc!: string;
 
     @IsString()
     @IsOptional()

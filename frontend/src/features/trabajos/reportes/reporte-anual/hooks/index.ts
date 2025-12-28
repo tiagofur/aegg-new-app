@@ -3,5 +3,5 @@
  * Exportaciones centralizadas de hooks
  */
 
-export * from './useReporteAnualData';
-export * from './useReporteAnualUpdate';
+export * from './useReporteAnualData'
+export * from './useReporteAnualUpdate'

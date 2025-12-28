@@ -17,10 +17,21 @@ import { JwtStrategy } from './strategies/jwt.strategy';
         JwtModule.registerAsync({
             imports: [ConfigModule],
             inject: [ConfigService],
-            useFactory: (configService: ConfigService) => ({
-                secret: configService.get<string>('JWT_SECRET', 'your-super-secret-jwt-key-change-in-production'),
-                signOptions: { expiresIn: '7d' },
-            }),
+            useFactory: (configService: ConfigService) => {
+                const secret = configService.get<string>('JWT_SECRET');
+                if (!secret || secret === 'your-super-secret-jwt-key-change-in-production') {
+                    throw new Error(
+                        'JWT_SECRET environment variable is required and must be set to a secure value'
+                    );
+                }
+                if (secret.length < 32) {
+                    throw new Error('JWT_SECRET must be at least 32 characters long');
+                }
+                return {
+                    secret,
+                    signOptions: { expiresIn: '8h' },
+                };
+            },
         }),
     ],
     controllers: [AuthController],

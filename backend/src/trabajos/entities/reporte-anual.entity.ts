@@ -31,22 +31,22 @@ export enum MesEnum {
 @Index(['anio'])
 export class ReporteAnual {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column({ name: 'trabajo_id' })
-    trabajoId: string;
+    trabajoId!: string;
 
     @ManyToOne(() => Trabajo, (trabajo) => trabajo.reportesAnuales, {
         onDelete: 'CASCADE',
     })
     @JoinColumn({ name: 'trabajo_id' })
-    trabajo: Trabajo;
+    trabajo!: Trabajo;
 
     @Column({ type: 'int' })
-    anio: number;
+    anio!: number;
 
     @Column({ type: 'int' })
-    mes: number;
+    mes!: number;
 
     @Column({
         type: 'decimal',
@@ -55,7 +55,7 @@ export class ReporteAnual {
         nullable: true,
         name: 'ventas',
     })
-    ventas: number | null;
+    ventas!: number | null;
 
     @Column({
         type: 'decimal',
@@ -64,7 +64,7 @@ export class ReporteAnual {
         nullable: true,
         name: 'ventas_auxiliar',
     })
-    ventasAuxiliar: number | null;
+    ventasAuxiliar!: number | null;
 
     @Column({
         type: 'decimal',
@@ -73,14 +73,14 @@ export class ReporteAnual {
         nullable: true,
         name: 'diferencia',
     })
-    diferencia: number | null;
+    diferencia!: number | null;
 
     @Column({ type: 'boolean', default: false })
-    confirmado: boolean;
+    confirmado!: boolean;
 
     @CreateDateColumn({ name: 'fecha_creacion' })
-    fechaCreacion: Date;
+    fechaCreacion!: Date;
 
     @UpdateDateColumn({ name: 'fecha_actualizacion' })
-    fechaActualizacion: Date;
+    fechaActualizacion!: Date;
 }

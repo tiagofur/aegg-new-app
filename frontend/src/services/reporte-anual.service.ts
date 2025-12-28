@@ -3,12 +3,12 @@
  * Servicio API para endpoints de Reporte Anual
  */
 
-import api from './api';
+import api from './api'
 import {
     ReporteAnual,
     ResumenAnual,
     ActualizarVentasRequest,
-} from '../features/trabajos/reportes/reporte-anual/types';
+} from '../features/trabajos/reportes/reporte-anual/types'
 
 export const reporteAnualService = {
     /**
@@ -16,28 +16,22 @@ export const reporteAnualService = {
      * Obtiene todos los reportes mensuales para un año
      * Crea automáticamente los 12 meses si no existen
      */
-    async obtenerReporteAnual(
-        trabajoId: string,
-        anio: number
-    ): Promise<ReporteAnual[]> {
+    async obtenerReporteAnual(trabajoId: string, anio: number): Promise<ReporteAnual[]> {
         const { data } = await api.get<ReporteAnual[]>(
             `/trabajos/${trabajoId}/reporte-anual/${anio}`
-        );
-        return data;
+        )
+        return data
     },
 
     /**
      * GET /trabajos/:trabajoId/reporte-anual/:anio/resumen
      * Obtiene el resumen anual con totales y estadísticas
      */
-    async obtenerResumenAnual(
-        trabajoId: string,
-        anio: number
-    ): Promise<ResumenAnual> {
+    async obtenerResumenAnual(trabajoId: string, anio: number): Promise<ResumenAnual> {
         const { data } = await api.get<ResumenAnual>(
             `/trabajos/${trabajoId}/reporte-anual/${anio}/resumen`
-        );
-        return data;
+        )
+        return data
     },
 
     /**
@@ -51,8 +45,8 @@ export const reporteAnualService = {
     ): Promise<ReporteAnual> {
         const { data } = await api.get<ReporteAnual>(
             `/trabajos/${trabajoId}/reporte-anual/${anio}/mes/${mes}`
-        );
-        return data;
+        )
+        return data
     },
 
     /**
@@ -67,7 +61,7 @@ export const reporteAnualService = {
         const { data } = await api.post<ReporteAnual>(
             `/trabajos/${trabajoId}/reporte-anual/actualizar-ventas`,
             request
-        );
-        return data;
+        )
+        return data
     },
-};
+}

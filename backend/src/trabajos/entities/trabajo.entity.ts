@@ -34,32 +34,32 @@ export enum EstadoAprobacion {
 @Index('IDX_trabajos_cliente_anio', ['clienteId', 'anio'], { unique: true })
 export class Trabajo {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column({ nullable: true })
-    clienteNombre: string;
+    clienteNombre!: string;
 
     @Column({ length: 50, nullable: true })
-    clienteRfc: string;
+    clienteRfc!: string;
 
     @Column('int')
-    anio: number;
+    anio!: number;
 
     @Column({ name: 'clienteId', type: 'uuid', nullable: true })
-    clienteId: string | null;
+    clienteId!: string | null;
 
     @Column({ name: 'miembroAsignadoId', type: 'uuid', nullable: true })
-    miembroAsignadoId: string | null;
+    miembroAsignadoId!: string | null;
 
     @Column({ name: 'gestor_responsable_id', type: 'uuid', nullable: true })
-    gestorResponsableId: string | null;
+    gestorResponsableId!: string | null;
 
     @Column({
         type: 'enum',
         enum: EstadoTrabajo,
         default: EstadoTrabajo.ACTIVO,
     })
-    estado: EstadoTrabajo;
+    estado!: EstadoTrabajo;
 
     @Column({
         type: 'enum',
@@ -67,7 +67,7 @@ export class Trabajo {
         name: 'estado_aprobacion',
         default: EstadoAprobacion.EN_PROGRESO,
     })
-    estadoAprobacion: EstadoAprobacion;
+    estadoAprobacion!: EstadoAprobacion;
 
     @Column({ name: 'fecha_aprobacion', type: 'timestamp', nullable: true })
     fechaAprobacion?: Date | null;
@@ -76,13 +76,13 @@ export class Trabajo {
     aprobadoPorId?: string | null;
 
     @Column({ name: 'visibilidad_equipo', type: 'boolean', default: true })
-    visibilidadEquipo: boolean;
+    visibilidadEquipo!: boolean;
 
     @CreateDateColumn()
-    fechaCreacion: Date;
+    fechaCreacion!: Date;
 
     @UpdateDateColumn()
-    fechaActualizacion: Date;
+    fechaActualizacion!: Date;
 
     // Relaciones
     @ManyToOne(() => Cliente, { eager: false })
@@ -105,17 +105,17 @@ export class Trabajo {
         cascade: true,
         eager: false,
     })
-    reporteBaseAnual: ReporteBaseAnual;
+    reporteBaseAnual!: ReporteBaseAnual;
 
     @OneToMany(() => Mes, (mes) => mes.trabajo, {
         cascade: true,
         eager: false,
     })
-    meses: Mes[];
+    meses!: Mes[];
 
     @OneToMany(() => ReporteAnual, (reporte) => reporte.trabajo, {
         cascade: true,
         eager: false,
     })
-    reportesAnuales: ReporteAnual[];
+    reportesAnuales!: ReporteAnual[];
 }

@@ -18,23 +18,23 @@ export enum UserRole {
 @Entity('users')
 export class User {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column({ unique: true })
-    email: string;
+    email!: string;
 
     @Column()
-    password: string;
+    password!: string;
 
     @Column()
-    name: string;
+    name!: string;
 
     @Column({
         type: 'enum',
         enum: UserRole,
         default: UserRole.GESTOR,
     })
-    role: UserRole;
+    role!: UserRole;
 
     @Column({ name: 'equipo_id', type: 'uuid', nullable: true })
     equipoId?: string | null;
@@ -44,8 +44,8 @@ export class User {
     equipo?: Equipo | null;
 
     @CreateDateColumn()
-    createdAt: Date;
+    createdAt!: Date;
 
     @UpdateDateColumn()
-    updatedAt: Date;
+    updatedAt!: Date;
 }

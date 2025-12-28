@@ -26,7 +26,7 @@ export class CreateTrabajoDto {
     @IsInt()
     @Min(2020)
     @Max(2100)
-    anio: number;
+    anio!: number;
 
     @IsUUID('4')
     @IsOptional()

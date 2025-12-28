@@ -4,8 +4,8 @@ import { TipoReporteMensual } from '../entities';
 export class ImportReporteMensualDto {
     @IsString()
     @IsNotEmpty()
-    mesId: string;
+    mesId!: string;
 
     @IsEnum(TipoReporteMensual)
-    tipo: TipoReporteMensual;
+    tipo!: TipoReporteMensual;
 }

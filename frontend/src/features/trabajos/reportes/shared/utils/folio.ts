@@ -10,20 +10,18 @@
  */
 export const normalizeFolio = (folio?: string | null): string => {
     if (!folio) {
-        return "";
+        return ''
     }
 
     return folio
         .toString()
         .trim()
-        .replace(/[^0-9A-Za-z]/g, "")
-        .toUpperCase();
-};
+        .replace(/[^0-9A-Za-z]/g, '')
+        .toUpperCase()
+}
 
 /**
  * Compara dos folios usando la normalización.
  */
-export const foliosAreEqual = (
-    a?: string | null,
-    b?: string | null
-): boolean => normalizeFolio(a) === normalizeFolio(b);
+export const foliosAreEqual = (a?: string | null, b?: string | null): boolean =>
+    normalizeFolio(a) === normalizeFolio(b)

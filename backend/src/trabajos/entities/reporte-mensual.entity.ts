@@ -26,43 +26,43 @@ export enum EstadoReporte {
 @Index(['mesId', 'tipo'], { unique: true })
 export class ReporteMensual {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column()
-    mesId: string;
+    mesId!: string;
 
     @Column({
         type: 'enum',
         enum: TipoReporteMensual,
     })
-    tipo: TipoReporteMensual;
+    tipo!: TipoReporteMensual;
 
     @Column({ nullable: true })
-    archivoOriginal: string;
+    archivoOriginal!: string | null;
 
     @Column('jsonb', { default: [] })
-    datos: any[];
+    datos!: any[];
 
     @Column({
         type: 'enum',
         enum: EstadoReporte,
         default: EstadoReporte.SIN_IMPORTAR,
     })
-    estado: EstadoReporte;
+    estado!: EstadoReporte;
 
     @Column({ nullable: true })
-    fechaImportacion: Date;
+    fechaImportacion!: Date | null;
 
     @Column({ nullable: true })
-    fechaProcesado: Date;
+    fechaProcesado!: Date | null;
 
     @CreateDateColumn()
-    fechaCreacion: Date;
+    fechaCreacion!: Date;
 
     // Relación
     @ManyToOne(() => Mes, (mes) => mes.reportes, {
         onDelete: 'CASCADE',
     })
     @JoinColumn({ name: 'mesId' })
-    mes: Mes;
+    mes!: Mes;
 }

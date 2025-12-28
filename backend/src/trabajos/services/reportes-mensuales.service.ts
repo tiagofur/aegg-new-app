@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
@@ -10,10 +10,12 @@ import {
     EstadoMes,
     EstadoRevisionMes,
 } from '../entities';
-import * as XLSX from 'xlsx';
+import * as ExcelJS from 'exceljs';
 
 @Injectable()
 export class ReportesMensualesService {
+    private readonly logger = new Logger(ReportesMensualesService.name);
+
     constructor(
         @InjectRepository(ReporteMensual)
         private reporteMensualRepository: Repository<ReporteMensual>,
@@ -48,8 +50,7 @@ export class ReportesMensualesService {
         }
 
         // Procesar el archivo Excel
-        const workbook = XLSX.read(file.buffer, { type: 'buffer' });
-        const datos = this.procesarExcel(workbook, tipo);
+        const datos = await this.procesarExcel(file.buffer, tipo);
 
         // Actualizar el reporte
         reporte.archivoOriginal = file.originalname;
@@ -113,13 +114,36 @@ export class ReportesMensualesService {
         return { success: true, message: 'Mes procesado y guardado correctamente' };
     }
 
-    private procesarExcel(workbook: XLSX.WorkBook, tipo: TipoReporteMensual): any[] {
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        let datos = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+    private async procesarExcel(buffer: Buffer, tipo: TipoReporteMensual): Promise<any[]> {
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(buffer as any);
 
-        console.log(`📊 Procesando reporte tipo: ${tipo}`);
-        console.log(`📄 Total de filas originales: ${datos.length}`);
+        const worksheet = workbook.worksheets[0];
+
+        // Convertir a array de arrays
+        let datos: any[][] = [];
+        worksheet.eachRow({ includeEmpty: true }, (row) => {
+            const rowValues: any[] = [];
+            row.eachCell({ includeEmpty: true }, (cell) => {
+                let value = cell.value;
+
+                // Si es una fórmula, obtener el resultado
+                if (cell.type === ExcelJS.ValueType.Formula && cell.result !== undefined) {
+                    value = cell.result;
+                }
+
+                // Si es fecha, convertir a Date
+                if (cell.type === ExcelJS.ValueType.Date) {
+                    value = cell.value as Date;
+                }
+
+                rowValues.push(value);
+            });
+            datos.push(rowValues);
+        });
+
+        this.logger.log(`📊 Procesando reporte tipo: ${tipo}`);
+        this.logger.log(`📄 Total de filas originales: ${datos.length}`);
 
         // Limpiar filas innecesarias antes del header real
         datos = this.limpiarFilasInnecesarias(datos);
@@ -130,7 +154,7 @@ export class ReportesMensualesService {
         // Llenar Estado SAT con "Vigente" cuando esté vacío
         datos = this.llenarEstadoSat(datos);
 
-        console.log(`✅ Total de filas después de limpieza: ${datos.length}`);
+        this.logger.log(`✅ Total de filas después de limpieza: ${datos.length}`);
 
         return datos;
     }
@@ -195,10 +219,10 @@ export class ReportesMensualesService {
             const esHeader = tienePalabrasClaveHeader && porcentajeTexto > 0.5;
 
             if (esHeader) {
-                console.log(`✓ Header detectado en fila ${index + 1}:`);
-                console.log(`  - Celdas con datos: ${numCeldasConDatos}`);
-                console.log(`  - Palabras clave encontradas: ${tienePalabrasClaveHeader}`);
-                console.log(`  - % texto: ${(porcentajeTexto * 100).toFixed(0)}%`);
+                this.logger.log(`✓ Header detectado en fila ${index + 1}:`);
+                this.logger.log(`  - Celdas con datos: ${numCeldasConDatos}`);
+                this.logger.log(`  - Palabras clave encontradas: ${tienePalabrasClaveHeader}`);
+                this.logger.log(`  - % texto: ${(porcentajeTexto * 100).toFixed(0)}%`);
             }
 
             return esHeader;
@@ -206,7 +230,7 @@ export class ReportesMensualesService {
 
         // Si no se encuentra un header válido con palabras clave, usar solo el criterio de cantidad de celdas
         if (indexHeaderReal === -1) {
-            console.warn(`⚠ No se encontró header con palabras clave. Buscando por cantidad de celdas...`);
+            this.logger.warn(`⚠ No se encontró header con palabras clave. Buscando por cantidad de celdas...`);
 
             const indexPorCantidad = datos.findIndex((fila) => {
                 if (!Array.isArray(fila)) return false;
@@ -221,7 +245,7 @@ export class ReportesMensualesService {
             });
 
             if (indexPorCantidad === -1) {
-                console.warn(`⚠ No se encontró header válido. Retornando datos originales.`);
+                this.logger.warn(`⚠ No se encontró header válido. Retornando datos originales.`);
                 return datos;
             }
 
@@ -230,7 +254,7 @@ export class ReportesMensualesService {
             }
 
             const datosLimpios = datos.slice(indexPorCantidad);
-            console.log(`✓ Limpieza automática: Se eliminaron ${indexPorCantidad} fila(s) innecesaria(s) antes del header.`);
+            this.logger.log(`✓ Limpieza automática: Se eliminaron ${indexPorCantidad} fila(s) innecesaria(s) antes del header.`);
             return datosLimpios;
         }
 
@@ -242,8 +266,8 @@ export class ReportesMensualesService {
         // Eliminar todas las filas antes del header real
         const datosLimpios = datos.slice(indexHeaderReal);
 
-        console.log(`✓ Limpieza automática: Se eliminaron ${indexHeaderReal} fila(s) innecesaria(s) antes del header.`);
-        console.log(`✓ Header detectado en fila original ${indexHeaderReal + 1} con ${datosLimpios[0]?.length || 0} columnas`);
+        this.logger.log(`✓ Limpieza automática: Se eliminaron ${indexHeaderReal} fila(s) innecesaria(s) antes del header.`);
+        this.logger.log(`✓ Header detectado en fila original ${indexHeaderReal + 1} con ${datosLimpios[0]?.length || 0} columnas`);
 
         return datosLimpios;
     }
@@ -280,11 +304,11 @@ export class ReportesMensualesService {
 
         // Si no se encuentra la columna, no hacer nada
         if (estadoSatIndex === -1) {
-            console.log('ℹ️  No se encontró columna de Estado SAT en el reporte');
+            this.logger.log('ℹ️  No se encontró columna de Estado SAT en el reporte');
             return datos;
         }
 
-        console.log(`✓ Columna "Estado SAT" encontrada en posición ${estadoSatIndex + 1} (${headers[estadoSatIndex]})`);
+        this.logger.log(`✓ Columna "Estado SAT" encontrada en posición ${estadoSatIndex + 1} (${headers[estadoSatIndex]})`);
 
         // Contador de celdas modificadas
         let celdasLlenadas = 0;
@@ -318,9 +342,9 @@ export class ReportesMensualesService {
         }
 
         if (celdasLlenadas > 0) {
-            console.log(`✓ Se llenaron ${celdasLlenadas} celda(s) de "Estado SAT" con valor "Vigente"`);
+            this.logger.log(`✓ Se llenaron ${celdasLlenadas} celda(s) de "Estado SAT" con valor "Vigente"`);
         } else {
-            console.log('ℹ️  Todas las celdas de "Estado SAT" ya tenían valores');
+            this.logger.log('ℹ️  Todas las celdas de "Estado SAT" ya tenían valores');
         }
 
         return datos;
@@ -360,7 +384,7 @@ export class ReportesMensualesService {
         // Si hay filas vacías al final, eliminarlas
         if (ultimaFilaConDatos < datos.length - 1) {
             const filasEliminadas = datos.length - ultimaFilaConDatos - 1;
-            console.log(`✓ Se eliminaron ${filasEliminadas} fila(s) vacía(s) al final del archivo.`);
+            this.logger.log(`✓ Se eliminaron ${filasEliminadas} fila(s) vacía(s) al final del archivo.`);
             return datos.slice(0, ultimaFilaConDatos + 1);
         }
 
@@ -785,7 +809,7 @@ export class ReportesMensualesService {
             await this.mesRepository.save(mes);
         }
 
-        console.log(`✓ Datos del reporte ${reporteId} (tipo: ${reporte.tipo}) limpiados correctamente`);
+        this.logger.log(`✓ Datos del reporte ${reporteId} (tipo: ${reporte.tipo}) limpiados correctamente`);
 
         return {
             success: true,
@@ -825,7 +849,7 @@ export class ReportesMensualesService {
             };
         }
 
-        console.log(`🔄 Reprocesando Estado SAT para reporte ${reporteId} (tipo: ${reporte.tipo})`);
+        this.logger.log(`🔄 Reprocesando Estado SAT para reporte ${reporteId} (tipo: ${reporte.tipo})`);
 
         // Aplicar la función de llenado de Estado SAT
         const datosOriginales = JSON.parse(JSON.stringify(reporte.datos)); // Copia profunda
@@ -864,7 +888,7 @@ export class ReportesMensualesService {
         reporte.datos = datosActualizados;
         await this.reporteMensualRepository.save(reporte);
 
-        console.log(`✓ Reporte ${reporteId} reprocesado: ${celdasModificadas} celda(s) actualizadas`);
+        this.logger.log(`✓ Reporte ${reporteId} reprocesado: ${celdasModificadas} celda(s) actualizadas`);
 
         return {
             success: true,

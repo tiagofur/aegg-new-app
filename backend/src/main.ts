@@ -1,13 +1,46 @@
 import { NestFactory } from '@nestjs/core';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
+import helmet from 'helmet';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
+    const logger = new Logger('Bootstrap');
 
-    app.use(json({ limit: '25mb' }));
-    app.use(urlencoded({ limit: '25mb', extended: true }));
+    app.use(helmet({
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'"],
+                styleSrc: ["'self'", "'unsafe-inline'"],
+                scriptSrc: ["'self'"],
+                imgSrc: ["'self'", "data:", "https:"],
+                connectSrc: ["'self'"],
+                fontSrc: ["'self'", "data:"],
+                objectSrc: ["'none'"],
+                mediaSrc: ["'self'"],
+                frameSrc: ["'none'"],
+            },
+        },
+        hsts: {
+            maxAge: 31536000,
+            includeSubDomains: true,
+            preload: true,
+        },
+        xssFilter: true,
+        noSniff: true,
+        frameguard: { action: 'deny' },
+        referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    }));
+
+    app.use(json({ limit: '1mb' }));
+    app.use(urlencoded({ limit: '1mb', extended: true }));
+
+    // CORS configuration - improved with environment variable support
+    const devOrigins = (process.env.DEV_ORIGINS || 'http://localhost:5173').split(',');
+    const allowedOrigins = process.env.NODE_ENV === 'production'
+        ? (process.env.ALLOWED_ORIGINS || 'https://aegg.creapolis.mx').split(',')
+        : devOrigins;
 
     // CORS configuration - includes production domains
     const allowedOrigins = process.env.NODE_ENV === 'production'
@@ -19,6 +52,7 @@ async function bootstrap() {
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization'],
+        maxAge: 86400,
     });
 
     app.useGlobalPipes(new ValidationPipe({
@@ -27,6 +61,6 @@ async function bootstrap() {
     }));
 
     await app.listen(3000);
-    console.log('🚀 Backend running on http://localhost:3000');
+    logger.log('🚀 Backend running on http://localhost:3000');
 }
 bootstrap();

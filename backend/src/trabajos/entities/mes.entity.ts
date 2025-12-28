@@ -30,20 +30,20 @@ export enum EstadoRevisionMes {
 @Index(['trabajoId', 'mes'], { unique: true })
 export class Mes {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column()
-    trabajoId: string;
+    trabajoId!: string;
 
     @Column('int')
-    mes: number; // 1-12
+    mes!: number; // 1-12
 
     @Column({
         type: 'enum',
         enum: EstadoMes,
         default: EstadoMes.PENDIENTE,
     })
-    estado: EstadoMes;
+    estado!: EstadoMes;
 
     @Column({
         type: 'enum',
@@ -51,7 +51,7 @@ export class Mes {
         name: 'estado_revision',
         default: EstadoRevisionMes.EN_EDICION,
     })
-    estadoRevision: EstadoRevisionMes;
+    estadoRevision!: EstadoRevisionMes;
 
     @Column({ name: 'enviado_revision_por_id', type: 'uuid', nullable: true })
     enviadoRevisionPorId?: string | null;
@@ -69,23 +69,23 @@ export class Mes {
     comentarioRevision?: string | null;
 
     @CreateDateColumn()
-    fechaCreacion: Date;
+    fechaCreacion!: Date;
 
     @UpdateDateColumn()
-    fechaActualizacion: Date;
+    fechaActualizacion!: Date;
 
     // Relaciones
     @ManyToOne(() => Trabajo, (trabajo) => trabajo.meses, {
         onDelete: 'CASCADE',
     })
     @JoinColumn({ name: 'trabajoId' })
-    trabajo: Trabajo;
+    trabajo!: Trabajo;
 
     @OneToMany(() => ReporteMensual, (reporte) => reporte.mes, {
         cascade: true,
         eager: false,
     })
-    reportes: ReporteMensual[];
+    reportes!: ReporteMensual[];
 
     @ManyToOne(() => User, { eager: false })
     @JoinColumn({ name: 'enviado_revision_por_id' })
