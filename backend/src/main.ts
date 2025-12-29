@@ -37,10 +37,11 @@ async function bootstrap() {
     app.use(urlencoded({ limit: '1mb', extended: true }));
 
     // CORS configuration - improved with environment variable support
-    const devOrigins = (process.env.DEV_ORIGINS || 'http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176,http://localhost:3000').split(',');
-    const allowedOrigins = process.env.NODE_ENV === 'production'
-        ? (process.env.ALLOWED_ORIGINS || 'https://aegg.creapolis.mx').split(',')
-        : devOrigins;
+    const devOrigins = (process.env.DEV_ORIGINS || 'http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176,http://localhost:3000,http://localhost:3100').split(',');
+    // Allow wildcard in production for now to fix issues, then restrict. Or better, explicitly list the domains.
+    const allowedOrigins = process.env.ALLOWED_ORIGINS
+        ? process.env.ALLOWED_ORIGINS.split(',')
+        : ['https://aegg.creapolis.mx', 'https://aegg-api.creapolis.mx', 'http://localhost:3100'];
 
     app.enableCors({
         origin: allowedOrigins,
