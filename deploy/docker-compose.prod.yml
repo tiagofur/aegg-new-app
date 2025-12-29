@@ -106,9 +106,9 @@ services:
       - "--certificatesresolvers.letsencrypt.acme.email=${LETSENCRYPT_EMAIL}"
       - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
     ports:
-      - "80:80"
-      - "443:443"
-      - "8080:8080"  # Traefik dashboard
+      - "81:80"
+      - "444:443"
+      - "8081:8080"  # Traefik dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - traefik_letsencrypt:/letsencrypt
