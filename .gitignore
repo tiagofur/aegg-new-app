@@ -211,8 +211,10 @@ pubspec.lock
 
 # Docker
 .dockerignore
-Dockerfile*
 docker-compose*.yml
+# But allow specific Dockerfiles
+!backend/Dockerfile
+!frontend/Dockerfile
 
 # Terraform
 *.tfstate

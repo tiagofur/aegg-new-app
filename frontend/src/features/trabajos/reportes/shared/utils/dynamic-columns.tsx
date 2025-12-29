@@ -106,9 +106,10 @@ export function formatCellValue(value: any, type: 'currency' | 'date' | 'number'
             return formatCurrency(Number(value))
         case 'date':
             return formatDate(value)
-        case 'number':
+        case 'number': {
             const num = Number(value)
             return isNaN(num) ? String(value) : num.toFixed(4)
+        }
         case 'text':
         default:
             return String(value)
