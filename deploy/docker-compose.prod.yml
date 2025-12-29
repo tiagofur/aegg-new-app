@@ -12,7 +12,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_HOST_AUTH_METHOD: scram-sha-256
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_v2:/var/lib/postgresql/data
     networks:
       - aegg_network
     healthcheck:
@@ -97,7 +97,7 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data:
-    name: aegg_postgres_data
+  postgres_data_v2:
+    name: aegg_postgres_data_v2
   backend_logs:
     name: aegg_backend_logs
