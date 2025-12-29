@@ -44,7 +44,7 @@ async function bootstrap() {
         : ['https://aegg.creapolis.mx', 'https://aegg-api.creapolis.mx', 'http://localhost:3100'];
 
     app.enableCors({
-        origin: allowedOrigins,
+        origin: true, // Allow any origin that sends an Origin header (reflects request origin)
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization'],
