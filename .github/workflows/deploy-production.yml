@@ -193,9 +193,34 @@ jobs:
             echo "🔐 Login a GitHub Container Registry..."
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            echo "📦 Pulling new images..."
-            docker pull ghcr.io/${{ github.repository }}/aegg-backend:latest
-            docker pull ghcr.io/${{ github.repository }}/aegg-frontend:latest
+            echo "📦 Pulling new images with retry logic..."
+            # Pull with retry logic for slow VPS connections
+            pull_with_retry() {
+              local image=$1
+              local max_attempts=3
+              local attempt=1
+
+              while [ $attempt -le $max_attempts ]; do
+                echo "📥 Attempt $attempt/$max_attempts: Pulling $image..."
+                if timeout 300 docker pull $image; then
+                  echo "✅ Successfully pulled $image"
+                  return 0
+                else
+                  echo "⚠️  Failed to pull $image (attempt $attempt/$max_attempts)"
+                  if [ $attempt -lt $max_attempts ]; then
+                    echo "⏳ Waiting 10 seconds before retry..."
+                    sleep 10
+                  fi
+                fi
+                attempt=$((attempt + 1))
+              done
+
+              echo "❌ Failed to pull $image after $max_attempts attempts"
+              return 1
+            }
+
+            pull_with_retry ghcr.io/${{ github.repository }}/aegg-backend:latest
+            pull_with_retry ghcr.io/${{ github.repository }}/aegg-frontend:latest
 
             echo "💾 Backup del estado actual..."
             docker-compose -f docker-compose.prod.yml exec -T postgres pg_dump -U ${{ secrets.DB_USER }} ${{ secrets.DB_NAME }} > $BACKUP_DIR/backup_$TIMESTAMP.sql || true
