@@ -50,7 +50,7 @@ COPY --from=builder --chown=nginx-user:nginx-user /app/dist /usr/share/nginx/htm
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Switch to non-root user where possible
-USER nginx-user
+# USER nginx-user
 
 # Expose port
 EXPOSE 3100
