@@ -22,7 +22,7 @@ export class Cliente {
     @Column({ length: 13 })
     rfc!: string;
 
-    @Column({ name: 'razon_social', length: 200, nullable: true })
+    @Column({ name: 'razon_social', type: 'varchar', length: 200, nullable: true })
     razonSocial?: string | null;
 
     @Column({ type: 'jsonb', nullable: true })
