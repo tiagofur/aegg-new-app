@@ -247,8 +247,8 @@ jobs:
 
             echo "🗄️  Running database migrations..."
             # Wait a bit for db to be ready
-            sleep 10
-            docker-compose -f docker-compose.prod.yml exec -T backend npm run migration:run || echo "⚠️  No se ejecutaron migraciones"
+            echo "🗄️ Running database migrations..."
+            docker-compose -f docker-compose.prod.yml exec -T backend npm run migration:run:prod || echo "⚠️  No se ejecutaron migraciones"
 
             echo "🧹 Limpieza de imágenes antiguas..."
             docker image prune -af --filter "until=72h"
