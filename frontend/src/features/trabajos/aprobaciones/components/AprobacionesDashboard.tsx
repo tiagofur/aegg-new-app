@@ -100,14 +100,6 @@ const calcularDiasEnRevision = (fechaEnvio?: string | null) => {
     return dias
 }
 
-const calcularDiasEnRevision = (fechaEnvio?: string | null) => {
-  if (!fechaEnvio) return null;
-  const dias = Math.floor(
-    (Date.now() - new Date(fechaEnvio).getTime()) / (1000 * 60 * 60 * 24)
-  );
-  return dias;
-};
-
 interface AprobacionesDashboardProps {
     data: AprobacionesDashboardData
     loading: boolean
