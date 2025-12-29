@@ -93,7 +93,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./backend
-          file: ./backend/Dockerfile
           push: false
           tags: aegg-backend:ci
           cache-from: type=gha
@@ -115,7 +114,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
-          file: ./frontend/Dockerfile
           push: false
           tags: aegg-frontend:ci
           cache-from: type=gha
