@@ -37,7 +37,7 @@ async function bootstrap() {
     app.use(urlencoded({ limit: '1mb', extended: true }));
 
     // CORS configuration - improved with environment variable support
-    const devOrigins = (process.env.DEV_ORIGINS || 'http://localhost:5173').split(',');
+    const devOrigins = (process.env.DEV_ORIGINS || 'http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176,http://localhost:3000').split(',');
     const allowedOrigins = process.env.NODE_ENV === 'production'
         ? (process.env.ALLOWED_ORIGINS || 'https://aegg.creapolis.mx').split(',')
         : devOrigins;
