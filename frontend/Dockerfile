@@ -38,6 +38,10 @@ RUN apk add --no-cache curl
 RUN addgroup -g 1001 -S nginx-user && \
     adduser -S nginx-user -u 1001 -G nginx-user
 
+# Create nginx temp directories with proper permissions
+RUN mkdir -p /var/cache/nginx/client_temp /var/cache/nginx/proxy_temp /var/cache/nginx/fastcgi_temp /var/cache/nginx/uwsgi_temp /var/cache/nginx/scgi_temp && \
+    chown -R nginx-user:nginx-user /var/cache/nginx
+
 # Copy built files from builder
 COPY --from=builder --chown=nginx-user:nginx-user /app/dist /usr/share/nginx/html
 
