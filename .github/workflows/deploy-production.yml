@@ -241,7 +241,9 @@ jobs:
             fi
 
             echo "🔄 Restarting services..."
-            docker-compose -f docker-compose.prod.yml up -d --remove-orphans
+            echo "🛑 Stopping and removing old containers to avoid compatibility issues..."
+            docker-compose -f docker-compose.prod.yml down --remove-orphans || true
+            docker-compose -f docker-compose.prod.yml up -d
 
             echo "🗄️  Running database migrations..."
             # Wait a bit for db to be ready
