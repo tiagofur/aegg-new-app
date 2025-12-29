@@ -571,7 +571,7 @@ export const ReporteMensualViewer: React.FC<ReporteMensualViewerProps> = ({
         []
     )
 
-    const getRowClassName = (fila: Record<string, unknown>): string => {
+    const getRowClassName = (fila: unknown[] | Record<string, unknown>): string => {
         if (!comparacionActiva) return 'hover:bg-gray-50'
 
         const header = reporte.datos?.[0]
