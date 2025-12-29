@@ -215,6 +215,7 @@ docker-compose*.yml
 # But allow specific Dockerfiles
 !backend/Dockerfile
 !frontend/Dockerfile
+!deploy/docker-compose.prod.yml
 
 # Terraform
 *.tfstate

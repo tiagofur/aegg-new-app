@@ -171,7 +171,7 @@ jobs:
             DEPLOY_DIR="/opt/aegg"
             BACKUP_DIR="/opt/aegg-backups"
             TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-
+            
             # Crear directorios
             mkdir -p $DEPLOY_DIR
             mkdir -p $BACKUP_DIR
@@ -184,17 +184,29 @@ jobs:
              fi
 
             echo "📥 Descargando docker-compose.prod.yml..."
-            # El archivo ya debería existir, o lo copiamos si cambió
             if [ ! -f "docker-compose.prod.yml" ]; then
               echo "⚠️  No se encontró docker-compose.prod.yml"
               exit 1
             fi
 
+            echo "📝 Creando archivo .env..."
+            cat <<EOF > .env
+            DB_HOST=${{ secrets.DB_HOST }}
+            DB_PORT=${{ secrets.DB_PORT }}
+            DB_NAME=${{ secrets.DB_NAME }}
+            DB_USER=${{ secrets.DB_USER }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            API_URL=${{ secrets.API_URL }}
+            FRONTEND_URL=*
+            GITHUB_REPOSITORY=${{ github.repository }}
+            EOF
+            chmod 600 .env
+
             echo "🔐 Login a GitHub Container Registry..."
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             echo "📦 Pulling new images with retry logic..."
-            # Pull with retry logic for slow VPS connections
             pull_with_retry() {
               local image=$1
               local max_attempts=3
@@ -223,12 +235,17 @@ jobs:
             pull_with_retry ghcr.io/${{ github.repository }}/aegg-frontend:latest
 
             echo "💾 Backup del estado actual..."
-            docker-compose -f docker-compose.prod.yml exec -T postgres pg_dump -U ${{ secrets.DB_USER }} ${{ secrets.DB_NAME }} > $BACKUP_DIR/backup_$TIMESTAMP.sql || true
+            # Solo intentamos backup si el contenedor existe y estÃ¡ corriendo
+            if docker ps | grep -q aegg_postgres; then
+                docker-compose -f docker-compose.prod.yml exec -T postgres pg_dump -U ${{ secrets.DB_USER }} ${{ secrets.DB_NAME }} > $BACKUP_DIR/backup_$TIMESTAMP.sql || echo "⚠️ Falló el backup, continuando..."
+            fi
 
             echo "🔄 Restarting services..."
-            docker-compose -f docker-compose.prod.yml up -d --no-deps --build backend frontend
+            docker-compose -f docker-compose.prod.yml up -d --remove-orphans
 
             echo "🗄️  Running database migrations..."
+            # Wait a bit for db to be ready
+            sleep 10
             docker-compose -f docker-compose.prod.yml exec -T backend npm run migration:run || echo "⚠️  No se ejecutaron migraciones"
 
             echo "🧹 Limpieza de imágenes antiguas..."
@@ -243,8 +260,8 @@ jobs:
         if: success()
         run: |
           echo "🎉 Deployment completado exitosamente"
-          echo "Backend: https://aegg-api.creapolis.mx"
-          echo "Frontend: https://aegg.creapolis.mx"
+          echo "Backend: ${{ secrets.API_URL }}"
+          echo "Frontend: http://${{ secrets.VPS_HOST }}:3100"
 
       - name: ❌ Notify Deployment Failure
         if: failure()
