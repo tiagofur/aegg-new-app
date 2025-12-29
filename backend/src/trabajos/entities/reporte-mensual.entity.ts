@@ -37,7 +37,7 @@ export class ReporteMensual {
     })
     tipo!: TipoReporteMensual;
 
-    @Column({ nullable: true })
+    @Column({ type: 'varchar', nullable: true })
     archivoOriginal!: string | null;
 
     @Column('jsonb', { default: [] })
@@ -50,10 +50,10 @@ export class ReporteMensual {
     })
     estado!: EstadoReporte;
 
-    @Column({ nullable: true })
+    @Column({ type: 'timestamp', nullable: true })
     fechaImportacion!: Date | null;
 
-    @Column({ nullable: true })
+    @Column({ type: 'timestamp', nullable: true })
     fechaProcesado!: Date | null;
 
     @CreateDateColumn()
