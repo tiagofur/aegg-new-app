@@ -55,7 +55,8 @@ async function bootstrap() {
         transform: true,
     }));
 
-    await app.listen(3000);
-    logger.log('🚀 Backend running on http://localhost:3000');
+    const PORT = process.env.PORT || 3101;
+    await app.listen(PORT);
+    logger.log(`🚀 Backend running on http://localhost:${PORT}`);
 }
 bootstrap();

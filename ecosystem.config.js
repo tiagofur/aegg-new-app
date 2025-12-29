@@ -9,7 +9,7 @@ module.exports = {
       exec_mode: "cluster",
       env: {
         NODE_ENV: "production",
-        PORT: 3000,
+        PORT: 3101,
       },
       error_file: "./logs/backend-error.log",
       out_file: "./logs/backend-out.log",
