@@ -46,6 +46,8 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       PORT: 3101
       ALLOWED_ORIGINS: ${FRONTEND_URL}
+    ports:
+      - "3101:3101"
     depends_on:
       postgres:
         condition: service_healthy
@@ -74,6 +76,8 @@ services:
     restart: unless-stopped
     environment:
       VITE_API_URL: ${API_URL}
+    ports:
+      - "3100:3100"
     networks:
       - aegg-network
     healthcheck:
