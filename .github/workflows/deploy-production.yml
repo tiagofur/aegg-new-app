@@ -143,14 +143,14 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 📂 Copy docker-compose to VPS
+      - name: 📂 Copy deployment files to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
-          source: "deploy/docker-compose.prod.yml"
+          source: "deploy/docker-compose.prod.yml,deploy/deploy.sh"
           target: "/opt/aegg"
           strip_components: 1
 
@@ -162,108 +162,29 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
           script_stop: true
+          # Pass secrets as environment variables to the script
+          envs: GITHUB_REPOSITORY,DB_USER,DB_PASSWORD,DB_NAME,JWT_SECRET,API_URL,LETSENCRYPT_EMAIL,TRAEFIK_BASIC_AUTH
           script: |
-            set -e
-
-            echo "🚀 Iniciando deployment en VPS..."
-
-            # Variables
-            DEPLOY_DIR="/opt/aegg"
-            BACKUP_DIR="/opt/aegg-backups"
-            TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+            export GITHUB_REPOSITORY=${{ github.repository }}
+            export DB_USER=${{ secrets.DB_USER }}
+            export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            export DB_NAME=${{ secrets.DB_NAME }}
+            export JWT_SECRET=${{ secrets.JWT_SECRET }}
+            export API_URL=${{ secrets.API_URL }}
+            export FRONTEND_URL=${{ secrets.FRONTEND_URL || 'https://aegg.creapolis.mx' }}
+            export LETSENCRYPT_EMAIL=${{ secrets.LETSENCRYPT_EMAIL }}
+            export TRAEFIK_BASIC_AUTH=${{ secrets.TRAEFIK_BASIC_AUTH }}
             
-            # Crear directorios
-            mkdir -p $DEPLOY_DIR
-            mkdir -p $BACKUP_DIR
-            cd $DEPLOY_DIR
-
-             # Note: We rely on the scp-action step above to update docker-compose.prod.yml
-             # ensure permissions are correct
-             if [ -f "docker-compose.prod.yml" ]; then
-                chmod 644 docker-compose.prod.yml
-             fi
-
-            echo "📥 Descargando docker-compose.prod.yml..."
-            if [ ! -f "docker-compose.prod.yml" ]; then
-              echo "⚠️  No se encontró docker-compose.prod.yml"
-              exit 1
-            fi
-
-            echo "📝 Creando archivo .env..."
-            cat <<EOF > .env
-            DB_HOST=${{ secrets.DB_HOST }}
-            DB_PORT=${{ secrets.DB_PORT }}
-            DB_NAME=${{ secrets.DB_NAME }}
-            DB_USER=${{ secrets.DB_USER }}
-            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
-            API_URL=${{ secrets.API_URL }}
-            FRONTEND_URL=*
-            GITHUB_REPOSITORY=${{ github.repository }}
-            EOF
-            chmod 600 .env
-
-            echo "🔐 Login a GitHub Container Registry..."
-            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-            echo "📦 Pulling new images with retry logic..."
-            pull_with_retry() {
-              local image=$1
-              local max_attempts=3
-              local attempt=1
-
-              while [ $attempt -le $max_attempts ]; do
-                echo "📥 Attempt $attempt/$max_attempts: Pulling $image..."
-                if timeout 300 docker pull $image; then
-                  echo "✅ Successfully pulled $image"
-                  return 0
-                else
-                  echo "⚠️  Failed to pull $image (attempt $attempt/$max_attempts)"
-                  if [ $attempt -lt $max_attempts ]; then
-                    echo "⏳ Waiting 10 seconds before retry..."
-                    sleep 10
-                  fi
-                fi
-                attempt=$((attempt + 1))
-              done
-
-              echo "❌ Failed to pull $image after $max_attempts attempts"
-              return 1
-            }
-
-            pull_with_retry ghcr.io/${{ github.repository }}/aegg-backend:latest
-            pull_with_retry ghcr.io/${{ github.repository }}/aegg-frontend:latest
-
-            echo "💾 Backup del estado actual..."
-            # Solo intentamos backup si el contenedor existe y estÃ¡ corriendo
-            if docker ps | grep -q aegg_postgres; then
-                docker-compose -f docker-compose.prod.yml exec -T postgres pg_dump -U ${{ secrets.DB_USER }} ${{ secrets.DB_NAME }} > $BACKUP_DIR/backup_$TIMESTAMP.sql || echo "⚠️ Falló el backup, continuando..."
-            fi
-
-            echo "🔄 Restarting services..."
-            echo "🛑 Stopping and removing old containers to avoid compatibility issues..."
-            docker-compose -f docker-compose.prod.yml down --remove-orphans || true
-            docker-compose -f docker-compose.prod.yml up -d
-
-            echo "🗄️  Running database migrations..."
-            # Wait a bit for db to be ready
-            echo "🗄️ Running database migrations..."
-            docker-compose -f docker-compose.prod.yml exec -T backend npm run migration:run:prod || echo "⚠️  No se ejecutaron migraciones"
-
-            echo "🧹 Limpieza de imágenes antiguas..."
-            docker image prune -af --filter "until=72h"
-
-            echo "✅ Deployment completado!"
-            echo ""
-            echo "📊 Status:"
-            docker-compose -f docker-compose.prod.yml ps
+            cd /opt/aegg
+            chmod +x deploy.sh
+            ./deploy.sh
 
       - name: ✅ Notify Deployment Success
         if: success()
         run: |
           echo "🎉 Deployment completado exitosamente"
           echo "Backend: ${{ secrets.API_URL }}"
-          echo "Frontend: http://${{ secrets.VPS_HOST }}:3100"
+          echo "Frontend: https://aegg.creapolis.mx"
 
       - name: ❌ Notify Deployment Failure
         if: failure()

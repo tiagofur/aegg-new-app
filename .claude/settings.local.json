@@ -65,7 +65,8 @@
       "Bash(npm audit:*)",
       "Bash(npm update:*)",
       "Bash(npm view:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(if exist:*)"
     ],
     "deny": [],
     "ask": []

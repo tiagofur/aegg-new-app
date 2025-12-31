@@ -4,7 +4,7 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
-    container_name: aegg_postgres
+    container_name: aegg-postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME}
@@ -12,38 +12,45 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_HOST_AUTH_METHOD: scram-sha-256
     volumes:
-      - postgres_data_v2:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     networks:
-      - aegg_network
+      - aegg-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 30s
+    # Option 1: Direct port binding (simple, no SSL)
+    # ports:
+    #   - "5432:5432"
+
+    # Option 2: Traefik enabled (recommended for production)
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.postgres.rule=HostSNI(`postgres.aegg.local`)"
+      - "traefik.tcp.routers.postgres.tls=true"
 
   # Backend API (NestJS)
   backend:
     image: ghcr.io/${GITHUB_REPOSITORY}/aegg-backend:latest
-    container_name: aegg_backend
+    container_name: aegg-backend
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      DATABASE_HOST: ${DB_HOST:-postgres}
-      DATABASE_PORT: ${DB_PORT:-5432}
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
       DATABASE_USER: ${DB_USER}
       DATABASE_PASSWORD: ${DB_PASSWORD}
       DATABASE_NAME: ${DB_NAME}
       JWT_SECRET: ${JWT_SECRET}
       PORT: 3101
-      ALLOWED_ORIGINS: "*"
-    ports:
-      - "3101:3101"
+      ALLOWED_ORIGINS: ${FRONTEND_URL}
     depends_on:
       postgres:
         condition: service_healthy
     networks:
-      - aegg_network
+      - aegg-network
     volumes:
       - backend_logs:/app/logs
     healthcheck:
@@ -52,29 +59,72 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`aegg-api.creapolis.mx`)"
+      - "traefik.http.routers.backend.tls=true"
+      - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.backend.loadbalancer.server.port=3101"
+      - "traefik.http.routers.backend.middlewares=secHeaders"
 
   # Frontend (Vite + React + Nginx)
   frontend:
     image: ghcr.io/${GITHUB_REPOSITORY}/aegg-frontend:latest
-    container_name: aegg_frontend
+    container_name: aegg-frontend
     restart: unless-stopped
     environment:
       VITE_API_URL: ${API_URL}
-    ports:
-      - "3100:3100"
     networks:
-      - aegg_network
+      - aegg-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3100/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`aegg.creapolis.mx`)"
+      - "traefik.http.routers.frontend.tls=true"
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3100"
+      - "traefik.http.routers.frontend.middlewares=secHeaders"
+
+  # Reverse Proxy & SSL (Traefik)
+  traefik:
+    image: traefik:v2.10
+    container_name: aegg-traefik
+    restart: unless-stopped
+    command:
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.email=${LETSENCRYPT_EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "81:80"
+      - "444:443"
+      - "8081:8080"  # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_letsencrypt:/letsencrypt
+    networks:
+      - aegg-network
+    labels:
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.aegg.creapolis.mx`)"
+      - "traefik.http.routers.dashboard.tls=true"
+      - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.middlewares=auth"
+      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
 
   # Database Backup Service
   backup:
     image: postgres:15-alpine
-    container_name: aegg_backup
+    container_name: aegg-backup
     restart: "no"
     environment:
       POSTGRES_DB: ${DB_NAME}
@@ -83,7 +133,7 @@ services:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
     networks:
-      - aegg_network
+      - aegg-network
     volumes:
       - ./backups:/backups
       - ./scripts/backup.sh:/backup.sh:ro
@@ -92,12 +142,15 @@ services:
       - postgres
 
 networks:
-  aegg_network:
-    name: aegg_network
-    driver: bridge
+  aegg-network:
+    name: aegg-network
+    external: false
 
 volumes:
-  postgres_data_v2:
-    name: aegg_postgres_data_v2
+  postgres_data:
+    name: aegg_postgres_data
+    external: true
+  traefik_letsencrypt:
+    name: aegg_traefik_letsencrypt
   backend_logs:
     name: aegg_backend_logs
