@@ -89,11 +89,14 @@ fi
 
 # 5. Restart Services
 echo -e "${YELLOW}🔄 Restarting application services...${NC}"
-# Only recreate backend and frontend to minimize downtime, postgres stays up usually
-docker-compose -f docker-compose.prod.yml up -d --no-deps --build backend frontend
 
-# Ensure Postgres is also running (in case it was down)
-docker-compose -f docker-compose.prod.yml up -d postgres traefik backup
+# Fix for "KeyError: 'ContainerConfig'" by forcefully removing old containers
+# We stop everything first to ensure a clean state, especially given the history of issues
+echo -e "${YELLOW}🛑 Stopping all services...${NC}"
+docker-compose -f docker-compose.prod.yml down --remove-orphans || true
+
+echo -e "${YELLOW}🚀 Starting services...${NC}"
+docker-compose -f docker-compose.prod.yml up -d
 
 # 6. Run Migrations
 echo -e "${YELLOW}🏗️  Running migrations...${NC}"
