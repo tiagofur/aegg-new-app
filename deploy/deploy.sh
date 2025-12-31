@@ -98,14 +98,22 @@ docker-compose -f docker-compose.prod.yml down --remove-orphans || true
 echo -e "${YELLOW}🚀 Starting services...${NC}"
 docker-compose -f docker-compose.prod.yml up -d
 
-# 5.1 Force Password Sync (Fix for 'password authentication failed')
-# This is necessary if the secrets were changed but the volume has old data
+# 5.0 Force Allow Auth (Update pg_hba.conf)
+# This is required because existing volumes persist old auth config
+echo -e "${YELLOW}🔓 Updating pg_hba.conf to trust...${NC}"
+sleep 5
+docker-compose -f docker-compose.prod.yml exec -T -u root postgres sh -c 'echo "host all all all trust" > /var/lib/postgresql/data/pg_hba.conf'
+docker-compose -f docker-compose.prod.yml exec -T -u root postgres sh -c 'echo "local all all trust" >> /var/lib/postgresql/data/pg_hba.conf'
+# Reload config
+docker-compose -f docker-compose.prod.yml exec -T -u postgres postgres pg_ctl reload -D /var/lib/postgresql/data
+
+# 5.1 Force Password Sync
 echo -e "${YELLOW}🔐 Syncing database password...${NC}"
-sleep 10 # Wait for DB to be up
+sleep 5
 if docker-compose -f docker-compose.prod.yml exec -T -u postgres postgres psql -U "$DB_USER" -c "ALTER USER $DB_USER WITH PASSWORD '$DB_PASSWORD';"; then
     echo -e "${GREEN}✅ Database password synced!${NC}"
 else
-    echo -e "${RED}⚠️  Failed to sync password. If this is a new DB or auth is strict, check logs.${NC}"
+    echo -e "${RED}⚠️  Failed to sync password. Check logs.${NC}"
 fi
 
 # 6. Run Migrations
