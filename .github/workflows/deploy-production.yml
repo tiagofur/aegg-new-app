@@ -163,9 +163,11 @@ jobs:
           port: ${{ secrets.VPS_PORT || 22 }}
           script_stop: true
           # Pass secrets as environment variables to the script
-          envs: GITHUB_REPOSITORY,DB_USER,DB_PASSWORD,DB_NAME,JWT_SECRET,API_URL,LETSENCRYPT_EMAIL,TRAEFIK_BASIC_AUTH
+          envs: GITHUB_REPOSITORY,DB_USER,DB_PASSWORD,DB_NAME,JWT_SECRET,API_URL,LETSENCRYPT_EMAIL,TRAEFIK_BASIC_AUTH,GITHUB_TOKEN,GITHUB_ACTOR
           script: |
             export GITHUB_REPOSITORY=${{ github.repository }}
+            export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+            export GITHUB_ACTOR=${{ github.actor }}
             export DB_USER=${{ secrets.DB_USER }}
             export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             export DB_NAME=${{ secrets.DB_NAME }}

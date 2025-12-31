@@ -36,6 +36,13 @@ else
 fi
 
 # 3. Pull Images with Retry Logic
+echo -e "${YELLOW}🔐 Logging in to GitHub Container Registry...${NC}"
+if [ -n "$GITHUB_TOKEN" ] && [ -n "$GITHUB_ACTOR" ]; then
+    echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+else
+    echo -e "${RED}⚠️  GITHUB_TOKEN or GITHUB_ACTOR not set. Skipping login (might fail if image is private).${NC}"
+fi
+
 echo -e "${YELLOW}⬇️  Pulling images...${NC}"
 pull_with_retry() {
     local image=$1
