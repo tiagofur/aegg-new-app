@@ -118,7 +118,7 @@ fi
 
 # 6. Run Migrations
 echo -e "${YELLOW}🏗️  Running migrations...${NC}"
-if docker-compose -f docker-compose.prod.yml exec -T backend npm run migration:run; then
+if docker-compose -f docker-compose.prod.yml exec -T backend npm run migration:run:prod; then
     echo -e "${GREEN}✅ Migrations applied successfully${NC}"
 else
     echo -e "${RED}❌ Migrations failed! Check logs.${NC}"
